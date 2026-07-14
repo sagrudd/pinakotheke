@@ -254,10 +254,14 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
 
 ## 0.4.0 — Social account acquisition
 
-- [ ] **XIMG-040 P0 — Implement official X OAuth adapter.**
-  Request only required read/offline/follow scopes through a Monas-managed
-  integration flow. Acceptance: state/PKCE/token refresh/revocation tests pass;
-  protected access is used only when authorized by the viewing account.
+- [x] **XIMG-040 P0 — Implement official X OAuth adapter.** Completed in
+  `7c10d9f`; the official Authorization Code + S256 PKCE boundary requests only
+  `tweet.read`, `users.read`, `follows.read`, and `offline.access`, enforces
+  state/redirect/expiry/replay, and delegates exchange/refresh/revocation to
+  opaque Monas-held references. Grant scopes and protected access are bound to
+  the viewing X account. It contains no raw token/cookie/secret or live X API
+  traffic; ADR 0002's approval, rights, retention, and deletion gates still
+  block live acquisition.
 
 - [ ] **XIMG-041 P1 — Import/select followed X accounts.**
   Let the user explicitly select from permitted followed accounts into the local

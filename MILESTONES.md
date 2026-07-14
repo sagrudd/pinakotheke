@@ -250,6 +250,12 @@ Exit criteria:
 
 - official, user-authorized X connector supports permitted public and protected
   access, pagination, photos, videos, GIFs, and highest-quality allowed variant;
+- XIMG-040 implements the official X OAuth Authorization Code + S256 PKCE host
+  boundary (commit `7c10d9f`): exact redirect, state, expiry, replay, required
+  read/follow/refresh scopes, opaque host exchange/refresh/revocation, and
+  viewing-account binding are test-covered without raw credentials, cookies,
+  tokens, live API traffic, or a scraping fallback. ADR 0002 still blocks live
+  acquisition until X approval, rights, retention, and deletion gates close.
 - official, user-authorized Instagram connector supports the account/media
   types permitted by the approved API and records unsupported cases clearly;
 - `Refresh accounts` schedules all enabled connectors once, reports per-account
