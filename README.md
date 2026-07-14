@@ -56,6 +56,11 @@ account/site configuration; it performs no network access or source refresh.
 See [configuration documentation](docs/configuration.rst) for commands and
 fail-closed validation rules.
 
+The Rust core also enforces the acquisition lifecycle through verified object
+commit and review admission. It is an in-memory policy boundary only; it does
+not transfer media, contact an authority, or persist acquisition state. See
+[acquisition lifecycle documentation](docs/acquisition.rst).
+
 The supported-toolchain, browser, Semantic Versioning, dependency, fixture,
 CI, documentation, and Definition of Done rules are maintained in the
 [release and quality policy](docs/release-quality-policy.rst). Run the

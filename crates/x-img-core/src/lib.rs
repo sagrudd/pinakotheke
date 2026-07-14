@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MPL-2.0
 //! Application-core boundaries with no live source or storage integration.
 
+pub mod acquisition;
+
 use std::{
     fs::{self, File, OpenOptions},
     io::{self, Write},

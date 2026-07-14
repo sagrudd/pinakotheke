@@ -19,6 +19,10 @@ All notable changes to x-img will be documented in this file. The project uses
   identities, invalid account names, unsafe wildcard/non-origin websites, and
   missing/incompatible opaque authority references without contacting any
   source or authority.
+- Added XIMG-022's platform-neutral acquisition state machine. It accepts only
+  the verified settlement path, makes failure/policy/cancellation/conflict
+  terminal, requires bounded immutable ObjectStore evidence before commit, and
+  prevents every review state from being assigned before a verified commit.
 - Added the XIMG-009 executable Pinakotheke v1 identity-migration plan,
   including a complete rename surface matrix, a minimum compatibility window,
   migration and rollback rules, retained schema/object/extension identities,

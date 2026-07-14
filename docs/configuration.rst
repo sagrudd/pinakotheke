@@ -123,8 +123,8 @@ validation leaves the existing configuration unchanged. This protects local
 configuration metadata; it does not claim to authenticate authority references
 or schedule an acquisition.
 
-Acquisition/catalogue validation belongs in the future Rust contract and state
-machine layers (XIMG-022 and XIMG-023). Those layers must preserve the
-canonical-identity-plus-immutable-checksum settlement key, retain URL aliases
-without treating URLs as identity, and admit review state only after verified
-ObjectStore settlement.
+The implemented XIMG-022 lifecycle layer admits review state only after a
+verified ObjectStore evidence record is committed. The separate XIMG-023
+contract will add canonical-identity-plus-immutable-checksum idempotency,
+crash reconciliation, and persisted URL-alias handling without treating URLs
+as identity. See :doc:`acquisition` for the current lifecycle boundary.
