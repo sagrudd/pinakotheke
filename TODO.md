@@ -129,6 +129,19 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   variants, rate limits, token expiry, malformed responses, and cursor reset for
   X and Instagram.
 
+- [ ] **XIMG-026 P0 — Define explicit bioinformatics transfer plans.** Depends
+  on XIMG-006/008. Accept one bounded, user-identified GEO, SRA, ENA, or NCBI
+  accession/URL and render a reviewable plan containing authority/release,
+  files, sizes/checksums, transport, endpoint/ObjectStore/prefix/type,
+  estimated bytes, licensing/usage, and policy result before any transfer;
+  reject bulk discovery and implicit repository crawling.
+
+- [ ] **XIMG-027 P0 — Add bioinformatics resolution and transport fixtures.**
+  Depends on XIMG-026. Cover ENA/SRA manifests and multi-run expansion, GEO
+  metadata/raw archive/file lists, NCBI routing, checksum/size evidence,
+  retries/resume/cancellation, bounded backpressure, and optional Aspera with
+  HTTPS fallback, without real credentials or copyrighted payloads.
+
 ## 0.3.0 — External authorities
 
 - [ ] **XIMG-030 P0 — Define and register the Monas product.**
@@ -158,6 +171,14 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
 - [ ] **XIMG-035 P1 — Add cross-repository contract CI.**
   Test pinned fixtures without requiring sibling checkouts; optionally run live
   integration when sibling repositories are available.
+
+- [ ] **XIMG-036 P0 — Implement confirmed direct bioinformatics commit.** Depends
+  on XIMG-023/024/026/027/033. After user confirmation and server-side policy
+  and capability revalidation, stream directly to DASObjectStore, verify
+  checksum and exact length before catalogue commit, reconcile crashes
+  idempotently, deduplicate by accession/file identity plus checksum, and
+  preserve source, transport, rights, and destination provenance. No durable
+  x-img-local payload or silent local fallback is allowed.
 
 ## 0.4.0 — Social account acquisition
 

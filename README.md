@@ -2,9 +2,10 @@
 
 Public repository: [github.com/sagrudd/x-img](https://github.com/sagrudd/x-img)
 
-`x-img` is a planned personal media-acquisition and review service for a small,
-explicitly configured set of X/Twitter and Instagram accounts, together with
-websites enabled through a Firefox extension.
+`x-img` is a planned personal acquisition and review service for a small,
+explicitly configured set of X/Twitter and Instagram accounts, user-identified
+public GEO/SRA/ENA/NCBI resources, and websites enabled through a Firefox
+extension.
 
 All sources resolve to one x-img Web instance. That instance presents a
 thumbnail-dense, ThumbsPlus-inspired library and review queue, and offers a
@@ -20,6 +21,10 @@ single-click refresh of configured social accounts.
   sibling `../DASObjectStore`; local x-img state may contain configuration,
   identifiers, indexes, and audit records, but never durable media payloads.
 - Account and site configuration is local, explicit, versioned JSON.
+- Bioinformatics acquisition is explicit and user-initiated: an accession or
+  URL becomes a reviewable transfer plan before bounded streaming to the
+  configured DASObjectStore ObjectStore. x-img does not bulk-discover or crawl
+  public repositories.
 - Acquisition is idempotent: once a media identity has a verified committed
   object, routine refreshes do not download it again.
 - The UI follows sibling `../mnemosyne_design_language` and retains a future
@@ -56,6 +61,9 @@ compatibility aliases and migrations must be documented before that move.
    thumbnails are eligible only after display/observation and originals only
    after an explicit user open. Avoiding an API does not exempt behavior from
    platform terms.
+7. GEO, SRA, ENA, and NCBI resources require explicit accession/URL selection,
+   rights/policy review, destination confirmation, checksum verification, and
+   provenance; controlled-access or license-uncertain resources remain blocked.
 
 ## Versioning
 

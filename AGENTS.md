@@ -112,6 +112,20 @@ integration, review, tests, commits, and the final handoff.
   behavior from platform terms.
 - The browser cache must fail open to the origin and must never break ordinary
   page loading when x-img, Monas, or DASObjectStore is unavailable.
+- Bioinformatics resources are a separate adapter family from Firefox/site
+  media. Accept only a bounded, explicit user accession or URL for GEO, SRA,
+  ENA, or NCBI; never add bulk discovery, repository crawling, or an implicit
+  catalog sweep. Resolve a reviewable plan and obtain user confirmation before
+  transfer, then revalidate policy, destination, quota, and write capability
+  server-side immediately before commit.
+- Bioinformatics bytes stream directly through the authorized DASObjectStore
+  ingest boundary. Only bounded ephemeral worker buffers are permitted; no
+  durable x-img-local payload or browser-storage copy may be used. Preserve
+  accession/file identity, source release and URLs, checksums, transport/tool
+  versions, rights metadata, endpoint/ObjectStore identity, object reference,
+  and discovery/commit times. Aspera is optional, explicitly licensed and
+  binary-bounded, HTTPS fallback is mandatory, and secrets never enter config,
+  logs, or fixtures.
 
 ## Data integrity and privacy
 
@@ -152,6 +166,10 @@ integration, review, tests, commits, and the final handoff.
   Run the documented container check as well. GitHub Actions may mirror these
   checks but never replaces local container verification as the release
   authority.
+- User-facing resource documentation must include explicit GEO, SRA, ENA, and
+  NCBI accession/URL examples, plan confirmation, rights/policy blocking,
+  destination selection, checksum failure, retry/resume, and local container
+  verification.
 
 ## Architecture and code quality
 

@@ -17,6 +17,8 @@ x-img provides one private, authenticated Web library for media acquired from:
 - a small JSON allowlist of X/Twitter accounts;
 - a small JSON allowlist of Instagram accounts; and
 - websites enabled by the user through a Firefox extension.
+- user-identified public GEO, SRA, ENA, and NCBI resources through an explicit
+  review-and-confirm transfer plan.
 
 A user can press one `Refresh accounts` action to schedule all enabled social
 connectors. Newly committed items enter a visible review queue and are
@@ -38,6 +40,9 @@ Firefox extension ------/              |                       media bytes
 
 - x-img owns source adapters, canonical media identity, acquisition jobs,
   review state, provenance, and cache lookup policy.
+- Bioinformatics adapters are separate from Firefox/site adapters and accept
+  only explicit accessions/URLs; both families share bounded jobs, review,
+  provenance, idempotency, Monas identity, and DASObjectStore ports.
 - DASObjectStore owns all durable image/video bytes, verification, object
   commit, read service, and storage credentials/capabilities.
 - Monas owns the standalone application shell, login, session, and product
@@ -99,6 +104,9 @@ Exit criteria:
 - review state distinguishes new, reviewed, retained, hidden, and removed;
 - fixture adapters prove pagination, duplicate discovery, crash reconciliation,
   and retry behavior without network access; and
+- explicit GEO/SRA/ENA/NCBI plan and resolution fixtures prove source authority,
+  release, files, checksums, transport, rights/policy, destination, and no
+  bulk discovery; and
 - no code path can persist media bytes outside the storage port.
 
 ## 0.3.0 — DASObjectStore and Monas integration contracts
@@ -118,6 +126,9 @@ Exit criteria:
 - upload completion is reconciled idempotently after crash boundaries; and
 - a future Synoptikon host adapter can replace Monas without changing domain or
   connector logic.
+- the resource ingest contract streams bounded, confirmed GEO/SRA/ENA/NCBI
+  transfers to DASObjectStore, verifies checksums before catalogue admission,
+  and records endpoint/ObjectStore and source provenance.
 
 ## 0.4.0 — Account connectors and one-click refresh
 

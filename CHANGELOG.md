@@ -11,6 +11,10 @@ All notable changes to x-img will be documented in this file. The project uses
   compatibility aliases and repository migration planning.
 - Added the Sphinx/Read the Docs local-container documentation authority and
   stricter Firefox observation, opt-in, fail-open, and status-display rules.
+- Added the planned explicit GEO/SRA/ENA/NCBI resource workflow: reviewable
+  accession plans, rights gates, direct DASObjectStore streaming, checksum and
+  provenance requirements, optional Aspera with HTTPS fallback, and no bulk
+  discovery or durable x-img-local payloads.
 
 ## [0.1.0] - 2026-07-14
 
