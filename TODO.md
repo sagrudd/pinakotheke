@@ -40,12 +40,14 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   legal/policy questions block live acquisition but not fixture work.
   Completed in [`docs/adr/0002-platform-policy.md`](docs/adr/0002-platform-policy.md), commit `625c833`; X and Instagram remain fixture-only until the listed approval, account-class, rights, and retention gates are answered.
 
-- [ ] **XIMG-003 P0 — Inventory sibling contracts.**
+- [x] **XIMG-003 P0 — Inventory sibling contracts.**
   Pin the relevant Monas product mount/session contract, DASObjectStore
   application-auth/upload/read/range contracts, Mnemosyne design-language
   revision, and future Synoptikon product adapter contract.
   Acceptance: compatibility matrix names versions/commits and contract fixtures;
-  no public build requires unpublished path dependencies.
+  no public build requires unpublished path dependencies. Completed in
+  `b381921`; open Monas fixture and DAS HTTP-range contract risks remain
+  explicitly recorded in `docs/compatibility-matrix.md`.
 
 - [ ] **XIMG-004 P0 — Write architecture decisions.**
   Create ADRs for authority boundaries, local metadata versus media bytes,
