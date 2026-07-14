@@ -31,6 +31,7 @@ Configuration
    object-read
    x-oauth
    x-followed-accounts
+   x-media-discovery
    identity-migration
 
 Release and quality

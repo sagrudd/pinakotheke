@@ -14,6 +14,7 @@ pub mod object_ingest;
 pub mod object_read;
 pub mod reconciliation;
 pub mod scheduler;
+pub mod x_discovery;
 pub mod x_followed_accounts;
 pub mod x_oauth;
 

@@ -97,6 +97,13 @@ complete candidate configuration for atomic save. It contains no live X call or
 bulk import, and remains subject to ADR 0002. See
 [followed-account selection](docs/x-followed-accounts.rst).
 
+The core also plans incremental X media discovery from synthetic adapter pages:
+it bounds cursors, timeline depth, pages, and items; selects the best supported
+photo/video/animated-GIF rendition; records complete metadata provenance; and
+feeds canonical identity plus checksum into the existing idempotency boundary.
+It does not call X or transfer media while ADR 0002 remains open. See
+[incremental X media discovery](docs/x-media-discovery.rst).
+
 x-img now carries a strict, versioned Monas product-registration contract for
 one authenticated application/API mount, a DASObjectStore requirement, and a
 future Synoptikon-equivalent bootstrap. It declares no x-img login/session

@@ -1,0 +1,86 @@
+{
+  "schema_version": "x-img.x-discovery-fixtures.v1",
+  "generated_by": "XIMG-042 synthetic X incremental discovery fixture",
+  "account_id": "fixture-account",
+  "budget": {"max_pages": 2, "max_items": 8, "max_timeline_depth": 2},
+  "expected_candidate_identities": [
+    "x:fixture-account:post-100:media-gif",
+    "x:fixture-account:post-100:media-photo",
+    "x:fixture-account:post-100:media-video",
+    "x:fixture-account:post-101:media-photo-2"
+  ],
+  "pages": [
+    {
+      "request_cursor": null,
+      "next_cursor": "cursor-2",
+      "timeline_depth": 1,
+      "items": [
+        {
+          "item_id": "post-100",
+          "media": [
+            {
+              "media_id": "media-photo",
+              "kind": "photo",
+              "expected_checksum_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "variants": [
+                {"variant_id":"photo-small","content_type":"image/jpeg","width":640,"height":480,"bitrate":0,"source_url_alias":"https://media.x-fixture.invalid/photo-small"},
+                {"variant_id":"photo-large","content_type":"image/jpeg","width":2048,"height":1536,"bitrate":0,"source_url_alias":"https://media.x-fixture.invalid/photo-large"}
+              ]
+            },
+            {
+              "media_id": "media-video",
+              "kind": "video",
+              "expected_checksum_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "variants": [
+                {"variant_id":"video-hls","content_type":"application/vnd.apple.mpegurl","width":1920,"height":1080,"bitrate":9000000,"source_url_alias":"https://media.x-fixture.invalid/video-hls"},
+                {"variant_id":"video-720","content_type":"video/mp4","width":1280,"height":720,"bitrate":3000000,"source_url_alias":"https://media.x-fixture.invalid/video-720"},
+                {"variant_id":"video-1080","content_type":"video/mp4","width":1920,"height":1080,"bitrate":5000000,"source_url_alias":"https://media.x-fixture.invalid/video-1080"}
+              ]
+            },
+            {
+              "media_id": "media-gif",
+              "kind": "animated_gif",
+              "expected_checksum_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+              "variants": [
+                {"variant_id":"gif-mp4","content_type":"video/mp4","width":480,"height":480,"bitrate":1000000,"source_url_alias":"https://media.x-fixture.invalid/gif-mp4"}
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "request_cursor": "cursor-2",
+      "next_cursor": null,
+      "timeline_depth": 2,
+      "items": [
+        {
+          "item_id": "post-100",
+          "media": [
+            {
+              "media_id": "media-photo",
+              "kind": "photo",
+              "expected_checksum_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "variants": [
+                {"variant_id":"photo-large","content_type":"image/jpeg","width":2048,"height":1536,"bitrate":0,"source_url_alias":"https://media.x-fixture.invalid/photo-large"}
+              ]
+            }
+          ]
+        },
+        {
+          "item_id": "post-101",
+          "media": [
+            {
+              "media_id": "media-photo-2",
+              "kind": "photo",
+              "expected_checksum_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+              "variants": [
+                {"variant_id":"photo-2","content_type":"image/webp","width":1200,"height":900,"bitrate":0,"source_url_alias":"https://media.x-fixture.invalid/photo-2"}
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

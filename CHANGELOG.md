@@ -7,6 +7,11 @@ All notable changes to x-img will be documented in this file. The project uses
 
 ### Planning
 
+- Added XIMG-042's fixture-driven, incremental X media-discovery planner. It
+  enforces cursor/page/item/depth budgets, selects supported best photo/video/
+  animated-GIF variants, preserves metadata provenance, and produces existing
+  idempotency requests without a live X call, media transfer, or ADR 0002
+  policy bypass.
 - Added XIMG-041's explicit followed-X-account selection boundary. A
   grant-bound returned candidate list becomes a reviewable added/existing/not-
   selected configuration diff and requires confirmation before the existing
