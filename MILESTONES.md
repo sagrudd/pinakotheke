@@ -226,6 +226,12 @@ Exit criteria:
   removal, rename, unavailable/read-only, expiry, quota, TLS, reconnect, or
   cross-endpoint alias changes. Live transport and rendered task panes remain
   gated.
+- XIMG-038 implements confirmed direct bioinformatics commit (commit
+  `f6a07fa`): allowed explicit plans are revalidated against the exact reviewed
+  endpoint/ObjectStore pair, then bounded chunks flow only through the existing
+  DAS ingest port. SHA-256, length, authority receipt, accession/file/checksum
+  replay, and metadata-only source/transport/rights/destination provenance are
+  tested; live provider/DAS transport and durable crash recovery remain gated.
 - upload completion is reconciled idempotently after crash boundaries; and
 - a future Synoptikon host adapter can replace Monas without changing domain or
   connector logic.

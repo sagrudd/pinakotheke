@@ -243,16 +243,14 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   states without choosing a fallback. Live discovery/pairing transport and the
   rendered Yew task pane remain future adapters.
 
-- [ ] **XIMG-038 P0 — Implement confirmed direct bioinformatics commit.** Depends
-  on XIMG-023/024/026/027/033/037. After user confirmation and server-side
-  policy and capability revalidation, stream directly to DASObjectStore, verify
-  checksum and exact length before catalogue commit, reconcile crashes
-  idempotently, deduplicate by accession/file identity plus checksum, and
-  preserve source, transport, rights, and destination provenance. No durable
-  x-img-local payload or silent local fallback is allowed. Planning evidence:
-  `docs/adr/0003-bioinformatics-resource-commit.md` in `b21c6da`, with endpoint
-  dependency ordering recorded in `docs/adr/0004-endpoints-and-objectstores.md`
-  in `bdd5294`.
+- [x] **XIMG-038 P0 — Implement confirmed direct bioinformatics commit.**
+  Completed in `f6a07fa`; one allowed, explicitly confirmed plan file must
+  retain its exact reviewed endpoint/ObjectStore pair through commit-time
+  revalidation before bounded direct ingest. SHA-256, exact length, and the
+  authority receipt are verified; accession/file/checksum replays return the
+  first metadata provenance record and changed destinations fail. No local
+  payload or fallback exists. Durable crash reconciliation and live provider/
+  DAS transport remain future adapters.
 
 ## 0.4.0 — Social account acquisition
 
