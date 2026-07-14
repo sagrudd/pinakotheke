@@ -1,9 +1,7 @@
 name: Planning quality mirror
 
 on:
-  pull_request:
-  push:
-    branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -21,7 +19,7 @@ jobs:
       - name: Check out source
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: State documentation authority
-        run: echo 'This workflow is a convenience mirror; the locally built docs/Dockerfile remains the documentation release authority.'
+        run: echo 'Manual advisory mirror only; local checks are the delivery authority and GitHub status must not block progress.'
       - name: Run dependency-free quality checks
         run: scripts/quality/check.sh
       - name: Verify vendored cross-repository contracts

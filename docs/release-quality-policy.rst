@@ -91,12 +91,12 @@ The Firefox policy is:
 * treat an increase to the minimum Firefox version as a deprecation-governed
   compatibility change.
 
-Release CI matrix
------------------
+Release verification matrix
+---------------------------
 
-The required matrix grows with implemented surfaces. Checks that do not yet
-have code must be tracked as release gates rather than reported as passing.
-At minimum the completed product runs:
+The required local verification matrix grows with implemented surfaces. Checks
+that do not yet have code must be tracked as release gates rather than reported
+as passing. At minimum the completed product runs:
 
 * Rust formatting, workspace linting with warnings denied, native unit and
   integration tests on Linux, macOS, and Windows, the pinned Rust toolchain,
@@ -116,10 +116,17 @@ At minimum the completed product runs:
   fixtures are not required; and
 * planning-link, Sphinx reference, JSON schema, and checked-in fixture checks.
 
-Operating-system or browser exclusions require a documented exception. A
-green subset never substitutes for a failing or skipped required matrix cell.
-Required matrix jobs do not use fail-fast cancellation; one failure must not
-hide evidence from the other cells.
+Operating-system or browser exclusions require a documented exception. A green
+subset never substitutes for a failing or skipped required local matrix cell.
+Each command records its own result so one failure does not hide other local
+evidence.
+
+Hosted CI is deliberately non-blocking while GitHub Actions funding is
+unavailable. Work is verified and delivered from recorded local checks; no
+pull-request, push, workflow, or status check may prevent progress, commits,
+or pushes. The checked-in GitHub workflows are manually dispatched advisory
+mirrors only. Their results may be backfilled or the work migrated to another
+CI system later, but they never replace the local verification matrix.
 
 Dependencies, security, and licensing
 --------------------------------------
@@ -189,7 +196,7 @@ Definition of Done
 A change is done only when all applicable acceptance criteria are implemented;
 tests cover success, denial, failure, and recovery paths; versioned contracts
 and fixtures are compatible; privacy and authority boundaries remain intact;
-and the required matrix is green. User-facing Sphinx documentation,
+and applicable required local matrix commands are green. User-facing Sphinx documentation,
 ``TODO.md``, ``MILESTONES.md``, and ``CHANGELOG.md`` must agree with the
 delivered behavior. The local documentation container must build and verify,
 the version-drift check must pass, and the public clone must not rely on
@@ -219,8 +226,8 @@ Cross-repository contract evidence
 ``scripts/contracts/check.sh`` is the dependency-free baseline contract
 check. It verifies x-img-owned, versioned Monas and DASObjectStore contract
 fixtures and rejects unpublished sibling path dependencies, so it must pass in
-a clean public clone. The ordinary GitHub quality workflow runs this baseline
-on every change.
+a clean public clone. It is run locally for each applicable change; the GitHub
+quality workflow is a manually dispatched, non-blocking mirror only.
 
 When the four compatibility siblings are checked out at the revisions recorded
 in ``docs/compatibility-matrix.md``, run the stronger source-anchor inspection:

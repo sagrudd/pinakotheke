@@ -111,6 +111,9 @@ CI, documentation, and Definition of Done rules are maintained in the
 [release and quality policy](docs/release-quality-policy.rst). Run the
 dependency-free planning checks with `scripts/quality/check.sh`; the pinned
 local Sphinx container remains the documentation release authority.
+GitHub Actions is currently a manually-dispatched advisory mirror only: its
+absence or status never blocks development. Record the local checks and
+backfill or migrate hosted CI later.
 
 Cross-repository contract evidence is also dependency-free by default:
 `scripts/contracts/check.sh` validates x-img-owned fixtures in a public clone.

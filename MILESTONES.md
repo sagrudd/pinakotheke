@@ -100,8 +100,10 @@ Exit criteria:
 - XIMG-008 release and quality policy is recorded in
   `docs/release-quality-policy.rst` (commit `34c7792`), with a Rust 1.95.0 MSRV
   for the initial 0.2.x line, current Firefox Release/ESR channel support,
-  version-drift and planning/schema/privacy checks, a SHA-pinned CI mirror, and
-  the local Sphinx container retained as the documentation authority.
+  version-drift and planning/schema/privacy checks, a manually dispatched,
+  non-blocking CI mirror, and the local Sphinx container retained as the
+  documentation authority. Hosted CI will be backfilled or migrated later and
+  does not block progress while funding is unavailable.
 - XIMG-009 records the executable Pinakotheke v1 identity-migration plan in
   `docs/adr/0011-pinakotheke-v1-identity-migration.md` and its synthetic
   coverage matrix (commit `c37e5d2`). It preserves data-bearing identity,

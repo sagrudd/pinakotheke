@@ -7,6 +7,9 @@ All notable changes to x-img will be documented in this file. The project uses
 
 ### Planning
 
+- Made hosted CI non-blocking while GitHub Actions funding is unavailable.
+  GitHub workflows are manually dispatched advisory mirrors; recorded local
+  verification remains the delivery authority until CI is backfilled or moved.
 - Added XIMG-035's dependency-free cross-repository contract check and pinned
   optional sibling-source workflow. A public clone validates x-img-owned
   fixtures without sibling dependencies; an explicit four-repository checkout

@@ -89,15 +89,18 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
 
 - [x] **XIMG-008 P1 — Establish release and quality policy.** Completed in
   `34c7792`; the Sphinx release policy, dependency-free repository checks, and
-  SHA-pinned GitHub Actions mirror define SemVer/version authority, Rust 1.95.0
-  MSRV and Firefox Release/ESR support, CI/dependency/fixture rules, and the
-  local-container-authoritative Definition of Done.
+  manually-dispatched, non-blocking GitHub Actions mirror define SemVer/version
+  authority, Rust 1.95.0 MSRV and Firefox Release/ESR support,
+  verification/dependency/fixture rules, and the local-container-authoritative
+  Definition of Done. Hosted CI will be backfilled or migrated later and never
+  blocks progress while funding is unavailable.
   Add changelog, SemVer rules, supported Rust/MSRV and Firefox versions, CI
   matrix, dependency policy, fixture privacy rules, and Definition of Done.
   Acceptance: version sources cannot drift; the Definition of Done requires
   precise Sphinx/Read the Docs user documentation and a reproducible local
   `docs/Dockerfile` container build/verification that is authoritative over
-  any GitHub Actions mirror; and CI checks planning links/schemas.
+  any GitHub Actions mirror; local checks cover planning links/schemas, with
+  hosted CI advisory only until it is backfilled or migrated.
 
 - [x] **XIMG-009 P0 — Plan the Pinakotheke v1 identity migration.** Completed
   in `c37e5d2`; ADR 0011, the Sphinx migration guide, a synthetic identity

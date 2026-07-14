@@ -261,8 +261,12 @@ Select checks proportionate to the change. The eventual baseline includes:
 
 Run `scripts/quality/check.sh` on every planning or contract change. It checks
 local documentation targets, strict JSON/schema-major structure, fixture
-privacy, and current version mirrors. The GitHub Actions quality workflow is a
-convenience mirror only; it does not replace the local Sphinx container build.
+privacy, and current version mirrors. GitHub Actions is an optional,
+manually-dispatched advisory mirror while hosted CI funding is unavailable:
+its absence, failure, or status must never block progress, commits, pushes, or
+release evidence. Record local command results instead; CI may be backfilled
+or moved to another system later. It does not replace the local Sphinx
+container build.
 Once XIMG-020 creates the Rust workspace, `[workspace.package].version` becomes
 the sole editable product-version source and all crates, Sphinx metadata,
 extension/product metadata, CLI output, tags, and release artefacts must be
