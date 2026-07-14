@@ -1,0 +1,11 @@
+{
+  "manifest_version": 3,
+  "name": "x-img",
+  "version": "0.2.0",
+  "description": "Least-privilege client for one configured x-img instance.",
+  "permissions": ["storage"],
+  "background": {"service_worker": "background.js"},
+  "action": {"default_title": "x-img"},
+  "options_ui": {"page": "options.html", "open_in_tab": true},
+  "browser_specific_settings": {"gecko": {"id": "x-img@example.invalid", "strict_min_version": "128.0"}}
+}
