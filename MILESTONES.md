@@ -134,6 +134,11 @@ Exit criteria:
   only after commit, and double claims, terminal re-entry, and out-of-order
   settlement transitions fail closed without live authority calls.
 - canonical identity supports platform media IDs and content-hash fallback;
+- XIMG-023 implements deterministic metadata-only idempotency and reconciliation
+  (commits `3b5cb51`, `5343996`): canonical identity plus immutable checksum
+  settles one record, replay merges safe aliases without object replacement,
+  and all crash boundaries plus absent/conflicting authority evidence fail
+  closed as pending/conflict.
 - review state distinguishes new, reviewed, retained, hidden, and removed;
 - fixture adapters prove pagination, duplicate discovery, crash reconciliation,
   and retry behavior without network access; and

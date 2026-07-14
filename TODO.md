@@ -140,10 +140,14 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   out-of-order commits, review-before-commit, terminal re-entry, and malformed
   evidence; it performs no transfer, persistence, or authority call.
 
-- [ ] **XIMG-023 P0 — Implement idempotency and reconciliation.**
-  Use platform media identity plus immutable object checksum; keep aliases from
-  canonical source identities. Acceptance: crash-injection fixtures at every
-  state converge to one committed catalogue record and never overwrite bytes.
+- [x] **XIMG-023 P0 — Implement idempotency and reconciliation.**
+  Completed in `3b5cb51` and `5343996`; an in-memory, metadata-only reconciliation catalogue
+  keys settlement by canonical media identity plus immutable checksum, appends
+  safe URL aliases on replay, preserves the first object reference, and records
+  checksum disagreement as conflict. Crash/replay tests cover absent authority
+  evidence across the discovered/claimed/transferring/stored/verified/commit
+  crash boundaries, post-upload retry, repeated settlement, and identity reuse
+  without byte, network, persistence, or overwrite behavior.
 
 - [ ] **XIMG-024 P1 — Implement job scheduler contracts.**
   Model global refresh, per-account jobs, extension capture, leases, cancellation,
