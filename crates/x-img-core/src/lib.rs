@@ -14,6 +14,7 @@ pub mod object_ingest;
 pub mod object_read;
 pub mod reconciliation;
 pub mod scheduler;
+pub mod x_oauth;
 
 use std::{
     fs::{self, File, OpenOptions},

@@ -192,6 +192,13 @@ deletion, rate limits, token expiry, malformed responses, and crash recovery;
 they must not contain real media, account lists, tokens, cookies, or private
 URLs.
 
+XIMG-040 supplies a fixture-tested official OAuth 2.0 Authorization Code +
+S256 PKCE host boundary only. It uses the documented ``tweet.read``,
+``users.read``, ``follows.read``, and ``offline.access`` baseline and exact
+redirect/state requirements, but does not change this live-acquisition block.
+Its 2026-07-14 source review is the `X OAuth 2.0 Authorization Code flow with
+PKCE <https://docs.x.com/fundamentals/authentication/oauth-2-0/authorization-code>`_.
+
 ## Acceptance tests
 
 - Static checks reject platform hosts, browser-cookie APIs, password fields,

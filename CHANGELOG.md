@@ -7,6 +7,10 @@ All notable changes to x-img will be documented in this file. The project uses
 
 ### Planning
 
+- Added XIMG-040's official X OAuth 2.0 Authorization Code + S256 PKCE host
+  boundary. State replay, denial, expiry, required scopes, viewing-account
+  binding, opaque refresh, and revocation are test-covered without raw tokens,
+  cookies, secrets, or live X API/media traffic.
 - Added XIMG-038's confirmed direct bioinformatics commit orchestrator. It
   requires allowed explicit plan confirmation and exact destination
   revalidation, streams bounded chunks through the DAS ingest port, verifies

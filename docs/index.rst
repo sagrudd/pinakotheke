@@ -29,6 +29,7 @@ Configuration
    destinations
    object-ingest
    object-read
+   x-oauth
    identity-migration
 
 Release and quality

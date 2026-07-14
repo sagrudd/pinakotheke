@@ -85,6 +85,11 @@ receipt produces metadata-only provenance and deterministic in-memory replay.
 No provider, authority, or local payload transport is enabled. See
 [confirmed bioinformatics commits](docs/bioinformatics-commit.rst).
 
+x-img also has a fixture-tested official X OAuth 2.0 + S256 PKCE host boundary:
+Monas owns verifier, secret, token, refresh, and revocation custody while x-img
+keeps opaque references only. Live X API/media access remains blocked on ADR
+0002 approval and rights gates. See [X OAuth authorization](docs/x-oauth.rst).
+
 x-img now carries a strict, versioned Monas product-registration contract for
 one authenticated application/API mount, a DASObjectStore requirement, and a
 future Synoptikon-equivalent bootstrap. It declares no x-img login/session
