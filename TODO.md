@@ -64,7 +64,9 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   Acceptance: examples cover enabled/disabled sources, per-source media policy,
   refresh budget, review defaults, and schema rejection of unknown fields.
 
-- [ ] **XIMG-006 P0 — Define acquisition and catalogue schemas.**
+- [x] **XIMG-006 P0 — Define acquisition and catalogue schemas.** Completed in
+  `b90ff7f`; strict metadata schema, synthetic fixtures, reconciliation ADR,
+  and Sphinx configuration guidance are in place.
   Specify source post/item, media identity, object reference, download attempt,
   job lease, account cursor, review state, tombstone, and audit event.
   Acceptance: state diagrams cover retry before/after DAS commit, duplicate URLs,

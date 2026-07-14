@@ -7,6 +7,10 @@ All notable changes to x-img will be documented in this file. The project uses
 
 ### Planning
 
+- Added the XIMG-006 versioned acquisition/catalogue metadata contract for
+  source items, canonical media identities, DASObjectStore references,
+  attempts, leases, cursors, review state, tombstones, audit events, and
+  crash/idempotency reconciliation, with strict synthetic fixtures.
 - Added XIMG-005 versioned draft-2020-12 configuration schemas and synthetic
   positive/negative fixtures for the instance, X, Instagram, and website
   policy contracts, with strict fields and host-managed references documented
