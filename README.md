@@ -111,6 +111,12 @@ expiry/revocation explicit, and uses the same reconciliation boundary. It does
 not call Instagram or Meta while XIMG-043 and ADR 0002 remain open. See
 [incremental Instagram media discovery](docs/instagram-media-discovery.rst).
 
+One authenticated refresh action now has a fixture-tested orchestration model:
+it selects all enabled social accounts, coalesces repeat presses, exposes
+per-account bounded progress and terminal states, supports cancellation/retry,
+and produces a final summary. It executes no connector or media work. See
+[one-click account refresh](docs/account-refresh.rst).
+
 x-img now carries a strict, versioned Monas product-registration contract for
 one authenticated application/API mount, a DASObjectStore requirement, and a
 future Synoptikon-equivalent bootstrap. It declares no x-img login/session

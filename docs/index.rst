@@ -33,6 +33,7 @@ Configuration
    x-followed-accounts
    x-media-discovery
    instagram-media-discovery
+   account-refresh
    identity-migration
 
 Release and quality

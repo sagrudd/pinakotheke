@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 //! Application-core boundaries with no live source or storage integration.
 
+pub mod account_refresh;
 pub mod acquisition;
 pub mod application_identity;
 pub mod bioinformatics;

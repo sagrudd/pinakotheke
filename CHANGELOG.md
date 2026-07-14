@@ -7,6 +7,10 @@ All notable changes to x-img will be documented in this file. The project uses
 
 ### Planning
 
+- Added XIMG-045's one-click social-account refresh orchestration contract:
+  enabled X/Instagram accounts become coalesced global jobs with bounded
+  per-account progress, partial failure, cancellation, retry, no-overlap, and
+  final new-item summary states, without connector execution or media transfer.
 - Added XIMG-044's fixture-only incremental Instagram discovery planner. It
   handles posts, carousels, reels/videos, pagination and budgets; exposes
   opaque credential expiry/revocation; selects supported renditions; preserves
