@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/sagrudd/x-img/schemas/x-img-instance.v1.schema.json",
+  "title": "x-img instance configuration v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": "x-img.instance.v1" },
+    "instance_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+    },
+    "display_name": { "type": "string", "minLength": 1, "maxLength": 120 },
+    "host_context_ref": {
+      "$ref": "x-img-common.v1.schema.json#/$defs/hostManagedRef",
+      "description": "Opaque Monas or future host reference; never a session value."
+    },
+    "object_store_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "endpoint_id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._:-]{0,127}$" },
+        "object_store_id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._:-]{0,127}$" },
+        "prefix": { "type": "string", "pattern": "^[^/].{0,254}/$" },
+        "application_ref": {
+          "$ref": "x-img-common.v1.schema.json#/$defs/hostManagedRef"
+        }
+      },
+      "required": ["endpoint_id", "object_store_id", "prefix", "application_ref"]
+    },
+    "defaults": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "media_policy": { "$ref": "x-img-common.v1.schema.json#/$defs/mediaPolicy" },
+        "refresh_budget": { "$ref": "x-img-common.v1.schema.json#/$defs/refreshBudget" },
+        "review_defaults": { "$ref": "x-img-common.v1.schema.json#/$defs/reviewDefaults" }
+      },
+      "required": ["media_policy", "refresh_budget", "review_defaults"]
+    },
+    "x_accounts": {
+      "type": "array",
+      "items": { "$ref": "x-img-x-account.v1.schema.json" },
+      "maxItems": 100
+    },
+    "instagram_accounts": {
+      "type": "array",
+      "items": { "$ref": "x-img-instagram-account.v1.schema.json" },
+      "maxItems": 100
+    },
+    "website_policies": {
+      "type": "array",
+      "items": { "$ref": "x-img-website-policy.v1.schema.json" },
+      "maxItems": 100
+    }
+  },
+  "required": [
+    "schema_version",
+    "instance_id",
+    "display_name",
+    "host_context_ref",
+    "object_store_ref",
+    "defaults",
+    "x_accounts",
+    "instagram_accounts",
+    "website_policies"
+  ]
+}

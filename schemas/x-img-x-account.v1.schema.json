@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/sagrudd/x-img/schemas/x-img-x-account.v1.schema.json",
+  "title": "x-img X account configuration v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": "x-img.x-account.v1" },
+    "account_id": { "$ref": "x-img-common.v1.schema.json#/$defs/identifier" },
+    "handle": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_]{1,15}$"
+    },
+    "enabled": { "type": "boolean" },
+    "access_mode": {
+      "type": "string",
+      "enum": ["public_only", "authorized_viewer"]
+    },
+    "authorization_ref": {
+      "$ref": "x-img-common.v1.schema.json#/$defs/hostManagedRef"
+    },
+    "media_policy": { "$ref": "x-img-common.v1.schema.json#/$defs/mediaPolicy" },
+    "refresh_budget": { "$ref": "x-img-common.v1.schema.json#/$defs/refreshBudget" },
+    "review_defaults": { "$ref": "x-img-common.v1.schema.json#/$defs/reviewDefaults" }
+  },
+  "required": [
+    "schema_version",
+    "account_id",
+    "handle",
+    "enabled",
+    "access_mode",
+    "media_policy",
+    "refresh_budget",
+    "review_defaults"
+  ],
+  "allOf": [
+    {
+      "if": { "properties": { "enabled": { "const": true } } },
+      "then": { "required": ["authorization_ref"] }
+    },
+    {
+      "if": { "properties": { "access_mode": { "const": "authorized_viewer" } } },
+      "then": { "required": ["authorization_ref"] }
+    }
+  ]
+}

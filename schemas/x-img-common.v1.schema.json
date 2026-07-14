@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/sagrudd/x-img/schemas/x-img-common.v1.schema.json",
+  "title": "x-img configuration shared definitions",
+  "type": "object",
+  "additionalProperties": false,
+  "$defs": {
+    "schemaVersion": {
+      "type": "string",
+      "enum": [
+        "x-img.instance.v1",
+        "x-img.x-account.v1",
+        "x-img.instagram-account.v1",
+        "x-img.website-policy.v1"
+      ]
+    },
+    "hostManagedRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "monas.host-context",
+            "monas.connector-authorization",
+            "dasobjectstore.application"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._:-]{0,127}$"
+        }
+      },
+      "required": ["kind", "id"]
+    },
+    "mediaPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "images": { "type": "boolean" },
+        "videos": { "type": "boolean" },
+        "animated_images": { "type": "boolean" },
+        "thumbnail_capture": {
+          "type": "string",
+          "enum": ["never", "observed_only"]
+        },
+        "original_capture": {
+          "type": "string",
+          "enum": ["never", "explicit_open_only", "allowed"]
+        },
+        "retain_original": { "type": "boolean" }
+      },
+      "required": [
+        "images",
+        "videos",
+        "animated_images",
+        "thumbnail_capture",
+        "original_capture",
+        "retain_original"
+      ]
+    },
+    "refreshBudget": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "max_requests": { "type": "integer", "minimum": 0 },
+        "max_pages": { "type": "integer", "minimum": 0 },
+        "max_items": { "type": "integer", "minimum": 0 },
+        "max_bytes": { "type": "integer", "minimum": 0 },
+        "max_duration_seconds": { "type": "integer", "minimum": 1 },
+        "minimum_interval_seconds": { "type": "integer", "minimum": 0 }
+      },
+      "required": [
+        "max_requests",
+        "max_pages",
+        "max_items",
+        "max_bytes",
+        "max_duration_seconds",
+        "minimum_interval_seconds"
+      ]
+    },
+    "reviewDefaults": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "initial_state": {
+          "type": "string",
+          "enum": ["new", "hidden"]
+        },
+        "auto_review": { "type": "boolean" },
+        "group_by_source": { "type": "boolean" }
+      },
+      "required": ["initial_state", "auto_review", "group_by_source"]
+    },
+    "origin": {
+      "type": "string",
+      "pattern": "^https://[^/*?#]+(:[0-9]{1,5})?$"
+    },
+    "identifier": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+    }
+  }
+}

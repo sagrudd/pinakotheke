@@ -1,0 +1,221 @@
+{
+  "schema_version": "x-img.instance.v1",
+  "instance_id": "fixture-instance",
+  "display_name": "Synthetic x-img instance",
+  "host_context_ref": {
+    "kind": "monas.host-context",
+    "id": "fixture-host-context"
+  },
+  "object_store_ref": {
+    "endpoint_id": "fixture-endpoint",
+    "object_store_id": "fixture-store",
+    "prefix": "x-img-fixture/",
+    "application_ref": {
+      "kind": "dasobjectstore.application",
+      "id": "fixture-application"
+    }
+  },
+  "defaults": {
+    "media_policy": {
+      "images": true,
+      "videos": true,
+      "animated_images": true,
+      "thumbnail_capture": "observed_only",
+      "original_capture": "explicit_open_only",
+      "retain_original": false
+    },
+    "refresh_budget": {
+      "max_requests": 20,
+      "max_pages": 5,
+      "max_items": 100,
+      "max_bytes": 104857600,
+      "max_duration_seconds": 300,
+      "minimum_interval_seconds": 60
+    },
+    "review_defaults": {
+      "initial_state": "new",
+      "auto_review": false,
+      "group_by_source": true
+    }
+  },
+  "x_accounts": [
+    {
+      "schema_version": "x-img.x-account.v1",
+      "account_id": "fixture-x-public",
+      "handle": "ExampleAccount",
+      "enabled": true,
+      "access_mode": "public_only",
+      "authorization_ref": {
+        "kind": "monas.connector-authorization",
+        "id": "fixture-x-authorization"
+      },
+      "media_policy": {
+        "images": true,
+        "videos": true,
+        "animated_images": true,
+        "thumbnail_capture": "never",
+        "original_capture": "allowed",
+        "retain_original": false
+      },
+      "refresh_budget": {
+        "max_requests": 10,
+        "max_pages": 3,
+        "max_items": 50,
+        "max_bytes": 52428800,
+        "max_duration_seconds": 180,
+        "minimum_interval_seconds": 120
+      },
+      "review_defaults": {
+        "initial_state": "new",
+        "auto_review": false,
+        "group_by_source": true
+      }
+    },
+    {
+      "schema_version": "x-img.x-account.v1",
+      "account_id": "fixture-x-disabled",
+      "handle": "DisabledAccount",
+      "enabled": false,
+      "access_mode": "public_only",
+      "media_policy": {
+        "images": true,
+        "videos": false,
+        "animated_images": false,
+        "thumbnail_capture": "never",
+        "original_capture": "never",
+        "retain_original": false
+      },
+      "refresh_budget": {
+        "max_requests": 0,
+        "max_pages": 0,
+        "max_items": 0,
+        "max_bytes": 0,
+        "max_duration_seconds": 60,
+        "minimum_interval_seconds": 0
+      },
+      "review_defaults": {
+        "initial_state": "hidden",
+        "auto_review": false,
+        "group_by_source": true
+      }
+    }
+  ],
+  "instagram_accounts": [
+    {
+      "schema_version": "x-img.instagram-account.v1",
+      "account_id": "fixture-instagram-public",
+      "username": "example.account",
+      "enabled": true,
+      "account_class": "public",
+      "authorization_ref": {
+        "kind": "monas.connector-authorization",
+        "id": "fixture-instagram-authorization"
+      },
+      "media_policy": {
+        "images": true,
+        "videos": true,
+        "animated_images": false,
+        "thumbnail_capture": "never",
+        "original_capture": "explicit_open_only",
+        "retain_original": false
+      },
+      "refresh_budget": {
+        "max_requests": 10,
+        "max_pages": 3,
+        "max_items": 50,
+        "max_bytes": 52428800,
+        "max_duration_seconds": 180,
+        "minimum_interval_seconds": 120
+      },
+      "review_defaults": {
+        "initial_state": "new",
+        "auto_review": false,
+        "group_by_source": true
+      }
+    },
+    {
+      "schema_version": "x-img.instagram-account.v1",
+      "account_id": "fixture-instagram-disabled",
+      "username": "disabled.account",
+      "enabled": false,
+      "account_class": "public",
+      "media_policy": {
+        "images": true,
+        "videos": false,
+        "animated_images": false,
+        "thumbnail_capture": "never",
+        "original_capture": "never",
+        "retain_original": false
+      },
+      "refresh_budget": {
+        "max_requests": 0,
+        "max_pages": 0,
+        "max_items": 0,
+        "max_bytes": 0,
+        "max_duration_seconds": 60,
+        "minimum_interval_seconds": 0
+      },
+      "review_defaults": {
+        "initial_state": "hidden",
+        "auto_review": false,
+        "group_by_source": true
+      }
+    }
+  ],
+  "website_policies": [
+    {
+      "schema_version": "x-img.website-policy.v1",
+      "site_id": "fixture-site-enabled",
+      "origin": "https://photos.example.invalid",
+      "enabled": true,
+      "capture_enabled": true,
+      "substitution_enabled": false,
+      "media_policy": {
+        "images": true,
+        "videos": false,
+        "animated_images": false,
+        "thumbnail_capture": "observed_only",
+        "original_capture": "explicit_open_only",
+        "retain_original": false
+      },
+      "candidate_budget": {
+        "max_candidates_per_page": 20,
+        "max_bytes_per_candidate": 10485760,
+        "max_candidates_per_day": 100
+      },
+      "adapter": { "kind": "explicit", "version": "0.1.0" },
+      "review_defaults": {
+        "initial_state": "new",
+        "auto_review": false,
+        "group_by_source": false
+      }
+    },
+    {
+      "schema_version": "x-img.website-policy.v1",
+      "site_id": "fixture-site-disabled",
+      "origin": "https://disabled.example.invalid",
+      "enabled": false,
+      "capture_enabled": false,
+      "substitution_enabled": false,
+      "media_policy": {
+        "images": false,
+        "videos": false,
+        "animated_images": false,
+        "thumbnail_capture": "never",
+        "original_capture": "never",
+        "retain_original": false
+      },
+      "candidate_budget": {
+        "max_candidates_per_page": 0,
+        "max_bytes_per_candidate": 0,
+        "max_candidates_per_day": 0
+      },
+      "adapter": { "kind": "explicit", "version": "0.1.0" },
+      "review_defaults": {
+        "initial_state": "hidden",
+        "auto_review": false,
+        "group_by_source": false
+      }
+    }
+  ]
+}

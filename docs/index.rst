@@ -14,6 +14,14 @@ Architecture decisions
    adr/index
    compatibility-matrix
 
+Configuration
+-------------
+
+.. toctree::
+   :maxdepth: 1
+
+   configuration
+
 The local documentation container is the reproducible verification authority:
 
 .. code-block:: console

@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/sagrudd/x-img/schemas/x-img-instagram-account.v1.schema.json",
+  "title": "x-img Instagram account configuration v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": "x-img.instagram-account.v1" },
+    "account_id": { "$ref": "x-img-common.v1.schema.json#/$defs/identifier" },
+    "username": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._]{1,30}$"
+    },
+    "enabled": { "type": "boolean" },
+    "account_class": {
+      "type": "string",
+      "enum": ["public", "authorized_viewer"]
+    },
+    "authorization_ref": {
+      "$ref": "x-img-common.v1.schema.json#/$defs/hostManagedRef"
+    },
+    "media_policy": { "$ref": "x-img-common.v1.schema.json#/$defs/mediaPolicy" },
+    "refresh_budget": { "$ref": "x-img-common.v1.schema.json#/$defs/refreshBudget" },
+    "review_defaults": { "$ref": "x-img-common.v1.schema.json#/$defs/reviewDefaults" }
+  },
+  "required": [
+    "schema_version",
+    "account_id",
+    "username",
+    "enabled",
+    "account_class",
+    "media_policy",
+    "refresh_budget",
+    "review_defaults"
+  ],
+  "allOf": [
+    {
+      "if": { "properties": { "enabled": { "const": true } } },
+      "then": { "required": ["authorization_ref"] }
+    },
+    {
+      "if": { "properties": { "account_class": { "const": "authorized_viewer" } } },
+      "then": { "required": ["authorization_ref"] }
+    }
+  ]
+}

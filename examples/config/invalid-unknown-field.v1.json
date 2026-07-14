@@ -1,0 +1,35 @@
+{
+  "schema_version": "x-img.instance.v1",
+  "instance_id": "fixture-instance",
+  "display_name": "Synthetic invalid configuration",
+  "host_context_ref": { "kind": "monas.host-context", "id": "fixture-host" },
+  "object_store_ref": {
+    "endpoint_id": "fixture-endpoint",
+    "object_store_id": "fixture-store",
+    "prefix": "x-img-fixture/",
+    "application_ref": { "kind": "dasobjectstore.application", "id": "fixture-app" }
+  },
+  "defaults": {
+    "media_policy": {
+      "images": true,
+      "videos": false,
+      "animated_images": false,
+      "thumbnail_capture": "observed_only",
+      "original_capture": "never",
+      "retain_original": false
+    },
+    "refresh_budget": {
+      "max_requests": 1,
+      "max_pages": 1,
+      "max_items": 1,
+      "max_bytes": 1,
+      "max_duration_seconds": 1,
+      "minimum_interval_seconds": 1
+    },
+    "review_defaults": { "initial_state": "new", "auto_review": false, "group_by_source": true }
+  },
+  "x_accounts": [],
+  "instagram_accounts": [],
+  "website_policies": [],
+  "unexpected_future_setting": true
+}
