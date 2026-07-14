@@ -7,6 +7,10 @@ All notable changes to x-img will be documented in this file. The project uses
 
 ### Planning
 
+- Added the XIMG-003 sibling compatibility matrix with pinned Monas,
+  DASObjectStore, Mnemosyne design-language, and future Synoptikon revisions,
+  fixture anchors, public-build independence rules, and explicit host/range
+  contract risks.
 - Added the Pinakotheke v1.0.0 coordinated rename/rebrand gate, including
   compatibility aliases and repository migration planning.
 - Added the Sphinx/Read the Docs local-container documentation authority and
