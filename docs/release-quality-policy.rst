@@ -213,6 +213,35 @@ runtime JSON Schema validation and Rust/Firefox matrix cells become mandatory
 as their implementation tasks introduce those surfaces; a structural planning
 check must never be presented as runtime contract validation.
 
+Cross-repository contract evidence
+----------------------------------
+
+``scripts/contracts/check.sh`` is the dependency-free baseline contract
+check. It verifies x-img-owned, versioned Monas and DASObjectStore contract
+fixtures and rejects unpublished sibling path dependencies, so it must pass in
+a clean public clone. The ordinary GitHub quality workflow runs this baseline
+on every change.
+
+When the four compatibility siblings are checked out at the revisions recorded
+in ``docs/compatibility-matrix.md``, run the stronger source-anchor inspection:
+
+.. code-block:: console
+
+   scripts/contracts/check.sh --require-siblings
+
+It verifies the exact Monas, DASObjectStore, Synoptikon/Mnemosyne, and design
+language commits plus the contract paths x-img relies on. ``XIMG_SIBLING_ROOT``
+may point to a directory containing those four checkouts when they are not
+adjacent to x-img. The manually dispatched ``sibling-contracts`` GitHub
+workflow performs the same pinned inspection from public sources.
+
+This is intentionally a compatibility check, not a substitute for a live
+authority integration test: x-img has no live Monas or DASObjectStore transport
+adapter yet, and no workflow receives production credentials. Once such
+adapters exist, their opt-in integration environment must exercise the
+published wire contracts with scoped test identities while retaining this
+sibling-free baseline.
+
 Release checklist
 -----------------
 

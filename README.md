@@ -112,6 +112,13 @@ CI, documentation, and Definition of Done rules are maintained in the
 dependency-free planning checks with `scripts/quality/check.sh`; the pinned
 local Sphinx container remains the documentation release authority.
 
+Cross-repository contract evidence is also dependency-free by default:
+`scripts/contracts/check.sh` validates x-img-owned fixtures in a public clone.
+Where the pinned sibling repositories are available, use
+`scripts/contracts/check.sh --require-siblings` to inspect their exact commits
+and required contract anchors. This does not use credentials or claim live
+authority integration; see the release policy for the boundary.
+
 The v1.0.0 product and brand target is **Pinakotheke**. Until the coordinated
 release migration is complete, this public planning repository remains
 `sagrudd/x-img`; the target repository slug is `sagrudd/pinakotheke` and all

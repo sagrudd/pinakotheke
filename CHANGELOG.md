@@ -7,6 +7,11 @@ All notable changes to x-img will be documented in this file. The project uses
 
 ### Planning
 
+- Added XIMG-035's dependency-free cross-repository contract check and pinned
+  optional sibling-source workflow. A public clone validates x-img-owned
+  fixtures without sibling dependencies; an explicit four-repository checkout
+  verifies exact compatibility revisions and contract anchors without
+  credentials or a claim of live authority integration.
 - Added XIMG-034's authorized DASObjectStore object-read/cache handoff port.
   It validates content type, lengths, SHA-256, ETag, conditional and byte-range
   metadata, and explicit unavailable states before returning a stream, without

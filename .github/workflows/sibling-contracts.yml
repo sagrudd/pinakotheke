@@ -1,0 +1,47 @@
+name: Pinned sibling contract inspection
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pinned-contracts:
+    name: Inspect pinned sibling contracts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out x-img
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          path: x-img
+      - name: Check out pinned Monas contract
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          repository: sagrudd/monas
+          ref: 3d21b0bc7b83fa8408d01b93347a56f43f3a96b7
+          path: siblings/monas
+      - name: Check out pinned DASObjectStore contract
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          repository: sagrudd/DASObjectStore
+          ref: 8368d34a365689e19321ecd6a35aab7c819268f6
+          path: siblings/DASObjectStore
+      - name: Check out pinned Synoptikon contract
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          repository: sagrudd/synoptikon
+          ref: 9877017e3139711ed6313c53603409c53020541d
+          path: siblings/mnemosyne
+      - name: Check out pinned design-language contract
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          repository: sagrudd/mnemosyne_design_language
+          ref: 5539df8f662a78ebdf7cf4c868d71831380c8cfd
+          path: siblings/mnemosyne_design_language
+      - name: Inspect exact sibling contract paths and revisions
+        working-directory: x-img
+        env:
+          XIMG_SIBLING_ROOT: ${{ github.workspace }}/siblings
+        run: scripts/contracts/check.sh --require-siblings

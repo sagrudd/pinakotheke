@@ -24,3 +24,5 @@ jobs:
         run: echo 'This workflow is a convenience mirror; the locally built docs/Dockerfile remains the documentation release authority.'
       - name: Run dependency-free quality checks
         run: scripts/quality/check.sh
+      - name: Verify vendored cross-repository contracts
+        run: scripts/contracts/check.sh
