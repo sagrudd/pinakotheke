@@ -11,6 +11,7 @@
 .ximg-shell__empty { background: var(--mn-color-surface-raised); border: 1px solid var(--mn-color-border-subtle); margin-top: var(--mn-space-6); padding: var(--mn-space-4); }
 .ximg-source-nav { margin-top: var(--mn-space-6); }
 .ximg-refresh { background:var(--mn-color-surface-raised); border:1px solid var(--mn-color-border-subtle); margin-top:var(--mn-space-6); padding:var(--mn-space-4); }
+.ximg-review { background:var(--mn-color-surface-raised); border:1px solid var(--mn-color-border-subtle); margin-top:var(--mn-space-6); padding:var(--mn-space-4); }
 .ximg-source-nav ul { display: flex; flex-wrap: wrap; gap: var(--mn-space-2); list-style: none; padding: 0; }
 .ximg-source-nav__item { background: var(--mn-color-surface-raised); border: 1px solid var(--mn-color-border-subtle); color: var(--mn-color-text-primary); display: flex; gap: var(--mn-space-2); padding: var(--mn-space-2) var(--mn-space-3); }
 .ximg-source-nav__item.is-selected { border-color: var(--mn-color-action-primary-default); }
