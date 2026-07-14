@@ -15,6 +15,7 @@ pub mod instagram_discovery;
 pub mod object_ingest;
 pub mod object_read;
 pub mod reconciliation;
+pub mod review_admission;
 pub mod scheduler;
 pub mod x_discovery;
 pub mod x_followed_accounts;
