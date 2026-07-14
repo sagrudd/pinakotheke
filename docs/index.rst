@@ -25,6 +25,7 @@ Configuration
    monas-product
    host-context
    das-application-identity
+   object-ingest
    identity-migration
 
 Release and quality

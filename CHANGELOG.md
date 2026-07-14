@@ -7,6 +7,10 @@ All notable changes to x-img will be documented in this file. The project uses
 
 ### Planning
 
+- Added XIMG-033's bounded streaming object-ingest port. It forwards chunks to
+  an authority backend without local payload staging, enforces chunk/length and
+  SHA-256 verification, surfaces backpressure, checks authority completion, and
+  returns only an idempotent verified receipt for a repeated ingest ID.
 - Added XIMG-032's scoped DASObjectStore application-identity contract and
   authorization gate. It binds one endpoint, ObjectStore, prefix, narrow
   operation set, byte limits, expiry, and opaque authority references; tests
