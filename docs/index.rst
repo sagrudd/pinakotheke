@@ -24,6 +24,7 @@ Configuration
    acquisition
    monas-product
    host-context
+   das-application-identity
    identity-migration
 
 Release and quality

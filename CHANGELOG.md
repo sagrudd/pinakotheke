@@ -7,6 +7,11 @@ All notable changes to x-img will be documented in this file. The project uses
 
 ### Planning
 
+- Added XIMG-032's scoped DASObjectStore application-identity contract and
+  authorization gate. It binds one endpoint, ObjectStore, prefix, narrow
+  operation set, byte limits, expiry, and opaque authority references; tests
+  fail closed for expired, replayed, wrong-store, wrong-prefix, and oversized
+  operations without storing credentials or issuing tokens.
 - Added XIMG-031's authenticated host-context adapter. Privileged Axum routes
   require a host-injected, authorized non-secret context and reject direct
   access; fixture-tested Monas and Synoptikon adapters share the same boundary

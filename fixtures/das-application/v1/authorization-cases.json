@@ -1,0 +1,70 @@
+{
+  "schema_version": "x-img.das-application-fixtures.v1",
+  "cases": [
+    {
+      "id": "accepted-write",
+      "now_unix_seconds": 500,
+      "expected": "accepted",
+      "operation": {
+        "operation_id": "fixture-write-1",
+        "operation": "write",
+        "endpoint_id": "fixture-local-endpoint",
+        "object_store_id": "fixture-media-store",
+        "object_key": "x-img/acquisitions/fixture.jpg",
+        "size_bytes": 512
+      }
+    },
+    {
+      "id": "expired",
+      "now_unix_seconds": 1000,
+      "expected": "expired",
+      "operation": {
+        "operation_id": "fixture-expired-1",
+        "operation": "write",
+        "endpoint_id": "fixture-local-endpoint",
+        "object_store_id": "fixture-media-store",
+        "object_key": "x-img/acquisitions/fixture.jpg",
+        "size_bytes": 512
+      }
+    },
+    {
+      "id": "wrong-store",
+      "now_unix_seconds": 500,
+      "expected": "wrong-store",
+      "operation": {
+        "operation_id": "fixture-store-1",
+        "operation": "write",
+        "endpoint_id": "fixture-local-endpoint",
+        "object_store_id": "other-store",
+        "object_key": "x-img/acquisitions/fixture.jpg",
+        "size_bytes": 512
+      }
+    },
+    {
+      "id": "wrong-prefix",
+      "now_unix_seconds": 500,
+      "expected": "wrong-prefix",
+      "operation": {
+        "operation_id": "fixture-prefix-1",
+        "operation": "write",
+        "endpoint_id": "fixture-local-endpoint",
+        "object_store_id": "fixture-media-store",
+        "object_key": "outside/fixture.jpg",
+        "size_bytes": 512
+      }
+    },
+    {
+      "id": "oversized",
+      "now_unix_seconds": 500,
+      "expected": "oversized",
+      "operation": {
+        "operation_id": "fixture-size-1",
+        "operation": "write",
+        "endpoint_id": "fixture-local-endpoint",
+        "object_store_id": "fixture-media-store",
+        "object_key": "x-img/acquisitions/fixture.jpg",
+        "size_bytes": 1048577
+      }
+    }
+  ]
+}

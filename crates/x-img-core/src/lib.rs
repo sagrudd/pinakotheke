@@ -2,6 +2,7 @@
 //! Application-core boundaries with no live source or storage integration.
 
 pub mod acquisition;
+pub mod application_identity;
 pub mod bioinformatics;
 pub mod connector_fixtures;
 pub mod host_context;

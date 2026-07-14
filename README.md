@@ -90,6 +90,11 @@ context and reject direct requests. Monas and a future Synoptikon adapter share
 the same fixture-tested boundary; x-img never parses or retains session cookies
 or credentials. See [authenticated host context](docs/host-context.rst).
 
+x-img also carries a strict DASObjectStore application-identity registration:
+one endpoint/ObjectStore/prefix, bounded operations and bytes, explicit expiry,
+and opaque host/authority references only. It is not a live token exchange or
+storage adapter. See [DASObjectStore application identity](docs/das-application-identity.rst).
+
 The supported-toolchain, browser, Semantic Versioning, dependency, fixture,
 CI, documentation, and Definition of Done rules are maintained in the
 [release and quality policy](docs/release-quality-policy.rst). Run the

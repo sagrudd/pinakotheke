@@ -1,0 +1,15 @@
+{
+  "schema_version": "x-img.das-application-identity.v1",
+  "application_id": "x-img",
+  "owner_ref": "monas.host-context:x-img",
+  "credential_ref": "dasobjectstore.application:x-img",
+  "endpoint_id": "fixture-local-endpoint",
+  "object_store_id": "fixture-media-store",
+  "prefix": "x-img/",
+  "operations": ["read", "write", "list", "verify"],
+  "max_object_bytes": 1048576,
+  "max_total_bytes": 4194304,
+  "issued_at_unix_seconds": 100,
+  "expires_at_unix_seconds": 1000,
+  "active": true
+}
