@@ -417,6 +417,50 @@ mod tests {
     }
 
     #[test]
+    fn crash_boundaries_converge_without_creating_duplicate_commits() {
+        for pre_verification_state in ["discovered", "claimed", "transferring", "stored"] {
+            let mut catalogue = ReconciliationCatalogue::default();
+            let outcome = catalogue
+                .reconcile(
+                    request(CHECKSUM_A, &["https://x.example.invalid/status/1"]),
+                    AuthorityObservation::Absent,
+                )
+                .expect("pre-verification crash observation");
+            assert_eq!(
+                outcome,
+                ReconciliationOutcome::AwaitingAuthority,
+                "{pre_verification_state}"
+            );
+            assert_eq!(catalogue.committed_len(), 0, "{pre_verification_state}");
+        }
+
+        for post_verification_state in ["verified-before-commit", "around-catalogue-commit"] {
+            let mut catalogue = ReconciliationCatalogue::default();
+            let first = catalogue
+                .reconcile(
+                    request(CHECKSUM_A, &["https://x.example.invalid/status/1"]),
+                    AuthorityObservation::Verified(object(CHECKSUM_A, "fixture-object")),
+                )
+                .expect("post-verification recovery");
+            let replay = catalogue
+                .reconcile(
+                    request(CHECKSUM_A, &["https://x.example.invalid/status/1"]),
+                    AuthorityObservation::Verified(object(CHECKSUM_A, "fixture-object")),
+                )
+                .expect("post-verification replay");
+            assert!(
+                matches!(first, ReconciliationOutcome::Committed { .. }),
+                "{post_verification_state}"
+            );
+            assert!(
+                matches!(replay, ReconciliationOutcome::AlreadyCommitted { .. }),
+                "{post_verification_state}"
+            );
+            assert_eq!(catalogue.committed_len(), 1, "{post_verification_state}");
+        }
+    }
+
+    #[test]
     fn checksum_mismatch_and_platform_id_reuse_become_conflicts() {
         let mut catalogue = ReconciliationCatalogue::default();
         let mismatch = catalogue
