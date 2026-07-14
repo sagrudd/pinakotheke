@@ -1,0 +1,17 @@
+{
+  "schema_version": "x-img.acquisition.v1",
+  "catalogue_id": "fixture-catalogue",
+  "revision": 1,
+  "records": {
+    "source_items": [],
+    "media_identities": [],
+    "object_references": [],
+    "download_attempts": [],
+    "job_leases": [],
+    "account_cursors": [],
+    "review_states": [],
+    "tombstones": [],
+    "audit_events": []
+  },
+  "unexpected_future_record": true
+}

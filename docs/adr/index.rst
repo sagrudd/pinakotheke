@@ -15,3 +15,4 @@ blocked where the policy and rights gates say so.
    0006-account-refresh-scheduling
    0007-extension-pairing-and-origin-opt-in
    0008-external-cache-fail-open
+   0009-acquisition-catalogue-schemas

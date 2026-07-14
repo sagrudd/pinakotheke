@@ -1,0 +1,319 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/sagrudd/x-img/schemas/x-img-acquisition.v1.schema.json",
+  "title": "x-img acquisition and catalogue metadata v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": "x-img.acquisition.v1" },
+    "catalogue_id": { "$ref": "#/$defs/id" },
+    "revision": { "type": "integer", "minimum": 0 },
+    "records": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "source_items": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/sourceItem" },
+          "maxItems": 100000
+        },
+        "media_identities": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/mediaIdentity" },
+          "maxItems": 100000
+        },
+        "object_references": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/objectReference" },
+          "maxItems": 100000
+        },
+        "download_attempts": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/downloadAttempt" },
+          "maxItems": 100000
+        },
+        "job_leases": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/jobLease" },
+          "maxItems": 10000
+        },
+        "account_cursors": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/accountCursor" },
+          "maxItems": 10000
+        },
+        "review_states": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/reviewState" },
+          "maxItems": 100000
+        },
+        "tombstones": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/tombstone" },
+          "maxItems": 100000
+        },
+        "audit_events": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/auditEvent" },
+          "maxItems": 1000000
+        }
+      },
+      "required": [
+        "source_items",
+        "media_identities",
+        "object_references",
+        "download_attempts",
+        "job_leases",
+        "account_cursors",
+        "review_states",
+        "tombstones",
+        "audit_events"
+      ]
+    }
+  },
+  "required": ["schema_version", "catalogue_id", "revision", "records"],
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._:-]{0,127}$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "sourceKind": {
+      "type": "string",
+      "enum": ["x", "instagram", "website", "geo", "sra", "ena", "ncbi"]
+    },
+    "sourceItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "source_item_id": { "$ref": "#/$defs/id" },
+        "source_kind": { "$ref": "#/$defs/sourceKind" },
+        "account_or_origin": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "source_item_kind": {
+          "type": "string",
+          "enum": ["post", "item", "page", "resource", "run"]
+        },
+        "source_platform_id": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "source_url_aliases": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/urlAlias" },
+          "maxItems": 32
+        },
+        "published_at": { "$ref": "#/$defs/timestamp" },
+        "discovered_at": { "$ref": "#/$defs/timestamp" },
+        "policy_result": {
+          "type": "string",
+          "enum": ["allowed", "review_required", "blocked", "unknown"]
+        },
+        "provenance_ref": { "$ref": "#/$defs/id" }
+      },
+      "required": [
+        "source_item_id",
+        "source_kind",
+        "account_or_origin",
+        "source_item_kind",
+        "source_url_aliases",
+        "discovered_at",
+        "policy_result"
+      ]
+    },
+    "urlAlias": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "url": {
+          "type": "string",
+          "pattern": "^https://[^\\s@/?#]+(?::[0-9]{1,5})?(?:/[^\\s@?#]*)?$",
+          "maxLength": 2048
+        },
+        "kind": {
+          "type": "string",
+          "enum": ["canonical_source", "observed_alias"]
+        },
+        "first_seen_at": { "$ref": "#/$defs/timestamp" },
+        "last_seen_at": { "$ref": "#/$defs/timestamp" }
+      },
+      "required": ["url", "kind", "first_seen_at", "last_seen_at"]
+    },
+    "mediaIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "media_identity_id": { "$ref": "#/$defs/id" },
+        "source_item_id": { "$ref": "#/$defs/id" },
+        "media_kind": { "type": "string", "enum": ["image", "video", "animated_image", "dataset_file"] },
+        "canonical_media_key": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "platform_media_id": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "platform_id_scope": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "content_sha256": { "$ref": "#/$defs/sha256" },
+        "object_reference_id": { "$ref": "#/$defs/id" },
+        "state": {
+          "type": "string",
+          "enum": ["discovered", "claimed", "transferring", "stored", "verified", "committed", "failed", "policy-blocked", "cancelled", "tombstoned", "conflict"]
+        },
+        "created_at": { "$ref": "#/$defs/timestamp" },
+        "updated_at": { "$ref": "#/$defs/timestamp" }
+      },
+      "required": [
+        "media_identity_id",
+        "source_item_id",
+        "media_kind",
+        "canonical_media_key",
+        "state",
+        "created_at",
+        "updated_at"
+      ]
+    },
+    "objectReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "object_reference_id": { "$ref": "#/$defs/id" },
+        "endpoint_id": { "$ref": "#/$defs/id" },
+        "object_store_id": { "$ref": "#/$defs/id" },
+        "object_key": { "type": "string", "pattern": "^[^/][^\\n]{0,1023}$" },
+        "object_type": { "type": "string", "enum": ["original", "thumbnail", "normalized_video", "poster", "subtitle", "manifest", "dataset_file"] },
+        "content_type": { "type": "string", "pattern": "^[a-z0-9][a-z0-9!#$&^_.+-]*/[a-z0-9][a-z0-9!#$&^_.+-]*$", "maxLength": 127 },
+        "byte_length": { "type": "integer", "minimum": 0 },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "etag": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "verified_at": { "$ref": "#/$defs/timestamp" },
+        "committed_at": { "$ref": "#/$defs/timestamp" },
+        "provenance_ref": { "$ref": "#/$defs/id" }
+      },
+      "required": [
+        "object_reference_id",
+        "endpoint_id",
+        "object_store_id",
+        "object_key",
+        "object_type",
+        "content_type",
+        "byte_length",
+        "sha256",
+        "verified_at",
+        "committed_at",
+        "provenance_ref"
+      ]
+    },
+    "downloadAttempt": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "attempt_id": { "$ref": "#/$defs/id" },
+        "media_identity_id": { "$ref": "#/$defs/id" },
+        "job_id": { "$ref": "#/$defs/id" },
+        "attempt_number": { "type": "integer", "minimum": 1 },
+        "state": {
+          "type": "string",
+          "enum": ["requested", "started", "transferring", "upload_submitted", "stored", "verified", "committed", "failed", "cancelled", "policy-blocked", "conflict"]
+        },
+        "expected_length": { "type": "integer", "minimum": 0 },
+        "received_length": { "type": "integer", "minimum": 0 },
+        "received_sha256": { "$ref": "#/$defs/sha256" },
+        "authority_upload_id": { "$ref": "#/$defs/id" },
+        "started_at": { "$ref": "#/$defs/timestamp" },
+        "finished_at": { "$ref": "#/$defs/timestamp" },
+        "failure_code": { "type": "string", "pattern": "^[a-z][a-z0-9._-]{0,63}$" }
+      },
+      "required": ["attempt_id", "media_identity_id", "job_id", "attempt_number", "state", "started_at"]
+    },
+    "jobLease": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "lease_id": { "$ref": "#/$defs/id" },
+        "job_id": { "$ref": "#/$defs/id" },
+        "scope_kind": { "type": "string", "enum": ["account", "website", "resource", "media"] },
+        "scope_id": { "$ref": "#/$defs/id" },
+        "owner_id": { "$ref": "#/$defs/id" },
+        "owner_nonce": { "type": "string", "pattern": "^[A-Za-z0-9_-]{16,128}$" },
+        "issued_at": { "$ref": "#/$defs/timestamp" },
+        "expires_at": { "$ref": "#/$defs/timestamp" },
+        "heartbeat_at": { "$ref": "#/$defs/timestamp" },
+        "attempt": { "type": "integer", "minimum": 1 },
+        "state": { "type": "string", "enum": ["active", "released", "expired", "reclaimed"] }
+      },
+      "required": ["lease_id", "job_id", "scope_kind", "scope_id", "owner_id", "owner_nonce", "issued_at", "expires_at", "heartbeat_at", "attempt", "state"]
+    },
+    "accountCursor": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "cursor_id": { "$ref": "#/$defs/id" },
+        "source_kind": { "type": "string", "enum": ["x", "instagram"] },
+        "account_id": { "$ref": "#/$defs/id" },
+        "connector_version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+        "opaque_cursor": { "type": "string", "minLength": 1, "maxLength": 4096 },
+        "state": { "type": "string", "enum": ["valid", "reset", "rejected"] },
+        "observed_at": { "$ref": "#/$defs/timestamp" },
+        "reset_reason": { "type": "string", "pattern": "^[a-z][a-z0-9._-]{0,63}$" }
+      },
+      "required": ["cursor_id", "source_kind", "account_id", "connector_version", "state", "observed_at"]
+    },
+    "reviewState": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "review_state_id": { "$ref": "#/$defs/id" },
+        "media_identity_id": { "$ref": "#/$defs/id" },
+        "state": { "type": "string", "enum": ["new", "reviewed", "retained", "hidden", "removed"] },
+        "committed_object_reference_id": { "$ref": "#/$defs/id" },
+        "changed_at": { "$ref": "#/$defs/timestamp" },
+        "actor_ref": { "$ref": "#/$defs/id" },
+        "reason": { "type": "string", "maxLength": 512 }
+      },
+      "required": ["review_state_id", "media_identity_id", "state", "changed_at"],
+      "allOf": [
+        {
+          "if": { "properties": { "state": { "enum": ["new", "reviewed", "retained"] } } },
+          "then": { "required": ["committed_object_reference_id"] }
+        }
+      ]
+    },
+    "tombstone": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tombstone_id": { "$ref": "#/$defs/id" },
+        "target_kind": { "type": "string", "enum": ["source_item", "media_identity", "object_reference"] },
+        "target_id": { "$ref": "#/$defs/id" },
+        "reason": { "type": "string", "enum": ["source_deleted", "source_inaccessible", "permission_revoked", "policy_blocked", "rights_changed", "conflict"] },
+        "created_at": { "$ref": "#/$defs/timestamp" },
+        "effective_at": { "$ref": "#/$defs/timestamp" },
+        "object_removal_requested": { "type": "boolean" },
+        "object_removal_completed": { "type": "boolean" },
+        "audit_event_id": { "$ref": "#/$defs/id" }
+      },
+      "required": ["tombstone_id", "target_kind", "target_id", "reason", "created_at", "effective_at", "object_removal_requested", "object_removal_completed", "audit_event_id"]
+    },
+    "auditEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "event_id": { "$ref": "#/$defs/id" },
+        "event_kind": {
+          "type": "string",
+          "enum": ["discovered", "alias_attached", "claimed", "transfer_started", "upload_completed", "verification_succeeded", "catalogue_committed", "review_changed", "cursor_advanced", "cursor_reset", "policy_blocked", "tombstoned", "conflict_detected", "lease_expired", "reconciled"]
+        },
+        "occurred_at": { "$ref": "#/$defs/timestamp" },
+        "actor_kind": { "type": "string", "enum": ["system", "user", "connector", "worker"] },
+        "subject_kind": { "type": "string", "enum": ["source_item", "media_identity", "object_reference", "download_attempt", "job", "lease", "cursor", "review_state", "tombstone"] },
+        "subject_id": { "$ref": "#/$defs/id" },
+        "from_state": { "type": "string", "maxLength": 64 },
+        "to_state": { "type": "string", "maxLength": 64 },
+        "attempt_id": { "$ref": "#/$defs/id" },
+        "object_reference_id": { "$ref": "#/$defs/id" },
+        "checksum": { "$ref": "#/$defs/sha256" },
+        "reason_code": { "type": "string", "pattern": "^[a-z][a-z0-9._-]{0,63}$" }
+      },
+      "required": ["event_id", "event_kind", "occurred_at", "actor_kind", "subject_kind", "subject_id"]
+    }
+  }
+}

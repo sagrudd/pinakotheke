@@ -23,6 +23,14 @@ The top-level schema references the account and website schemas by their local
 versioned filenames, so a validator should load the complete ``schemas/``
 directory rather than fetching a network URL.
 
+The acquisition contract is separate from source configuration:
+``x-img.acquisition.v1`` defines the metadata envelopes for source items,
+canonical media identities, verified ObjectStore references, download attempts,
+job leases, account cursors, review state, tombstones, and audit events. It
+does not contain media bytes, credentials, cookies, sessions, signed URLs, or
+unbounded transfer buffers. Its state transitions and crash-reconciliation
+rules are documented in :doc:`adr/0009-acquisition-catalogue-schemas`.
+
 Every object rejects unknown properties. ``schema_version`` is a constant, not
 an open-ended string: an unknown future major must be rejected before a config
 write or job snapshot. A future version requires an explicit migration and
@@ -90,3 +98,9 @@ The reproducible documentation check is authoritative:
 
 Configuration validation belongs in the future Rust contract layer (XIMG-021)
 and must preserve these strict, fail-closed semantics.
+
+Acquisition/catalogue validation belongs in the future Rust contract and state
+machine layers (XIMG-022 and XIMG-023). Those layers must preserve the
+canonical-identity-plus-immutable-checksum settlement key, retain URL aliases
+without treating URLs as identity, and admit review state only after verified
+ObjectStore settlement.

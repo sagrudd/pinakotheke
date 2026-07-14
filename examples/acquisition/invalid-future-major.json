@@ -1,0 +1,16 @@
+{
+  "schema_version": "x-img.acquisition.v9",
+  "catalogue_id": "fixture-future-major",
+  "revision": 1,
+  "records": {
+    "source_items": [],
+    "media_identities": [],
+    "object_references": [],
+    "download_attempts": [],
+    "job_leases": [],
+    "account_cursors": [],
+    "review_states": [],
+    "tombstones": [],
+    "audit_events": []
+  }
+}
