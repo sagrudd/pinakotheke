@@ -134,13 +134,16 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   accession/URL and render a reviewable plan containing authority/release,
   files, sizes/checksums, transport, endpoint/ObjectStore/prefix/type,
   estimated bytes, licensing/usage, and policy result before any transfer;
-  reject bulk discovery and implicit repository crawling.
+  reject bulk discovery and implicit repository crawling. Planning evidence:
+  `docs/adr/0003-bioinformatics-resource-commit.md` in commit `b21c6da`.
 
 - [ ] **XIMG-027 P0 — Add bioinformatics resolution and transport fixtures.**
   Depends on XIMG-026. Cover ENA/SRA manifests and multi-run expansion, GEO
   metadata/raw archive/file lists, NCBI routing, checksum/size evidence,
   retries/resume/cancellation, bounded backpressure, and optional Aspera with
-  HTTPS fallback, without real credentials or copyrighted payloads.
+  HTTPS fallback, without real credentials or copyrighted payloads. Planning
+  evidence: `docs/adr/0003-bioinformatics-resource-commit.md` in commit
+  `b21c6da`.
 
 ## 0.3.0 — External authorities
 
@@ -178,7 +181,8 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   pairing/discovery, scoped credentials, capabilities, health, quota, TLS
   trust, and endpoint-qualified provenance. Acceptance: versioned fixtures
   reject unmanaged-folder writes, mutable-name identity, broad secrets, and
-  arbitrary first-store selection.
+  arbitrary first-store selection. Planning evidence:
+  `docs/adr/0004-endpoints-and-objectstores.md` in commit `bdd5294`.
 
 - [ ] **XIMG-037 P0 — Implement reviewed endpoint/ObjectStore selection.**
   Depends on XIMG-024/030/031/032/036. Discover every visible store, expose an
@@ -186,7 +190,8 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   and explicit site/resource overrides, and revalidate the reviewed target
   immediately before commit. Acceptance: removed, renamed, unavailable,
   read-only, expired, over-quota, TLS, reconnect, and multi-endpoint alias
-  fixtures never silently switch destinations.
+  fixtures never silently switch destinations. Planning evidence:
+  `docs/adr/0004-endpoints-and-objectstores.md` in commit `bdd5294`.
 
 - [ ] **XIMG-038 P0 — Implement confirmed direct bioinformatics commit.** Depends
   on XIMG-023/024/026/027/033/037. After user confirmation and server-side
@@ -194,7 +199,10 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   checksum and exact length before catalogue commit, reconcile crashes
   idempotently, deduplicate by accession/file identity plus checksum, and
   preserve source, transport, rights, and destination provenance. No durable
-  x-img-local payload or silent local fallback is allowed.
+  x-img-local payload or silent local fallback is allowed. Planning evidence:
+  `docs/adr/0003-bioinformatics-resource-commit.md` in `b21c6da`, with endpoint
+  dependency ordering recorded in `docs/adr/0004-endpoints-and-objectstores.md`
+  in `bdd5294`.
 
 ## 0.4.0 — Social account acquisition
 
@@ -314,6 +322,8 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   endpoint/ObjectStore, and intended profile. Acceptance rejects automatic
   opening, hidden traversal, playlist/channel bulk discovery, DRM bypass, and
   cookie/credential extraction, and requires explicit confirmation.
+  Planning evidence: `docs/adr/0005-video-selection-normalization.md` in commit
+  `5ad8eee`.
 
 - [ ] **XIMG-067 P0 — Define versioned normalized video objects and profiles.**
   Depends on XIMG-033/034/066. Specify `pinakotheke-video-webm-v1` and
@@ -321,6 +331,8 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   AV1/Opus, and H.264/AAC, typed derived objects, readiness states, retention,
   and provenance. Acceptance never marks source-only video ready and documents
   browser, hardware, licensing, quality, encoding, and storage evidence.
+  Planning evidence: `docs/adr/0005-video-selection-normalization.md` in commit
+  `5ad8eee`.
 
 - [ ] **XIMG-068 P0 — Implement the containerized video normalization adapter.**
   Depends on XIMG-024/033/067. Use a pinned FFmpeg image/tool with structured
@@ -328,6 +340,8 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   scratch, cleanup, probe/checksum manifests, cancellation, retry/resume,
   progress, and crash/idempotency handling. Acceptance has no shell
   interpolation, durable x-img-local payload, secret, or copyrighted fixture.
+  Planning evidence: `docs/adr/0005-video-selection-normalization.md` in commit
+  `5ad8eee`.
 
 - [ ] **XIMG-069 P0 — Prove normalized Firefox playback and delivery.** Depends
   on XIMG-067/068/072. Acceptance requires DAS commit, checksum, probe, real
@@ -335,6 +349,8 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   ranges, seek/pause/resume, authorization, and fail-open tests; blocked or
   failed/DRM media remains explicit and never falls back as ready source-only
   playback.
+  Planning evidence: `docs/adr/0005-video-selection-normalization.md` in commit
+  `5ad8eee`.
 
 ## 0.7.0 — External cache
 
