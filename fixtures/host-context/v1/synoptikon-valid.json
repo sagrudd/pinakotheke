@@ -1,0 +1,8 @@
+{
+  "schema_version": "x-img.host-context.v1",
+  "host": "synoptikon",
+  "host_mode": "synoptikon_integrated",
+  "actor_id": "synthetic-synoptikon-user",
+  "authorizations": ["ximg.access", "ximg.review"],
+  "correlation_id": "fixture-synoptikon-correlation"
+}

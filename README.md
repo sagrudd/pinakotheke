@@ -85,6 +85,11 @@ future Synoptikon-equivalent bootstrap. It declares no x-img login/session
 route; a later host-context adapter will enforce the registered host context at
 the live Axum boundary. See [Monas product registration](docs/monas-product.rst).
 
+Privileged API routes now require a host-injected, non-secret authenticated
+context and reject direct requests. Monas and a future Synoptikon adapter share
+the same fixture-tested boundary; x-img never parses or retains session cookies
+or credentials. See [authenticated host context](docs/host-context.rst).
+
 The supported-toolchain, browser, Semantic Versioning, dependency, fixture,
 CI, documentation, and Definition of Done rules are maintained in the
 [release and quality policy](docs/release-quality-policy.rst). Run the

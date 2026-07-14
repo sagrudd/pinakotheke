@@ -7,6 +7,10 @@ All notable changes to x-img will be documented in this file. The project uses
 
 ### Planning
 
+- Added XIMG-031's authenticated host-context adapter. Privileged Axum routes
+  require a host-injected, authorized non-secret context and reject direct
+  access; fixture-tested Monas and Synoptikon adapters share the same boundary
+  without x-img accepting, logging, configuring, or issuing sessions.
 - Added XIMG-030's versioned Monas product registration and synthetic strict
   fixtures. It requires host-owned Prosopikon authentication, one x-img
   application/API mount, a DASObjectStore requirement, capability disclosure,

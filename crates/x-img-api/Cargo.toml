@@ -14,3 +14,8 @@ workspace = true
 
 [dependencies]
 axum.workspace = true
+x-img-core = { path = "../x-img-core" }
+
+[dev-dependencies]
+tokio = { version = "=1.52.3", features = ["macros", "rt"] }
+tower = { version = "=0.5.3", features = ["util"] }

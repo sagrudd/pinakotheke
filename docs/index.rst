@@ -23,6 +23,7 @@ Configuration
    configuration
    acquisition
    monas-product
+   host-context
    identity-migration
 
 Release and quality

@@ -4,6 +4,7 @@
 pub mod acquisition;
 pub mod bioinformatics;
 pub mod connector_fixtures;
+pub mod host_context;
 pub mod host_product;
 pub mod reconciliation;
 pub mod scheduler;

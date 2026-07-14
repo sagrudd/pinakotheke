@@ -1,0 +1,8 @@
+{
+  "schema_version": "x-img.host-context.v1",
+  "host": "monas",
+  "host_mode": "monas_standalone",
+  "actor_id": "synthetic-denied-user",
+  "authorizations": ["ximg.read-only"],
+  "correlation_id": "fixture-denied-correlation"
+}
