@@ -146,6 +146,10 @@ Exit criteria:
   a connector, queue, or storage operation.
 - fixture adapters prove pagination, duplicate discovery, crash reconciliation,
   and retry behavior without network access; and
+- XIMG-025 provides the synthetic X/Instagram connector-fixture matrix (commit
+  `942c75f`) for pagination, edits/deletions, duplicate/variant media,
+  rate/authorization failures, malformed responses, and cursor reset, with a
+  strict completeness test and no live platform interaction.
 - explicit GEO/SRA/ENA/NCBI plan and resolution fixtures prove source authority,
   release, files, checksums, transport, rights/policy, destination, and no
   bulk discovery; and

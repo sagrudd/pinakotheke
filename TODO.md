@@ -156,10 +156,12 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   budgets, and releases leases on cancellation. Tests prove concurrent refresh
   coalescing and no per-source overlap; it executes no connector or storage job.
 
-- [ ] **XIMG-025 P1 — Add deterministic connector fixtures.**
-  Cover pagination, edits, deleted/inaccessible items, duplicate media, multiple
-  variants, rate limits, token expiry, malformed responses, and cursor reset for
-  X and Instagram.
+- [x] **XIMG-025 P1 — Add deterministic connector fixtures.**
+  Completed in `942c75f`; the strict synthetic X/Instagram fixture matrix and
+  Rust validation contract cover pagination, edits, deleted/inaccessible items,
+  duplicate media, variants, rate limits, authorization expiry, malformed
+  responses, and cursor reset. Fixtures remain opaque, deterministic, and free
+  of real traffic, credentials, account data, or media payloads.
 
 - [ ] **XIMG-026 P0 — Define explicit bioinformatics transfer plans.** Depends
   on XIMG-006/008. Accept one bounded, user-identified GEO, SRA, ENA, or NCBI
