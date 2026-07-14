@@ -26,6 +26,7 @@ Configuration
    host-context
    das-application-identity
    object-ingest
+   object-read
    identity-migration
 
 Release and quality

@@ -8,6 +8,7 @@ pub mod connector_fixtures;
 pub mod host_context;
 pub mod host_product;
 pub mod object_ingest;
+pub mod object_read;
 pub mod reconciliation;
 pub mod scheduler;
 

@@ -101,6 +101,11 @@ completion, backpressure is surfaced without buffering, and verified completion
 is idempotent. It does not store media bytes locally. See
 [streaming object ingest](docs/object-ingest.rst).
 
+The core also defines an authorized object-read/cache handoff port. It validates
+media type, length, SHA-256/ETag, conditional reads, ranges, and unavailable
+states before exposing an authority stream; it never keeps a local media cache.
+See [authorized object read](docs/object-read.rst).
+
 The supported-toolchain, browser, Semantic Versioning, dependency, fixture,
 CI, documentation, and Definition of Done rules are maintained in the
 [release and quality policy](docs/release-quality-policy.rst). Run the

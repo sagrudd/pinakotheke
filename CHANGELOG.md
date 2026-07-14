@@ -7,6 +7,10 @@ All notable changes to x-img will be documented in this file. The project uses
 
 ### Planning
 
+- Added XIMG-034's authorized DASObjectStore object-read/cache handoff port.
+  It validates content type, lengths, SHA-256, ETag, conditional and byte-range
+  metadata, and explicit unavailable states before returning a stream, without
+  persisting media locally.
 - Added XIMG-033's bounded streaming object-ingest port. It forwards chunks to
   an authority backend without local payload staging, enforces chunk/length and
   SHA-256 verification, surfaces backpressure, checks authority completion, and
