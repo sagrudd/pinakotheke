@@ -294,11 +294,12 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   request, browser fallback, byte transfer, or XIMG-043/ADR 0002 gate bypass is
   present.
 
-- [ ] **XIMG-045 P0 — Implement one-click account refresh.**
-  One authenticated action schedules all enabled X and Instagram accounts,
-  coalesces repeated clicks, and returns a global job with per-account children.
-  Acceptance: live progress, partial failure, cancellation, retry, new-item
-  count, and no-overlap behavior are tested.
+- [x] **XIMG-045 P0 — Implement one-click account refresh.** Completed in
+  `63c2672`; one authenticated actor schedules every enabled X/Instagram
+  account into a coalesced global job with bounded per-account progress,
+  partial failure, cancellation, retry, no-overlap, and final new-item summary
+  states. It is metadata-only orchestration: no connector, credential, media,
+  or review-admission work is executed.
 
 - [ ] **XIMG-046 P1 — Implement new-item review admission.**
   Mark media `new` only after verified object commit; keep source/account grouping

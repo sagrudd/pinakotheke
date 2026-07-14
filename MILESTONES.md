@@ -271,6 +271,11 @@ Exit criteria:
   opaque credential expiry/revocation, provenance, and reconciliation replay
   are test-covered. No Meta/Instagram request, browser fallback, transfer, or
   XIMG-043/ADR 0002 approval bypass is enabled.
+- XIMG-045 implements one-click account-refresh orchestration (commit
+  `63c2672`): all enabled X/Instagram accounts are coalesced into one global
+  job with per-account bounded progress, partial failure, cancellation, retry,
+  no overlap, and final new-item summary states; it executes no connector or
+  media transfer.
 - official, user-authorized Instagram connector supports the account/media
   types permitted by the approved API and records unsupported cases clearly;
 - `Refresh accounts` schedules all enabled connectors once, reports per-account
