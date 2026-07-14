@@ -296,6 +296,10 @@ Exit criteria:
 
 Goal: deliver the dense, fast visual browser.
 
+- XIMG-050 implements the Mnemosyne-compatible Monas shell (commit `9e9cabb`):
+  semantic-token CSS, compact header, responsive accessible empty state, and
+  one mandatory footer provenance mark; host authentication remains Monas-owned.
+
 Exit criteria:
 
 - Yew UI is mounted in Monas and follows the central Mnemosyne tokens, shell,

@@ -307,10 +307,11 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
 
 ## 0.5.0 — Web library and review
 
-- [ ] **XIMG-050 P1 — Implement Mnemosyne-compliant Monas shell.**
-  Import the canonical semantic tokens and approved brand assets; add compact
-  header and mandatory footer. Acceptance: no literal component palette values,
-  one decorative mark, responsive and AA-compliant shell.
+- [x] **XIMG-050 P1 — Implement Mnemosyne-compliant Monas shell.** Completed
+  in `9e9cabb`; the Yew shell uses canonical semantic-token classes, compact
+  product/navigation/Monas-host header, accessible responsive empty state, and
+  one required provenance footer mark. The host supplies approved token and
+  brand assets; x-img adds no login flow.
 
 - [ ] **XIMG-051 P1 — Implement source/account navigation.**
   Show X, Instagram, and website sources resolving to the same catalogue, with
