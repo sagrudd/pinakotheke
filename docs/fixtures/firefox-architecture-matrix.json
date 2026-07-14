@@ -1,0 +1,160 @@
+{
+  "schema": "x-img.firefox-architecture-matrix",
+  "schema_major": 1,
+  "fixture_kind": "synthetic",
+  "checked_at": "2026-07-14",
+  "browser": {
+    "family": "Firefox",
+    "manifest": "mv3-target",
+    "release_range": "explicitly selected during XIMG-060 implementation",
+    "primary_sources": [
+      {
+        "id": "webRequest",
+        "url": "https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/webRequest"
+      },
+      {
+        "id": "filterResponseData",
+        "url": "https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/webRequest/filterResponseData"
+      },
+      {
+        "id": "declarativeNetRequest",
+        "url": "https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/declarativeNetRequest"
+      },
+      {
+        "id": "optionalHostPermissions",
+        "url": "https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/optional_host_permissions"
+      },
+      {
+        "id": "mediaSource",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/API/MediaSource"
+      }
+    ]
+  },
+  "synthetic_context": {
+    "page_origin": "https://gallery.example.invalid",
+    "media_origins": ["https://cdn.example.invalid"],
+    "x_img_origin": "https://x-img.example.invalid",
+    "object_store": {
+      "endpoint_id": "endpoint-fixture-1",
+      "object_store_id": "store-fixture-1"
+    },
+    "signed_url_query": "redacted-fixture-query"
+  },
+  "capabilities": [
+    {
+      "id": "image-observed-progressive-v1",
+      "media_class": "image",
+      "eligibility": "displayed_or_observed",
+      "interception": "webRequest.filterResponseData_or_explicit_credential_omitted_fetch",
+      "permissions": ["webRequest", "webRequestBlocking", "webRequestFilterResponse", "exact_optional_host_permission"],
+      "status": "candidate",
+      "required_evidence": ["bounded_stream", "write_through_or_disconnect", "origin_fail_open", "no_cookie_or_auth_header"]
+    },
+    {
+      "id": "video-opened-progressive-v1",
+      "media_class": "progressive_video",
+      "eligibility": "explicit_user_open",
+      "interception": "https_x_img_delivery_redirect_or_proven_proxy",
+      "permissions": ["exact_optional_host_permission", "site_capability"],
+      "status": "candidate",
+      "required_evidence": ["mime", "content_length", "etag", "conditional_requests", "byte_ranges", "origin_fail_open"]
+    },
+    {
+      "id": "segmented-video-site-adapter-v1",
+      "media_class": "hls_or_dash",
+      "eligibility": "observed_or_explicitly_selected",
+      "interception": "adapter_specific_manifest_and_segment_rules",
+      "permissions": ["exact_optional_host_permission", "site_capability"],
+      "status": "blocked_until_proven",
+      "required_evidence": ["manifest_identity", "segment_identity", "authorization", "mse_or_native_playback", "normalized_ready_object", "origin_fail_open"]
+    }
+  ],
+  "cases": [
+    {
+      "id": "permission-exact-origin-user-action",
+      "kind": "permission",
+      "setup": "User opens the site task pane for gallery.example.invalid and selects capture only.",
+      "expected": "Show exact origin and consequence, request only that optional host permission from the user action, leave substitution disabled.",
+      "failure": "No permission request and site remains disabled."
+    },
+    {
+      "id": "image-displayed-capture",
+      "kind": "capture",
+      "media_class": "image",
+      "setup": "An image is displayed in the enabled page; a hidden image is also present but not displayed.",
+      "expected": "Only the displayed image can enter the capture plan; x-img receives redacted metadata and the observation event.",
+      "failure": "Hidden image is never fetched, submitted, or stored."
+    },
+    {
+      "id": "original-explicit-open",
+      "kind": "capture",
+      "media_class": "progressive_video",
+      "setup": "A video thumbnail is observed, then the user explicitly opens the original.",
+      "expected": "Thumbnail and original eligibility are separate events; original capture is allowed only after the open event.",
+      "failure": "A pre-open background request never admits the original."
+    },
+    {
+      "id": "dnr-body-replacement-not-supported",
+      "kind": "interception",
+      "setup": "A DNR redirect rule matches a candidate response.",
+      "expected": "DNR may redirect or modify supported headers only; it cannot replace the response body.",
+      "failure": "Body replacement is not inferred from a DNR match."
+    },
+    {
+      "id": "filter-response-write-through",
+      "kind": "interception",
+      "setup": "A candidate response is passed through a response filter in bounded chunks.",
+      "expected": "Each chunk is written promptly and the filter closes or disconnects on stop.",
+      "failure": "A filter that cannot safely continue disconnects and origin loading continues."
+    },
+    {
+      "id": "signed-url-rotation",
+      "kind": "identity",
+      "setup": "Two signed CDN URLs differ only by short-lived query values but identify the same synthetic media.",
+      "expected": "Canonical alias lookup uses redacted identity and resolves only to the reviewed immutable object.",
+      "failure": "Signed query values never enter logs, browser storage, or x-img diagnostics."
+    },
+    {
+      "id": "https-and-mixed-content",
+      "kind": "delivery",
+      "setup": "The source page is HTTPS and the paired x-img delivery endpoint is HTTPS; an HTTP endpoint is also advertised.",
+      "expected": "Only the trusted HTTPS endpoint is eligible.",
+      "failure": "HTTP loopback is bypassed and the original page request continues."
+    },
+    {
+      "id": "response-contract-and-ranges",
+      "kind": "delivery",
+      "setup": "An opened MP4 requests full content, a conditional request, and overlapping byte ranges.",
+      "expected": "The authorized delivery preserves MIME, exact length, ETag, conditional behavior, Content-Range, and cancellation.",
+      "failure": "Any mismatch bypasses substitution without a redirect loop."
+    },
+    {
+      "id": "cors-csp-corp",
+      "kind": "delivery",
+      "setup": "A candidate is loaded under restrictive CORS, CSP, and CORP response policies.",
+      "expected": "The adapter uses only a proven response contract and does not silently strip page security headers.",
+      "failure": "The source request remains origin-served when the contract is not proven."
+    },
+    {
+      "id": "segmented-video-gate",
+      "kind": "segmented_media",
+      "setup": "A synthetic HLS/DASH manifest references multiple segments and a DRM-marked variant.",
+      "expected": "No generic discovery or substitution occurs; only a site capability with manifest/segment and playback evidence may proceed.",
+      "failure": "DRM, hidden manifests, and unsupported MSE remain explicitly blocked or origin-served."
+    },
+    {
+      "id": "service-unavailable-fail-open",
+      "kind": "failure",
+      "setup": "x-img, Monas, DASObjectStore, pairing, or network lookup times out.",
+      "expected": "The browser continues the original request within the bounded interception timeout.",
+      "failure": "No page error, retry loop, silent destination switch, credential disclosure, or browsing-history record."
+    },
+    {
+      "id": "forbidden-credential-and-traversal-paths",
+      "kind": "privacy",
+      "setup": "A candidate request contains cookies/auth headers and a page contains hidden playlist links and background media.",
+      "expected": "The extension neither reads nor forwards credentials and does not open, traverse, crawl, or simulate navigation.",
+      "failure": "Any such path is rejected by static/privacy fixtures."
+    }
+  ]
+}
