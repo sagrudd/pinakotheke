@@ -234,14 +234,14 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   selection. It holds no credential and performs no live pairing, discovery,
   write, or transport; XIMG-037 implements reviewed selection/revalidation.
 
-- [ ] **XIMG-037 P0 — Implement reviewed endpoint/ObjectStore selection.**
-  Depends on XIMG-024/030/031/032/036. Discover every visible store, expose an
-  accessible endpoint-plus-store table/dropdown, support per-endpoint defaults
-  and explicit site/resource overrides, and revalidate the reviewed target
-  immediately before commit. Acceptance: removed, renamed, unavailable,
-  read-only, expired, over-quota, TLS, reconnect, and multi-endpoint alias
-  fixtures never silently switch destinations. Planning evidence:
-  `docs/adr/0004-endpoints-and-objectstores.md` in commit `bdd5294`.
+- [x] **XIMG-037 P0 — Implement reviewed endpoint/ObjectStore selection.**
+  Completed in `664c27c` (with its direct serde dependency recorded in
+  `40d9d23`); the core exposes every validated endpoint/store as structured,
+  word-first status rows and retains one explicit stable-ID reviewed pair.
+  Commit-time revalidation rejects removed, renamed, unavailable, read-only,
+  expired, over-quota, untrusted-TLS, reconnect, and multi-endpoint alias
+  states without choosing a fallback. Live discovery/pairing transport and the
+  rendered Yew task pane remain future adapters.
 
 - [ ] **XIMG-038 P0 — Implement confirmed direct bioinformatics commit.** Depends
   on XIMG-023/024/026/027/033/037. After user confirmation and server-side

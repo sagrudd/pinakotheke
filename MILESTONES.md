@@ -219,6 +219,13 @@ Exit criteria:
   fixture tested. It rejects unmanaged folders, mutable identities, broad
   secrets, and arbitrary first-store selection without live credentials or
   transport.
+- XIMG-037 implements reviewed endpoint/ObjectStore selection (commits
+  `664c27c`, `40d9d23`): all validated authority-visible stores are exposed as
+  endpoint-plus-store rows with word-first status; the exact reviewed stable-ID
+  pair is revalidated immediately before commit and never falls back on
+  removal, rename, unavailable/read-only, expiry, quota, TLS, reconnect, or
+  cross-endpoint alias changes. Live transport and rendered task panes remain
+  gated.
 - upload completion is reconciled idempotently after crash boundaries; and
 - a future Synoptikon host adapter can replace Monas without changing domain or
   connector logic.
