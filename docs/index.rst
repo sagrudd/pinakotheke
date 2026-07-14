@@ -25,6 +25,7 @@ Configuration
    monas-product
    host-context
    das-application-identity
+   destinations
    object-ingest
    object-read
    identity-migration

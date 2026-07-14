@@ -21,10 +21,12 @@ PINS = {
 VENDORED_REQUIRED = (
     "contracts/monas/x-img-product-bootstrap.v1.json",
     "contracts/dasobjectstore/x-img-application-identity.v1.json",
+    "contracts/dasobjectstore/x-img-destination-inventory.v1.json",
     "fixtures/monas/v1/invalid-anonymous-api.json",
     "fixtures/host-context/v1/monas-valid.json",
     "fixtures/host-context/v1/synoptikon-valid.json",
     "fixtures/das-application/v1/authorization-cases.json",
+    "fixtures/das-destinations/v1/cases.json",
 )
 SIBLING_REQUIRED = {
     "monas": ("README.md", "crates/monas-core/src/lib.rs", "crates/monas-server/src/lib.rs"),

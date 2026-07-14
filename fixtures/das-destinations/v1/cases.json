@@ -1,0 +1,38 @@
+{
+  "schema_version": "x-img.das-destination-fixtures.v1",
+  "cases": [
+    {
+      "id": "managed-local-and-explicit-remote-selection",
+      "expected": "accepted",
+      "document": {
+        "schema_version": "x-img.das-destination-inventory.v1",
+        "actor_ref": "monas.host-context:fixture-user",
+        "endpoints": [
+          {"endpoint_id": "local-device-1", "display_name": "This device", "deployment": "local_folder_profile", "service_url": "https://localhost:8448", "provisioning_ref": "dasobjectstore.profile:local-device-1", "pairing_ref": null, "tls_state": "trusted", "health": "ready", "default_object_store_id": "local-media", "object_stores": [{"object_store_id": "local-media", "display_name": "Personal media", "writable": true, "health": "ready", "quota_available_bytes": 10485760, "object_types": ["image", "video", "bioinformatics"]}]},
+          {"endpoint_id": "remote-appliance-1", "display_name": "Studio appliance", "deployment": "remote_appliance", "service_url": "https://storage.example.invalid", "provisioning_ref": null, "pairing_ref": "dasobjectstore.pairing:remote-appliance-1", "tls_state": "trusted", "health": "ready", "default_object_store_id": "remote-archive", "object_stores": [{"object_store_id": "remote-archive", "display_name": "Archive", "writable": true, "health": "ready", "quota_available_bytes": 20971520, "object_types": ["image", "video"]}, {"object_store_id": "remote-readonly", "display_name": "Reference", "writable": false, "health": "ready", "quota_available_bytes": 20971520, "object_types": ["image"]}]}
+        ],
+        "reviewed_destination": {"endpoint_id": "remote-appliance-1", "object_store_id": "remote-archive", "object_type": "video", "selection_kind": "site_override", "reviewed_at_unix_seconds": 500, "actor_ref": "monas.host-context:fixture-user"}
+      }
+    },
+    {
+      "id": "reject-unmanaged-folder-write",
+      "expected": "unknown field",
+      "document": {"schema_version": "x-img.das-destination-inventory.v1", "actor_ref": "monas.host-context:fixture-user", "endpoints": [{"endpoint_id": "local-device-1", "display_name": "This device", "deployment": "local_folder_profile", "service_url": "https://localhost:8448", "folder_path": "/Users/fixture/Pictures", "provisioning_ref": null, "pairing_ref": null, "tls_state": "trusted", "health": "ready", "default_object_store_id": "local-media", "object_stores": [{"object_store_id": "local-media", "display_name": "Personal media", "writable": true, "health": "ready", "quota_available_bytes": 1, "object_types": ["image"]}]}], "reviewed_destination": {"endpoint_id": "local-device-1", "object_store_id": "local-media", "object_type": "image", "selection_kind": "endpoint_default", "reviewed_at_unix_seconds": 500, "actor_ref": "monas.host-context:fixture-user"}}
+    },
+    {
+      "id": "reject-mutable-name-identity",
+      "expected": "identifier",
+      "document": {"schema_version": "x-img.das-destination-inventory.v1", "actor_ref": "monas.host-context:fixture-user", "endpoints": [{"endpoint_id": "remote appliance", "display_name": "Studio appliance", "deployment": "remote_appliance", "service_url": "https://storage.example.invalid", "provisioning_ref": null, "pairing_ref": "dasobjectstore.pairing:remote-appliance-1", "tls_state": "trusted", "health": "ready", "default_object_store_id": "Archive", "object_stores": [{"object_store_id": "Archive", "display_name": "Archive", "writable": true, "health": "ready", "quota_available_bytes": 1, "object_types": ["image"]}]}], "reviewed_destination": {"endpoint_id": "remote appliance", "object_store_id": "Archive", "object_type": "image", "selection_kind": "endpoint_default", "reviewed_at_unix_seconds": 500, "actor_ref": "monas.host-context:fixture-user"}}
+    },
+    {
+      "id": "reject-broad-secret",
+      "expected": "unknown field",
+      "document": {"schema_version": "x-img.das-destination-inventory.v1", "actor_ref": "monas.host-context:fixture-user", "access_key": "not-a-secret", "endpoints": [], "reviewed_destination": {}}
+    },
+    {
+      "id": "reject-arbitrary-first-store",
+      "expected": "default ObjectStore",
+      "document": {"schema_version": "x-img.das-destination-inventory.v1", "actor_ref": "monas.host-context:fixture-user", "endpoints": [{"endpoint_id": "remote-appliance-1", "display_name": "Studio appliance", "deployment": "remote_appliance", "service_url": "https://storage.example.invalid", "provisioning_ref": null, "pairing_ref": "dasobjectstore.pairing:remote-appliance-1", "tls_state": "trusted", "health": "ready", "default_object_store_id": null, "object_stores": [{"object_store_id": "archive-a", "display_name": "Archive A", "writable": true, "health": "ready", "quota_available_bytes": 1, "object_types": ["image"]}, {"object_store_id": "archive-b", "display_name": "Archive B", "writable": true, "health": "ready", "quota_available_bytes": 1, "object_types": ["image"]}]}], "reviewed_destination": {"endpoint_id": "remote-appliance-1", "object_store_id": "archive-a", "object_type": "image", "selection_kind": "endpoint_default", "reviewed_at_unix_seconds": 500, "actor_ref": "monas.host-context:fixture-user"}}
+    }
+  ]
+}

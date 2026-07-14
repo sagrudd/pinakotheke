@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/sagrudd/x-img/contracts/dasobjectstore/x-img-destination-inventory.v1.json",
+  "title": "x-img endpoint and ObjectStore inventory v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "actor_ref", "endpoints", "reviewed_destination"],
+  "properties": {
+    "schema_version": {"const": "x-img.das-destination-inventory.v1"},
+    "actor_ref": {"type": "string", "pattern": "^monas.host-context:"},
+    "endpoints": {"type": "array", "minItems": 1},
+    "reviewed_destination": {"type": "object"}
+  }
+}

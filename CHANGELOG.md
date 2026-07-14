@@ -7,6 +7,11 @@ All notable changes to x-img will be documented in this file. The project uses
 
 ### Planning
 
+- Added XIMG-036's strict endpoint/device and logical ObjectStore inventory
+  contract. Synthetic fixtures prove managed local profile and paired remote
+  discovery selection while rejecting unmanaged folders, mutable identities,
+  broad secrets, and arbitrary first-store selection; no live pairing,
+  credential, or transport integration is enabled.
 - Made hosted CI non-blocking while GitHub Actions funding is unavailable.
   GitHub workflows are manually dispatched advisory mirrors; recorded local
   verification remains the delivery authority until CI is backfilled or moved.

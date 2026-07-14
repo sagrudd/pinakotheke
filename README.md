@@ -106,6 +106,12 @@ media type, length, SHA-256/ETag, conditional reads, ranges, and unavailable
 states before exposing an authority stream; it never keeps a local media cache.
 See [authorized object read](docs/object-read.rst).
 
+x-img now validates a versioned metadata-only endpoint/device and ObjectStore
+inventory. It distinguishes managed local folder profiles from paired HTTPS
+appliances, requires stable endpoint-plus-store IDs and explicit defaults, and
+rejects unmanaged folders, credentials, mutable identity, and arbitrary
+first-store selection. See [destination contracts](docs/destinations.rst).
+
 The supported-toolchain, browser, Semantic Versioning, dependency, fixture,
 CI, documentation, and Definition of Done rules are maintained in the
 [release and quality policy](docs/release-quality-policy.rst). Run the

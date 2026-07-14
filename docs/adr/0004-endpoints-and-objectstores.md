@@ -1,6 +1,7 @@
 # ADR 0004: Endpoint/device and logical ObjectStore selection
 
-- Status: Proposed; endpoint-aware writes remain gated by XIMG-003 and XIMG-032
+- Status: Accepted for XIMG-036's metadata contract; endpoint-aware writes
+  remain gated by XIMG-037 and live DASObjectStore transport adapters
 - Date: 2026-07-14
 - Deciders: x-img maintainers
 - Scope: Firefox capture, bioinformatics resource plans, and all future writes
@@ -18,7 +19,7 @@ Compatibility-sensitive inspection pins:
 
 | Sibling | Commit | Relevant contracts inspected |
 | --- | --- | --- |
-| `../DASObjectStore` | `95cb4229cebec1290b8e0945a468c00d22152b5e` | `docs/application-authentication.md`, `docs/architecture.md`, endpoint and ObjectStore capability/health/quota contracts, daemon/API boundary |
+| `../DASObjectStore` | `8368d34a365689e19321ecd6a35aab7c819268f6` | `docs/application-authentication.md`, endpoint inventory, profile capability, remote EasyConnect, and daemon/API contracts |
 | `../monas` | `3d21b0bc7b83fa8408d01b93347a56f43f3a96b7` | `README.md`, standalone authenticated host and product-mount boundary |
 | `../mnemosyne_design_language` | `5539df8f662a78ebdf7cf4c868d71831380c8cfd` | `docs/interface-patterns.md`, `docs/brief.md`, endpoint inventory and destination-scoped task-pane patterns |
 

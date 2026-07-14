@@ -5,6 +5,7 @@ pub mod acquisition;
 pub mod application_identity;
 pub mod bioinformatics;
 pub mod connector_fixtures;
+pub mod destination;
 pub mod host_context;
 pub mod host_product;
 pub mod object_ingest;
