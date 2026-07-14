@@ -1,0 +1,16 @@
+/target/
+/dist/
+/.trunk/
+/.codex/
+*.xpi
+*.pem
+*.key
+*.p12
+.env
+.env.*
+accounts.local.json
+sites.local.json
+*.sqlite
+*.sqlite3
+*.db
+.DS_Store
