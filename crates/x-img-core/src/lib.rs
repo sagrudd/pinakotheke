@@ -2,6 +2,7 @@
 //! Application-core boundaries with no live source or storage integration.
 
 pub mod acquisition;
+pub mod reconciliation;
 
 use std::{
     fs::{self, File, OpenOptions},

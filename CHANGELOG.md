@@ -23,6 +23,11 @@ All notable changes to x-img will be documented in this file. The project uses
   the verified settlement path, makes failure/policy/cancellation/conflict
   terminal, requires bounded immutable ObjectStore evidence before commit, and
   prevents every review state from being assigned before a verified commit.
+- Added XIMG-023 deterministic idempotency and reconciliation: canonical media
+  identity plus immutable checksum settles one metadata record, replay appends
+  safe aliases without replacing an object reference, and absent/mismatched
+  authority observations remain pending or conflict without any byte, network,
+  or persistent-storage operation.
 - Added the XIMG-009 executable Pinakotheke v1 identity-migration plan,
   including a complete rename surface matrix, a minimum compatibility window,
   migration and rollback rules, retained schema/object/extension identities,

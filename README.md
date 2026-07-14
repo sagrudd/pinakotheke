@@ -61,6 +61,11 @@ commit and review admission. It is an in-memory policy boundary only; it does
 not transfer media, contact an authority, or persist acquisition state. See
 [acquisition lifecycle documentation](docs/acquisition.rst).
 
+The core's reconciliation catalogue keys committed metadata by canonical media
+identity plus immutable checksum. Replays reuse the first committed object
+reference and append safe URL aliases; checksum disagreement becomes an
+explicit conflict. It remains in-memory and performs no storage query or write.
+
 The supported-toolchain, browser, Semantic Versioning, dependency, fixture,
 CI, documentation, and Definition of Done rules are maintained in the
 [release and quality policy](docs/release-quality-policy.rst). Run the

@@ -32,15 +32,39 @@ card.
 ``Failed``, ``PolicyBlocked``, ``Cancelled``, and ``Conflict`` are terminal
 outcomes before settlement. They cannot be claimed, transferred, verified, or
 committed again by this instance. ``Tombstoned`` is allowed only from a
-committed record. Future XIMG-023 reconciliation and persistence work will
-create a fresh, explicitly reconciled lifecycle where a retry is permitted;
-this state machine does not silently reopen terminal records.
+committed record. A future persistence adapter must create a fresh, explicitly
+reconciled lifecycle where a retry is permitted; this state machine does not
+silently reopen terminal records.
 
 Boundaries
 ----------
 
 The core does not prove that supplied metadata came from DASObjectStore; the
 future authorized storage adapter must do that. It merely prevents a caller
-from treating absent or malformed evidence as verified. It also does not
-implement idempotency, crash reconciliation, persistence, object upload,
-account refresh, or review UI behavior. Those remain separate release gates.
+from treating absent or malformed evidence as verified. It does not implement
+persistence, object upload, account refresh, or review UI behavior. Those
+remain separate release gates.
+
+Idempotency and crash reconciliation
+------------------------------------
+
+XIMG-023 adds an in-memory metadata catalogue for deterministic settlement.
+Its key is the canonical media identity plus the verified immutable SHA-256;
+a source URL is never an identity. A reconciliation request carries only that
+bounded key expectation and safe HTTPS aliases. A future authorized adapter
+supplies one observation:
+
+* ``Absent`` leaves the catalogue unchanged and reports that authority evidence
+  is still required.
+* ``Verified`` with the expected checksum creates one committed record. A crash
+  replay with the same key reuses that record, appends any new safe aliases, and
+  never replaces the first object reference.
+* A mismatch or canonical-identity reuse with a different checksum records a
+  ``Conflict`` outcome and retains the competing checksum evidence. It never
+  overwrites bytes or silently selects a replacement object.
+
+The module does not call DASObjectStore, persist its in-memory metadata, or
+turn a supplied observation into proof of authorization. XIMG-030 and later
+storage/persistence contracts must obtain and durably record verified authority
+evidence. The present boundary exists so retries and crash recovery have one
+deterministic, testable settlement rule.
