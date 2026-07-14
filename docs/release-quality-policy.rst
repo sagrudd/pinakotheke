@@ -21,14 +21,14 @@ out as breaking changes with a migration path. From 1.0.0 onward:
 * a major release may remove or incompatibly change CLI, HTTP, configuration,
   catalogue, pairing, extension, or host-adapter contracts.
 
-Once the Rust workspace exists, its workspace package version is the single
-editable product-version source. CLI output, crate packages, product and host
+The Rust workspace package version is the single editable product-version
+source. CLI output, crate packages, product and host
 manifests, Firefox extension metadata, Sphinx ``release``, generated examples,
 and release artefact names must be derived from it. They must not carry
 independently maintained release numbers. A repository check must parse every
-derived surface and fail on drift before merge or release. Until the workspace
-is introduced by XIMG-020, ``MILESTONES.md`` is the temporary planning-version
-authority and ``docs/conf.py`` must match it.
+derived surface and fail on drift before merge or release. ``MILESTONES.md``
+and ``TODO.md`` record the current release line and ``docs/conf.py`` mirrors
+the workspace package version for Sphinx.
 
 Schema and adapter versions are compatibility versions, not product versions.
 They change only when their own compatibility rules require it. Readers must
@@ -70,7 +70,7 @@ must not claim a floor that has not run the required checks.
 
 The Rust policy is:
 
-* XIMG-020 introduces ``rust-toolchain.toml`` pinned initially to 1.97.0;
+* XIMG-020 provides ``rust-toolchain.toml`` pinned initially to 1.97.0;
 * ``rust-version`` in workspace package metadata declares the initial 1.95.0
   MSRV and every crate inherits it;
 * the lock file is tested both with the pinned toolchain and the MSRV; and

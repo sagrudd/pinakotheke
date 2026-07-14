@@ -44,8 +44,11 @@ single-click refresh of configured social accounts.
 
 ## Current status
 
-Planning only. See [MILESTONES.md](MILESTONES.md) for release gates and
-[TODO.md](TODO.md) for dependency-ordered work. Automated contributors must
+The `0.2.0` Rust workspace scaffold is available: shared model and core
+boundaries, a `clap` CLI, an Axum composition boundary, and a Yew client
+boundary compile without enabling any live source, storage, authentication, or
+media-payload integration. See [MILESTONES.md](MILESTONES.md) for release gates
+and [TODO.md](TODO.md) for dependency-ordered work. Automated contributors must
 follow [AGENTS.md](AGENTS.md).
 
 The supported-toolchain, browser, Semantic Versioning, dependency, fixture,
@@ -93,7 +96,8 @@ rollback constraints.
 
 ## Versioning
 
-The project uses Semantic Versioning. Planning starts at `0.1.0`; the stable
+The project uses Semantic Versioning. The workspace package version is the
+single product-version authority and is currently `0.2.0`; the stable
 connector, storage, Web, and Firefox contracts are the `1.0.0` gate.
 
 ## License

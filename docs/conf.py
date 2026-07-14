@@ -3,7 +3,7 @@
 project = "x-img"
 copyright = "2026, x-img maintainers"
 author = "x-img maintainers"
-release = "0.1.0"
+release = "0.2.0"
 
 extensions = ["myst_parser"]
 templates_path = ["_templates"]

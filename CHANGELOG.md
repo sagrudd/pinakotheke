@@ -7,6 +7,12 @@ All notable changes to x-img will be documented in this file. The project uses
 
 ### Planning
 
+- Added the XIMG-020 Rust 2024 workspace scaffold at product version 0.2.0:
+  shared model and core crates, a `clap` CLI reporting the workspace version,
+  an Axum composition boundary, and a Yew WebAssembly boundary. The pinned
+  Rust 1.97.0 toolchain, Rust 1.95 MSRV metadata, lint policy, MPL notices, and
+  lockfile are in place; no live source, storage, authentication, or media
+  payload integration is enabled.
 - Added the XIMG-009 executable Pinakotheke v1 identity-migration plan,
   including a complete rename surface matrix, a minimum compatibility window,
   migration and rollback rules, retained schema/object/extension identities,
