@@ -140,6 +140,10 @@ Exit criteria:
   and all crash boundaries plus absent/conflicting authority evidence fail
   closed as pending/conflict.
 - review state distinguishes new, reviewed, retained, hidden, and removed;
+- XIMG-024 implements scheduler contracts (commit `07d4f22`) for coalesced
+  global refreshes, explicit child scopes, mutually exclusive source leases,
+  bounded capacity/cost usage, and cooperative cancellation without executing
+  a connector, queue, or storage operation.
 - fixture adapters prove pagination, duplicate discovery, crash reconciliation,
   and retry behavior without network access; and
 - explicit GEO/SRA/ENA/NCBI plan and resolution fixtures prove source authority,

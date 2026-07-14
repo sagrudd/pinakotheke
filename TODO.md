@@ -149,10 +149,12 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   crash boundaries, post-upload retry, repeated settlement, and identity reuse
   without byte, network, persistence, or overwrite behavior.
 
-- [ ] **XIMG-024 P1 — Implement job scheduler contracts.**
-  Model global refresh, per-account jobs, extension capture, leases, cancellation,
-  cost/rate budgets, and bounded concurrency. Acceptance: concurrent refresh
-  presses coalesce safely and per-source work never overlaps.
+- [x] **XIMG-024 P1 — Implement job scheduler contracts.**
+  Completed in `07d4f22`; the in-memory scheduler coalesces repeated refreshes
+  per actor scope, creates explicit child source scopes, gates claims by
+  per-source lease and bounded child capacity, enforces request/byte/time
+  budgets, and releases leases on cancellation. Tests prove concurrent refresh
+  coalescing and no per-source overlap; it executes no connector or storage job.
 
 - [ ] **XIMG-025 P1 — Add deterministic connector fixtures.**
   Cover pagination, edits, deleted/inaccessible items, duplicate media, multiple
