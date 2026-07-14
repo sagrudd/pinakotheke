@@ -199,9 +199,12 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   replayed, wrong-store, wrong-prefix, and oversized operations without storing
   a credential or issuing a token; live token exchange/ingest remains XIMG-033.
 
-- [ ] **XIMG-033 P0 — Implement streaming object ingest port.**
-  Acceptance: checksum and exact length are verified; completion is idempotent;
-  backpressure is honored; local temp files cannot become durable media stores.
+- [x] **XIMG-033 P0 — Implement streaming object ingest port.** Completed in
+  `f2c6ef2`; the bounded authority-backend port validates chunk limits, exact
+  length, SHA-256, and authority receipt before completion, returns the original
+  receipt for an exact replay, and surfaces backpressure without buffering.
+  It owns no payload files or durable local media; daemon transport and durable
+  crash reconciliation remain future adapter work.
 
 - [ ] **XIMG-034 P0 — Implement authorized object read/cache port.**
   Acceptance: content type, length, checksum, ETag, conditional GET, byte ranges,

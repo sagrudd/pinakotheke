@@ -194,6 +194,11 @@ Exit criteria:
   issuance, quota, health, and final commit verification.
 - object keys, metadata, checksums, media types, provenance, and range-readable
   responses have contract tests against sibling fixtures;
+- XIMG-033 implements the bounded streaming ingest port (commit `f2c6ef2`):
+  chunks flow directly to an authority backend with no local payload staging;
+  exact length and SHA-256, backend receipt identity, backpressure, and
+  idempotent completion are fail-closed. A future DAS transport adapter owns
+  credential exchange, durable authority commit, and cross-restart recovery.
 - upload completion is reconciled idempotently after crash boundaries; and
 - a future Synoptikon host adapter can replace Monas without changing domain or
   connector logic.
