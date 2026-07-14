@@ -1,0 +1,14 @@
+{
+  "schema_version": "x-img.bioinformatics-fixtures.v1",
+  "synthetic": true,
+  "cases": [
+    {"id":"ena-multi-run","authority":"ena","input":"ENA:ERR400001","release":"fixture-ena-r1","files":[{"id":"run-1","bytes":42,"md5":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},{"id":"run-2","bytes":43,"md5":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"}],"transport":"https","expected":"expand_bounded_runs"},
+    {"id":"sra-manifest","authority":"sra","input":"SRA:SRR123456","release":"fixture-sra-r1","files":[{"id":"srr-1","bytes":44,"md5":"cccccccccccccccccccccccccccccccc"}],"transport":"https","expected":"preserve_provenance"},
+    {"id":"geo-raw-archive","authority":"geo","input":"GEO:GSE110544","release":"fixture-geo-r1","files":[{"id":"raw-archive","bytes":45,"md5":"dddddddddddddddddddddddddddddddd"}],"transport":"https","expected":"review_file_list"},
+    {"id":"ncbi-routing","authority":"ncbi","input":"NCBI:PRJNA000001","release":"fixture-ncbi-r1","files":[{"id":"ncbi-file","bytes":46,"md5":"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"}],"transport":"https","expected":"route_explicit_database"},
+    {"id":"retry-resume-cancel","authority":"ena","input":"ENA:ERR400002","release":"fixture-r2","files":[{"id":"retry-file","bytes":47,"md5":"ffffffffffffffffffffffffffffffff"}],"transport":"https","expected":"bounded_retry_resume_cancel"},
+    {"id":"aspera-fallback","authority":"ena","input":"ENA:ERR400003","release":"fixture-r3","files":[{"id":"fallback-file","bytes":48,"md5":"11111111111111111111111111111111"}],"transport":"aspera_optional","fallback":"https","expected":"missing_aspera_uses_https"},
+    {"id":"checksum-mismatch","authority":"sra","input":"SRA:SRR123457","release":"fixture-r4","files":[{"id":"mismatch-file","bytes":49,"md5":"22222222222222222222222222222222"}],"transport":"https","expected":"abort_before_commit"},
+    {"id":"backpressure","authority":"geo","input":"GEO:GSE110545","release":"fixture-r5","files":[{"id":"queued-file","bytes":50,"md5":"33333333333333333333333333333333"}],"transport":"https","expected":"capacity_limited"}
+  ]
+}

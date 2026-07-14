@@ -40,6 +40,10 @@ All notable changes to x-img will be documented in this file. The project uses
   explicit accession/URL, bounded resolved file evidence, transport, rights,
   endpoint/ObjectStore destination, policy blocking, and explicit confirmation;
   no repository discovery or byte transfer is enabled.
+- Added XIMG-027 synthetic bioinformatics resolution/transport fixtures for
+  ENA/SRA, GEO, NCBI, checksum/size evidence, retry/resume/cancellation,
+  backpressure, and optional Aspera-to-HTTPS fallback without payloads or
+  credentials.
 - Added the XIMG-009 executable Pinakotheke v1 identity-migration plan,
   including a complete rename surface matrix, a minimum compatibility window,
   migration and rollback rules, retained schema/object/extension identities,

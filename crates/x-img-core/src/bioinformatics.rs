@@ -238,3 +238,41 @@ mod tests {
         );
     }
 }
+
+#[cfg(test)]
+mod fixture_tests {
+    #[test]
+    fn resolution_and_transport_fixture_matrix_is_complete_and_synthetic() {
+        let value: serde_json::Value = serde_json::from_slice(include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../fixtures/bioinformatics/v1/resolution-transport.json"
+        )))
+        .expect("fixture JSON");
+        assert_eq!(value["schema_version"], "x-img.bioinformatics-fixtures.v1");
+        for required in [
+            "ena-multi-run",
+            "sra-manifest",
+            "geo-raw-archive",
+            "ncbi-routing",
+            "retry-resume-cancel",
+            "aspera-fallback",
+            "checksum-mismatch",
+            "backpressure",
+        ] {
+            assert!(
+                value["cases"]
+                    .as_array()
+                    .expect("cases")
+                    .iter()
+                    .any(|case| case["id"] == required),
+                "missing {required}"
+            );
+        }
+        assert!(
+            !serde_json::to_string(&value)
+                .expect("serialize")
+                .to_ascii_lowercase()
+                .contains("authorization: bearer")
+        );
+    }
+}

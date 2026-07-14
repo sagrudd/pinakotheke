@@ -116,3 +116,10 @@ the future server-side adapter must revalidate policy, destination, quota, and
 write capability immediately before DASObjectStore ingest. HTTPS remains the
 baseline transport; optional Aspera and any fallback/resume work remain later
 fixture and adapter gates.
+
+XIMG-027 supplies the synthetic resolution/transport matrix at
+``fixtures/bioinformatics/v1/resolution-transport.json``. It covers ENA/SRA
+manifests and multi-run expansion, GEO raw archive review, NCBI routing,
+checksums/sizes, retry/resume/cancellation, backpressure, checksum failure, and
+optional Aspera fallback to HTTPS. It contains no payload, credential, or live
+provider interaction.
