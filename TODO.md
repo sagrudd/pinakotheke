@@ -437,7 +437,7 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   ranges, seek/pause/resume, authorization, and fail-open tests; blocked or
   failed/DRM media remains explicit and never falls back as ready source-only
   playback.
-  Completed in this run: an actor-bound Axum ``/api/playback/v1/{playback_id}``
+  Completed in `f49572e`: an actor-bound Axum ``/api/playback/v1/{playback_id}``
   host adapter streams only the scoped DASObjectStore response and preserves
   MIME, ETag, conditional, single-range, and explicit error behavior. The
   route tests reject unauthenticated/multi-range requests and prove a verified
