@@ -21,6 +21,7 @@ Configuration
    :maxdepth: 1
 
    configuration
+   local-monolith
    acquisition
    bioinformatics-commit
    monas-product

@@ -6,6 +6,8 @@ use std::{ffi::OsString, path::PathBuf};
 use clap::{Args, CommandFactory, FromArgMatches, Parser, Subcommand};
 use x_img_core::{ConfigStore, build_info};
 
+mod monolith;
+
 /// Canonical command name used by the v1 entry point.
 pub const CANONICAL_COMMAND: &str = "pinakotheke";
 /// Compatibility command retained for pre-v1 scripts.
@@ -72,6 +74,8 @@ enum Command {
         #[command(subcommand)]
         command: ConfigCommand,
     },
+    /// Run the local Pinakotheke monolith in the foreground.
+    Serve(monolith::ServeArgs),
 }
 
 #[derive(Debug, PartialEq, Eq, Subcommand)]
@@ -123,6 +127,7 @@ pub fn run(invocation: Invocation, cli: Cli) -> Result<(), Box<dyn std::error::E
             build_info().product.version
         ),
         Some(Command::Config { command }) => run_config(command)?,
+        Some(Command::Serve(arguments)) => monolith::serve(arguments)?,
     }
     Ok(())
 }

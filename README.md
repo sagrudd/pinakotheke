@@ -68,7 +68,11 @@ and dual-architecture upgrade/rollback evidence.
 The `1.1.0` development workspace provides shared model and core boundaries, a `clap`
 CLI, an Axum composition boundary, and a Yew client boundary. It compiles
 without enabling unconfigured source, storage, authentication, or media-payload
-integration. See [MILESTONES.md](MILESTONES.md) for release gates
+integration. The first local monolith slice can now run a loopback Axum service
+with an isolated private metadata root; Monas authentication and DASObjectStore
+read/write readiness remain explicitly unavailable until their next integration
+slices. See [local monolith](docs/local-monolith.rst) and
+[MILESTONES.md](MILESTONES.md) for release gates
 and [TODO.md](TODO.md) for dependency-ordered work. Automated contributors must
 follow [AGENTS.md](AGENTS.md).
 

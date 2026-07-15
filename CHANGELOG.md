@@ -10,6 +10,9 @@ All notable changes to Pinakotheke will be documented in this file. The project 
 - Add the XIMG-200 Synoptikon product manifest, strict tenant/account/project
   host scope, and bounded authenticated catalogue projection over immutable
   DASObjectStore references.
+- Add the first XIMG-090 ``pinakotheke serve`` monolith slice with a private
+  per-user metadata root, loopback-safe Axum listener, graceful shutdown, and
+  honest component readiness.
 
 ## [1.0.0] - 2026-07-15
 

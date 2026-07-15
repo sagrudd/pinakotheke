@@ -5,6 +5,7 @@
 //! This crate never parses cookies, passwords, or session tokens.
 
 use std::{
+    io,
     sync::{Arc, Mutex},
     time::{SystemTime, UNIX_EPOCH},
 };
@@ -14,7 +15,7 @@ use axum::{
     body::Body,
     extract::{Path, Query, State},
     http::{HeaderMap, StatusCode, header},
-    response::Response,
+    response::{Html, Response},
     routing::{get, post},
 };
 use serde::{Deserialize, Serialize};
@@ -81,6 +82,21 @@ struct PublicHealthResponse {
 }
 
 #[derive(Debug, Serialize)]
+struct MonolithReadinessResponse {
+    schema_version: &'static str,
+    status: &'static str,
+    root: &'static str,
+    components: [MonolithComponentReadiness; 3],
+}
+
+#[derive(Debug, Serialize)]
+struct MonolithComponentReadiness {
+    component: &'static str,
+    status: &'static str,
+    detail: &'static str,
+}
+
+#[derive(Debug, Serialize)]
 struct OperationsResponse {
     schema_version: &'static str,
     snapshot: OperationsSnapshot,
@@ -100,6 +116,15 @@ pub type HostObjectOpen = Box<
 /// the stream available only after its injected Monas context is authorized.
 pub struct HostObjectReadBackend {
     open: HostObjectOpen,
+}
+
+/// Serves the initial local monolith until interrupted.
+pub async fn serve(listener: tokio::net::TcpListener) -> io::Result<()> {
+    axum::serve(listener, monolith_router())
+        .with_graceful_shutdown(async {
+            let _ = tokio::signal::ctrl_c().await;
+        })
+        .await
 }
 
 impl HostObjectReadBackend {
@@ -133,6 +158,49 @@ pub fn router() -> Router {
         )
         .route("/api/playback/v1/{playback_id}", get(deliver_playback))
         .with_state(None::<CapturePlans>)
+}
+
+/// Returns the initial locally runnable monolith surface.
+///
+/// This first slice deliberately exposes only public orientation, liveness,
+/// and honest dependency readiness. Authenticated product APIs are added only
+/// when Monas can inject a verified host context.
+pub fn monolith_router() -> Router {
+    Router::new()
+        .route("/", get(monolith_landing))
+        .route("/health", get(health))
+        .route("/ready", get(monolith_readiness))
+}
+
+async fn monolith_landing() -> Html<&'static str> {
+    Html(
+        "<!doctype html><html lang=\"en\"><meta charset=\"utf-8\"><title>Pinakotheke</title><main><h1>Pinakotheke</h1><p>Local service is running.</p><p><a href=\"/ready\">Readiness</a></p></main></html>",
+    )
+}
+
+async fn monolith_readiness() -> Json<MonolithReadinessResponse> {
+    Json(MonolithReadinessResponse {
+        schema_version: "pinakotheke.monolith-readiness.v1",
+        status: "not_ready",
+        root: "Ready",
+        components: [
+            MonolithComponentReadiness {
+                component: "pinakotheke",
+                status: "Ready",
+                detail: "Axum listener and local metadata root are available",
+            },
+            MonolithComponentReadiness {
+                component: "monas_authentication",
+                status: "Not configured",
+                detail: "Authenticated product routes are unavailable",
+            },
+            MonolithComponentReadiness {
+                component: "dasobjectstore",
+                status: "Not configured",
+                detail: "Media ingest and object reads are unavailable",
+            },
+        ],
+    })
 }
 
 /// Returns a host composition with a configured, server-side capture policy.
@@ -759,9 +827,9 @@ mod tests {
     };
 
     use super::{
-        HostObjectReadBackend, router, router_with_cache_aliases, router_with_cache_substitution,
-        router_with_capture_plans, router_with_direct_playback, router_with_image_substitution,
-        router_with_operations, router_with_synoptikon_catalogue,
+        HostObjectReadBackend, monolith_router, router, router_with_cache_aliases,
+        router_with_cache_substitution, router_with_capture_plans, router_with_direct_playback,
+        router_with_image_substitution, router_with_operations, router_with_synoptikon_catalogue,
     };
 
     const CHECKSUM: &str =
@@ -983,6 +1051,26 @@ mod tests {
     #[test]
     fn creates_a_router_without_starting_a_listener() {
         let _router = router();
+    }
+
+    #[tokio::test]
+    async fn monolith_readiness_is_honest_until_authorities_are_composed() {
+        let response = monolith_router()
+            .oneshot(
+                Request::builder()
+                    .uri("/ready")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = to_bytes(response.into_body(), 8192).await.unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        assert_eq!(json["status"], "not_ready");
+        assert_eq!(json["components"][0]["status"], "Ready");
+        assert_eq!(json["components"][1]["status"], "Not configured");
+        assert_eq!(json["components"][2]["status"], "Not configured");
     }
 
     #[tokio::test]
