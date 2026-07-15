@@ -460,7 +460,7 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   only previously displayed/observed thumbnails may be cached automatically,
   and every substitution is per-site opt-in, transparent, same-instance, and
   fail-open to the origin.
-  Completed in this run: a capacity-bounded server index rejects signed query
+  Completed in `70cc536`: a capacity-bounded server index rejects signed query
   keys and immutable identity conflicts, separates observed thumbnails from
   explicitly opened originals, supports exact/origin invalidation and
   checksum-bound offline state, and requires host actor/pairing/instance/site/
