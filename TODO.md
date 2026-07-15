@@ -696,7 +696,20 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
 
 ## Post-1.0
 
-- [ ] **XIMG-090 P0 — Scaffold the runnable Pinakotheke monolith.** Add
+- [x] **XIMG-090 P0 — Scaffold the runnable Pinakotheke monolith.** Completed
+  in ``2cfa1e1``. ``pinakotheke serve`` now resolves ``$HOME/.x-img`` by
+  default, requires an absolute non-symlink root, creates only private
+  mode-``0700`` ``config``, ``state``, ``run``, and ``logs`` metadata
+  directories, and starts a graceful Axum HTTP/1 listener on
+  ``127.0.0.1:8731``. Non-loopback binding fails unless the operator supplies
+  the explicit unauthenticated-network acknowledgement, which also emits a
+  warning. Public landing, liveness, and bounded readiness routes report
+  Pinakotheke ``Ready`` but Monas authentication and DASObjectStore ``Not
+  configured``; authenticated/media routes are not falsely mounted. A real
+  local smoke run verified HTTP responses, permissions, and Control-C shutdown.
+  Workspace tests, strict clippy, wasm, quality/audit, and local Docker Sphinx
+  build/run passed. XIMG-091 is the next dependency-ready monolith slice.
+  Original acceptance: add
   ``pinakotheke serve`` with a loopback-only default, validated ``~/.x-img``
   root layout, Axum listener, coarse health/readiness, graceful shutdown, and
   tests proving non-loopback binds require an explicit reviewed override. The
