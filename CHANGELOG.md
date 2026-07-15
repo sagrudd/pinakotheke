@@ -15,7 +15,8 @@ All notable changes to Pinakotheke will be documented in this file. The project 
   honest component readiness.
 - Add XIMG-091's reviewed local DASObjectStore profile plan, authority-owned
   provisioning and discovery, stable secret-free destination selection, and
-  honest monolith storage readiness.
+  honest monolith storage readiness, with bounded actionable authority failure
+  diagnostics and an isolated-home Docker acceptance proof.
 
 ## [1.0.0] - 2026-07-15
 

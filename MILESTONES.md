@@ -574,13 +574,14 @@ ordinary writable media folder. Secret DASObjectStore configuration and keys
 remain in an OS-private configuration root such as
 ``~/.config/dasobjectstore``.
 
-The XIMG-091 implementation is available in ``7b5423a`` and consumes the
+XIMG-091 is complete in ``30b18d1`` (core implementation ``7b5423a``) and consumes the
 DASObjectStore ``0.84.0`` local-profile authority at ``0d71b2a1``. It provides
 reviewed CLI orchestration, strict secret-free identity validation, stable
-selection persistence, and storage-aware readiness. Docker-backed acceptance
-and the local documentation-container proof remain required before the item is
-closed; an unresponsive Docker Desktop backend prevented that evidence on
-2026-07-15.
+selection persistence, bounded authority diagnostics, and storage-aware
+readiness. An isolated-home Docker proof exercised provision, rediscovery,
+mode-``0600`` selection, monolith readiness, graceful shutdown, and retained
+state after profile shutdown. The pinned local Sphinx container build and run
+passed independently of hosted CI.
 
 Exit criteria:
 

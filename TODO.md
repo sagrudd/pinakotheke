@@ -715,7 +715,8 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   tests proving non-loopback binds require an explicit reviewed override. The
   first slice may expose only public health plus unavailable component status;
   it must not fake Monas authentication or DASObjectStore readiness.
-- [ ] **XIMG-091 P0 — Provision the managed local DASObjectStore profile.** Add
+- [x] **XIMG-091 P0 — Provision the managed local DASObjectStore profile.** Completed
+  in ``30b18d1`` (core implementation ``7b5423a``). Add
   an explicit bounded macOS development profile rooted at
   ``~/.x-img/dasobjectstore`` with private credentials under
   ``~/.config/dasobjectstore``. Provision/discover a named logical ObjectStore
@@ -726,10 +727,14 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   commands delegate to the canonical helper, validate its versioned
   secret-free identity, atomically retain the stable selection, and expose
   honest storage readiness. Unit, workspace, clippy, wasm, quality, audit, and
-  pinned sibling checks pass. Remaining acceptance evidence: Docker Desktop's
-  backend was unresponsive on 2026-07-15, so run the real isolated-home
-  provision/status/down proof and the mandatory local Sphinx container
-  build/run before marking this item complete.
+  pinned sibling checks pass. After an aggressive Docker Desktop restart, a
+  clean isolated home proved authority-owned provision and rediscovery, stable
+  endpoint ``local-docker-314985151`` plus ObjectStore ``pinakotheke_local``,
+  mode-``0600`` selection state, storage ``Ready`` with Monas still honestly
+  ``Not configured``, graceful monolith shutdown, and non-destructive profile
+  shutdown. The pinned local Sphinx container build and run also passed. The
+  final diagnostic fix exposes only one bounded authority-error line instead
+  of an opaque exit status.
 - [ ] **XIMG-092 P0 — Compose Monas authentication into the monolith.** Mount
   the Pinakotheke product through Monas/Prosopikon, inject authenticated host
   context into product APIs, and prove login/session/logout and direct-route
