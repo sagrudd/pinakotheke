@@ -430,16 +430,21 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   copyrighted fixture is used. Native, wasm, quality, contract, and local Docker
   Sphinx verification passed. See `docs/video-normalization.rst`.
 
-- [ ] **XIMG-069 P0 — Prove normalized Firefox playback and delivery.** Depends
+- [x] **XIMG-069 P0 — Prove normalized Firefox playback and delivery.** Depends
   on XIMG-034/067/068. Direct authenticated playback is independent of later
   Firefox cache substitution (XIMG-072). Acceptance requires DAS commit, checksum, probe, real
   Firefox playback, MIME/ETag/Content-Length, conditional requests, byte
   ranges, seek/pause/resume, authorization, and fail-open tests; blocked or
   failed/DRM media remains explicit and never falls back as ready source-only
   playback.
-  Planning evidence: `docs/adr/0005-video-selection-normalization.md` in commit
-  `5ad8eee`; direct delivery contract is implemented in this run and awaits the
-  host HTTPS route plus real Firefox proof.
+  Completed in this run: an actor-bound Axum ``/api/playback/v1/{playback_id}``
+  host adapter streams only the scoped DASObjectStore response and preserves
+  MIME, ETag, conditional, single-range, and explicit error behavior. The
+  route tests reject unauthenticated/multi-range requests and prove a verified
+  partial stream. Firefox 152.0.6 played a Docker-generated ephemeral
+  normalized MP4 through the checked-in local harness, with metadata, range,
+  seek, pause, and resume evidence. No test video, browser profile, source URL,
+  or credential is retained. See `docs/direct-playback.rst`.
 
 ## 0.7.0 — External cache
 

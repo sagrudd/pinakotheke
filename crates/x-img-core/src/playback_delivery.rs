@@ -30,6 +30,7 @@ pub struct DirectPlaybackGrant {
 pub struct PlaybackHeaders {
     pub content_type: String,
     pub content_length: u64,
+    pub total_length: u64,
     pub etag: String,
     pub accept_ranges: bool,
     pub content_range: Option<ByteRange>,
@@ -125,6 +126,7 @@ impl<B: ObjectReadBackend> DirectPlaybackService<B> {
                     headers: PlaybackHeaders {
                         content_type: metadata.content_type,
                         content_length: metadata.content_length,
+                        total_length: metadata.total_length,
                         etag: metadata.etag,
                         accept_ranges: true,
                         content_range: metadata.content_range,

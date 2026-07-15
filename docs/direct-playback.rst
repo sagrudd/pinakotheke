@@ -28,12 +28,29 @@ supports conditional requests using the same ETag.  Multiple ranges and invalid
 or unsatisfiable ranges are rejected rather than assembled into an unbounded
 multipart response.
 
-The current Rust core proves these rules with synthetic authority responses;
-the host HTTPS route and real Firefox range playback are the remaining XIMG-069
-proof.  No real video, user URL, cookie, credential, or source fallback is in
-the fixtures.  The authoritative DASObjectStore read wire route remains a
+The Axum host adapter accepts only a server-side scoped DASObjectStore read
+callback and a host-injected Monas context.  It emits the authorized object
+stream at ``GET /api/playback/v1/{playback_id}``; it has no origin URL or
+fallback behaviour.  The host terminates HTTPS and owns the authenticated DAS
+transport.  The authoritative DASObjectStore read wire route remains a
 separate versioned integration concern, so the public x-img build carries no
 sibling path dependency.
+
+Real Firefox evidence
+---------------------
+
+Use an ephemeral normalized MP4 from the approved worker or a DAS-managed
+staging mount; do not copy it into this repository or a browser profile:
+
+.. code-block:: console
+
+   python3 scripts/firefox/check_normalized_playback.py --video /ephemeral/normalized.mp4
+
+The local harness starts a temporary loopback presenter, makes Firefox request
+the same MIME/range shape as the delivery route, and proves metadata, a byte
+range, seek, pause, and resume.  It deletes its temporary profile when it
+finishes.  HTTP authorization is proven independently by the Axum route test;
+the browser never receives a Monas or DAS credential.
 
 Verification
 ------------
@@ -41,6 +58,7 @@ Verification
 .. code-block:: console
 
    cargo +1.97.0 test -p x-img-core playback_delivery
+   cargo +1.97.0 test -p x-img-api direct_playback
    docker build --pull --progress=plain -f docs/Dockerfile -t x-img-docs:check .
    docker run --rm x-img-docs:check
 

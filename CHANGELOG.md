@@ -7,10 +7,12 @@ All notable changes to x-img will be documented in this file. The project uses
 
 ### Planning
 
-- Added XIMG-069's direct authenticated normalized-video delivery contract.
-  Ready, actor-bound ObjectStore grants preserve single-range, MIME, length,
-  ETag, conditional, and unavailable semantics without origin fallback or a
-  dependency on later Firefox cache substitution.
+- Completed XIMG-069's direct authenticated normalized-video delivery route
+  and Firefox proof. Ready, actor-bound ObjectStore grants preserve
+  single-range, MIME, length, ETag, conditional, and unavailable semantics
+  without origin fallback or a dependency on later Firefox cache substitution.
+  The local Firefox harness uses only an ephemeral normalized file and cleans
+  its browser profile after verifying metadata, range, seek, pause, and resume.
 - Added XIMG-068's paired-device Docker FFmpeg adapter. It requires an
   approved pairing, digest-pinned image, resource limits, isolated scratch,
   structured network-disabled invocation, bounded ObjectStore ingest, probe

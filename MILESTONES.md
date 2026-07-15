@@ -4,7 +4,7 @@ Status: planning baseline
 
 Version: 0.2.0
 
-Updated: 2026-07-14
+Updated: 2026-07-15
 
 Product identity: `x-img` is the planning/repository name until the coordinated
 v1.0.0 migration to the Pinakotheke brand and target repository slug
@@ -310,6 +310,12 @@ Goal: deliver the dense, fast visual browser.
 - XIMG-054 implements word-first review states and reversible batch actions
   (commit `84e11ca`), including a toggleable observed-thumbnail versus
   committed-ObjectStore-original distinction without mutating bytes.
+- XIMG-069 implements direct normalized-video delivery (this run): a
+  host-authenticated Axum route maps an actor-bound ready rendition only to a
+  scoped DASObjectStore stream, retaining MIME/length/ETag/single-range and
+  conditional behavior without an origin fallback. Real Firefox evidence uses
+  a Docker-generated ephemeral normalized MP4 and proves metadata, range,
+  seek, pause, and resume without retaining a fixture or browser profile.
 
 Exit criteria:
 
