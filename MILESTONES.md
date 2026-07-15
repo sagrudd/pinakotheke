@@ -328,6 +328,9 @@ Exit criteria:
   are designed explicitly;
 - thumbnails and originals are served from DASObjectStore through authorized,
   range-capable URLs; and
+- direct normalized-video playback is proven through the authenticated x-img
+  delivery boundary before, and independently from, any optional Firefox cache
+  substitution; and
 - endpoint/device inventory and ObjectStore selection use accessible
   Mnemosyne tables/task panes, show endpoint and store together, and handle
   writable/read-only, health, capacity, pairing, TLS, and reconnect states

@@ -42,6 +42,7 @@ Configuration
    video-candidates
    normalized-video-profiles
    video-normalization
+   direct-playback
    identity-migration
 
 Release and quality

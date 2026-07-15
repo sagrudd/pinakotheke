@@ -231,6 +231,9 @@ rollback constraints.
    pinned containerized FFmpeg adapter. DRM, unsupported media, rights-
    uncertain sources, and source-only renditions remain explicitly blocked or
    failed; browser capture does not avoid platform terms.
+10. Direct normalized-video playback is host-authenticated and ObjectStore-only;
+    it preserves verified range and ETag behavior without enabling a website
+    cache rule or falling back to an origin URL.
 
 ## Versioning
 

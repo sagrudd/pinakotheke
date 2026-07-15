@@ -15,6 +15,7 @@ pub mod host_product;
 pub mod instagram_discovery;
 pub mod object_ingest;
 pub mod object_read;
+pub mod playback_delivery;
 pub mod reconciliation;
 pub mod review_admission;
 pub mod scheduler;
