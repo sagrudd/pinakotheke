@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 //! Review-queue admission after verified catalogue commit only.
+#![allow(missing_docs)]
 
 use crate::acquisition::{Acquisition, AcquisitionState, ReviewState, VerifiedObject};
 use std::collections::BTreeMap;
@@ -63,6 +64,11 @@ impl ReviewQueue {
     #[must_use]
     pub fn len(&self) -> usize {
         self.items.len()
+    }
+
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.items.is_empty()
     }
 }
 fn safe(value: &str) -> bool {

@@ -7,6 +7,7 @@ All notable changes to x-img will be documented in this file. The project uses
 
 ### Planning
 
+- Added XIMG-061's host-mediated extension pairing contract.
 - Added XIMG-062's explicit per-site Firefox policy controls.
 - Added XIMG-063's explicit, versioned Firefox site-adapter registry.
 - Added XIMG-054's review states, reversible batch actions, and ObjectStore

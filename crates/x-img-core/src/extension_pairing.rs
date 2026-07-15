@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 //! Host-mediated, metadata-only Firefox pairing contract.
-use std::collections::{BTreeMap, BTreeSet};
+#![allow(missing_docs)]
+use std::collections::BTreeMap;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Pairing {
     pub profile_id: String,

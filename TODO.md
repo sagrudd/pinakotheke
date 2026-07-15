@@ -357,10 +357,10 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   contains no automatic opening, hidden traversal, bulk crawling, simulated
   browsing, cookie extraction, or credential forwarding.
 
-- [ ] **XIMG-061 P0 — Implement Monas-mediated extension pairing.**
-  Pair one extension profile with one x-img instance using revocable,
-  least-privilege credentials. Acceptance: origin binding, expiry, rotation,
-  revocation, CSRF, replay, and local-network threat tests pass.
+- [x] **XIMG-061 P0 — Implement Monas-mediated extension pairing.** Completed
+  in `c6f4692`; the host pairing contract binds one profile/origin and
+  fixture-tests expiry, rotation, revocation, CSRF, replay, and local-network
+  rejection without extension-side credentials.
 
 - [x] **XIMG-062 P1 — Implement trivial website policy UI.** Completed in
   `bb14d50`; options disclose the exact HTTPS origin and consequences before
