@@ -7,6 +7,8 @@ All notable changes to x-img will be documented in this file. The project uses
 
 ### Planning
 
+- Reframed Instagram as an explicit Firefox site-policy path; the dedicated
+  Instagram API connector is now optional future work.
 - Added XIMG-061's host-mediated extension pairing contract.
 - Added XIMG-062's explicit per-site Firefox policy controls.
 - Added XIMG-063's explicit, versioned Firefox site-adapter registry.

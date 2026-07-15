@@ -279,8 +279,9 @@ Exit criteria:
 - XIMG-046 implements verified-commit-only new-item admission (commit
   `3ac77e9`), retaining source grouping and discovery time while excluding
   interrupted work from review cards.
-- official, user-authorized Instagram connector supports the account/media
-  types permitted by the approved API and records unsupported cases clearly;
+- Instagram is an explicitly enabled Firefox site policy for the first product
+  path; a future official API connector is optional and records unsupported
+  account/media classes clearly;
 - `Refresh accounts` schedules all enabled connectors once, reports per-account
   progress, respects rate/cost budgets, supports cancellation, and prevents
   overlapping refreshes for the same account;

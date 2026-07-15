@@ -29,8 +29,11 @@ primary sources and obtain any required platform approval before live use.
   description, approval for substantive changes, private credentials, and
   compliance with all incorporated policies. See [X Developer Policy](https://docs.x.com/developer-terms/policy),
   especially the access and credential requirements.
-- Instagram acquisition may use only a current, approved Meta API product and
-  an official user-authorized flow. The initial implementation must not assume
+- A dedicated Instagram connector may use only a current, approved Meta API
+  product and an official user-authorized flow. It is no longer required for
+  the first product path: Instagram may be configured as an explicit Firefox
+  website policy subject to the extension's observed-media-only, no-cookie,
+  no-automation, fail-open rules. The initial implementation must not assume
   that a consumer or private account is addressable. The official Meta API
   collection documents Facebook Login access through a managed Page and an
   Instagram professional account, while the Instagram Login surface has its own
@@ -186,7 +189,9 @@ before XIMG-040 or XIMG-043 implementation:
 5. Has the intended use case been accepted by each platform in writing where
    the terms or API review require approval?
 
-Until these are answered, X and Instagram remain fixture-only adapters. Synthetic
+Until these are answered, X remains fixture-only and a dedicated Instagram API
+connector remains disabled. The explicit Firefox site-policy path remains
+subject to platform terms and user rights; it is not an API bypass. Synthetic
 or redistributable fixtures may cover pagination, duplicates, URL rotation,
 deletion, rate limits, token expiry, malformed responses, and crash recovery;
 they must not contain real media, account lists, tokens, cookies, or private

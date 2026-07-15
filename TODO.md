@@ -280,19 +280,20 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   entries settle once in the fixture test. It has no live X request, byte
   transfer, or ADR 0002 policy-gate bypass.
 
-- [ ] **XIMG-043 P0 — Research and implement approved Instagram auth/API.**
-  Freeze implementation to the capabilities permitted by XIMG-002. Acceptance:
-  unsupported account/media classes are explicit and no browser credential or
-  scraping fallback is introduced implicitly.
+- [x] **XIMG-043 P0 — Retire the dedicated Instagram API connector path.**
+  Completed in this roadmap update; Instagram is no longer a required social
+  API adapter. Its supported path is an explicitly enabled Firefox site policy
+  with observed-media-only capture, no cookie/credential forwarding, no
+  automatic traversal, and policy/rights disclosure. Official API research may
+  resume later as an optional adapter, never as a fallback requirement.
 
-- [x] **XIMG-044 P0 — Implement incremental Instagram media discovery.**
+- [x] **XIMG-044 P0 — Archive fixture-only Instagram media discovery.**
   Completed in `298d2c5`; synthetic page planning covers single-media posts,
   multi-media carousels, reels/videos, cursor pagination, page/candidate
   budgets, supported image/MP4 variant choice, provenance, and XIMG-023
   reconciliation replay. Opaque fixture credential expiry/revocation fails
   closed to reauthorization without accepting a token. No Instagram/Meta API
-  request, browser fallback, byte transfer, or XIMG-043/ADR 0002 gate bypass is
-  present.
+  request, browser fallback, byte transfer, or policy-gate bypass is present.
 
 - [x] **XIMG-045 P0 — Implement one-click account refresh.** Completed in
   `63c2672`; one authenticated actor schedules every enabled X/Instagram

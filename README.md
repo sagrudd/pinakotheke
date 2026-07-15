@@ -104,12 +104,11 @@ feeds canonical identity plus checksum into the existing idempotency boundary.
 It does not call X or transfer media while ADR 0002 remains open. See
 [incremental X media discovery](docs/x-media-discovery.rst).
 
-Instagram has an equivalent fixture-only incremental discovery planner for
-posts, carousels, and reels/videos. It enforces cursors and budgets, selects
-supported image/video variants, records provenance, makes opaque credential
-expiry/revocation explicit, and uses the same reconciliation boundary. It does
-not call Instagram or Meta while XIMG-043 and ADR 0002 remain open. See
-[incremental Instagram media discovery](docs/instagram-media-discovery.rst).
+Instagram is supported first as an explicitly enabled Firefox website policy:
+the extension may submit only media actually displayed to the user, never
+forwards cookies or credentials, never automates browsing, and fails open to
+the origin. A dedicated Instagram API connector is optional future work, not a
+requirement for this path.
 
 One authenticated refresh action now has a fixture-tested orchestration model:
 it selects all enabled social accounts, coalesces repeat presses, exposes
