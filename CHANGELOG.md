@@ -13,6 +13,9 @@ All notable changes to x-img will be documented in this file. The project uses
 - Add validated, inert Pinakotheke 1.0 Monas and DASObjectStore registration
   candidates while preserving the active x-img registrations and historical
   authority identity.
+- Preserve Firefox pairing, site policy, endpoint, and ObjectStore state across
+  extension updates, and add a canonical manifest candidate retaining the
+  shipped Gecko update identity and least-privilege permission surface.
 
 ## [0.9.0] - 2026-07-15
 

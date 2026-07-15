@@ -515,6 +515,9 @@ the canonical public GitHub repository. It must pass before the v1 tag.
 The canonical Monas product and scoped DASObjectStore principal now have
 validated inert candidates; activation remains an authority-owned cutover step,
 and legacy registrations plus historical object/audit identities stay intact.
+The Firefox cutover candidate retains the shipped Gecko ID and least-privilege
+surface; its executable upgrade proof preserves pairing, site opt-ins,
+endpoint, and ObjectStore selection instead of resetting extension storage.
 
 Exit criteria:
 

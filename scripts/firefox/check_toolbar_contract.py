@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import json
 import pathlib
+import subprocess
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 EXTENSION = ROOT / "firefox-extension"
@@ -34,6 +35,7 @@ def main() -> int:
         assert forbidden_field not in diagnostic_block
     assert "siteDiagnostics" in diagnostic_block
     assert "some(site => site.origin === origin)" in diagnostic_block
+    subprocess.run(["node", "scripts/firefox/check_identity_upgrade.mjs"], cwd=ROOT, check=True)
     print("Firefox toolbar contract passed: popup, controls, labels, bounded redacted diagnostics")
     return 0
 

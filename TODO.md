@@ -652,6 +652,10 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   DASObjectStore registration candidates. They preserve authentication, scope,
   destination, quota, and legacy audit/object identities but cannot mount a
   product, activate a principal, or issue a credential before cutover.
+  The fourth delivery slice fixes update-time storage reset and adds a
+  Pinakotheke Firefox manifest candidate retaining the shipped Gecko ID,
+  permissions, CSP, and entry points. Executable synthetic upgrade proof
+  preserves pairing, site opt-ins, endpoint, and ObjectStore selection exactly.
 
 ## Post-1.0
 

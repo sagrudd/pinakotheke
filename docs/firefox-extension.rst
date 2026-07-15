@@ -26,3 +26,27 @@ shared scheduler; this is never a direct browser payload upload. See
 The toolbar now opens the explicit per-site cache control and diagnostic
 surface described in :doc:`firefox-toolbar`. Image, normalized-MP4, and
 fail-closed segmented behavior remain governed by their adapter/authority gates.
+
+Pinakotheke upgrade identity
+----------------------------
+
+The Gecko extension ID ``x-img@example.invalid`` shipped in the 0.9 release and
+is therefore a durable update identity, despite containing the legacy planning
+name. Pinakotheke 1.0 retains it. Changing the ID would create a different
+extension, strand existing installations, and lose Firefox-managed upgrade
+continuity.
+
+The inert canonical candidate is
+``packaging/firefox/pinakotheke-manifest.v1.candidate.json``. It changes the
+listing name and description while retaining the exact Gecko ID, permissions,
+optional origins, CSP, minimum Firefox version, and extension entry points. It
+is not included in 0.9 XPIs. The executable upgrade contract confirms that an
+update preserves pairing, explicitly enabled site rules, endpoint ID, and
+ObjectStore ID exactly. Fresh-install defaults are written only when their keys
+are absent; an extension update never resets stored configuration.
+
+Run the focused check locally with:
+
+.. code-block:: console
+
+   node scripts/firefox/check_identity_upgrade.mjs

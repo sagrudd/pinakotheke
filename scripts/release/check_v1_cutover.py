@@ -38,6 +38,7 @@ def current_checks(*, github: bool) -> list[Check]:
     monas = load_json(ROOT / "contracts/monas/x-img-product-bootstrap.v1.json")
     das = load_json(ROOT / "contracts/dasobjectstore/x-img-application-identity.v1.json")
     extension = load_json(ROOT / "firefox-extension/manifest.json")
+    extension_candidate = load_json(ROOT / "packaging/firefox/pinakotheke-manifest.v1.candidate.json")
     monas_candidate = load_json(ROOT / "contracts/monas/pinakotheke-product-bootstrap.v1.candidate.json")
     das_candidate = load_json(
         ROOT / "contracts/dasobjectstore/pinakotheke-application-identity.v1.candidate.json"
@@ -72,6 +73,11 @@ def current_checks(*, github: bool) -> list[Check]:
               das_candidate.get("application_id") == "pinakotheke" and
               das_candidate.get("active") is False,
               "inert canonical Monas and DASObjectStore candidates are validated"),
+        Check("firefox-candidate", extension_candidate.get("name") == "Pinakotheke" and
+              extension_candidate.get("version") == "1.0.0" and
+              extension_candidate.get("browser_specific_settings", {}).get("gecko", {}).get("id") ==
+              extension.get("browser_specific_settings", {}).get("gecko", {}).get("id"),
+              "canonical Firefox candidate retains the published Gecko identity"),
     ]
     if github:
         checks.append(github_check())

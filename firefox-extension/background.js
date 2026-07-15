@@ -1,8 +1,16 @@
 // SPDX-License-Identifier: MPL-2.0
 // No page cookies, webRequest interception, credentials, or automatic navigation.
-browser.runtime.onInstalled.addListener(() =>
-  browser.storage.local.set({ instanceUrl: "", instanceId: "", pairId: "", sites: [] }),
-);
+async function initializeStorage(details) {
+  if (details.reason !== "install") return;
+  const existing = await browser.storage.local.get(["instanceUrl", "instanceId", "pairId", "sites"]);
+  const defaults = { instanceUrl: "", instanceId: "", pairId: "", sites: [] };
+  const missing = Object.fromEntries(
+    Object.entries(defaults).filter(([key]) => existing[key] === undefined),
+  );
+  if (Object.keys(missing).length) await browser.storage.local.set(missing);
+}
+
+browser.runtime.onInstalled.addListener(initializeStorage);
 
 async function matchingAdapter(url) {
   const registry = await fetch(browser.runtime.getURL("adapters.json")).then(response => response.json());
