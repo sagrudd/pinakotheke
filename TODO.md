@@ -549,7 +549,17 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   fmt/check/test/clippy, wasm check, quality and public-contract checks, all
   nine fault cases, prohibited-name scan, and the pinned Sphinx container build
   plus run passed locally on 2026-07-15; hosted CI was not required.
-- [ ] **XIMG-081 P0 — Add migration/export/restore tests.**
+- [x] **XIMG-081 P0 — Add migration/export/restore tests.**
+  Delivered in ``a0fd895``. A strict metadata-only snapshot exports canonical
+  JSON plus an independent SHA-256, restores only a validated review candidate,
+  and performs idempotent copy-on-write legacy migration with an exact backup.
+  Native tests preserve configuration, historic labels, canonical media and
+  endpoint/ObjectStore/object/checksum identities; require reviewed Firefox
+  re-pairing; and reject corruption, unknown fields, unsafe metadata, and
+  future majors before mutation. Workspace fmt/check/test/clippy, wasm,
+  quality, public-contract, nine-case fault/Firefox, privacy, and pinned local
+  Sphinx container build/run checks passed on 2026-07-15. Hosted CI was not
+  required.
 - [ ] **XIMG-082 P0 — Implement approved deletion/compliance reconciliation.**
 - [ ] **XIMG-083 P1 — Add redacted telemetry, health, and audit surfaces.**
 - [ ] **XIMG-084 P1 — Complete privacy, security, accessibility, and license audits.**
