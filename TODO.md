@@ -560,7 +560,18 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   quality, public-contract, nine-case fault/Firefox, privacy, and pinned local
   Sphinx container build/run checks passed on 2026-07-15. Hosted CI was not
   required.
-- [ ] **XIMG-082 P0 — Implement approved deletion/compliance reconciliation.**
+- [x] **XIMG-082 P0 — Implement approved deletion/compliance reconciliation.**
+  Delivered in ``37ae847``. The metadata-only lifecycle requires a bounded host
+  policy approval, tombstones catalogue visibility before any deletion, keeps
+  catalogue-only and catalogue-plus-object scopes distinct, and binds removal
+  to the exact endpoint/ObjectStore/object/checksum. Pending or still-present
+  authority evidence remains retryable; only a matching DASObjectStore result
+  becomes ``Removal verified`` and mismatches become ``Conflict``. Four native
+  tests prove approval, ordering, scope, crash/replay idempotency, exact-object
+  verification, and redacted bounded audit events. Workspace fmt/check/test/
+  clippy, wasm, quality, public-contract, nine-case fault/Firefox, privacy, and
+  pinned local Sphinx container build/run passed on 2026-07-15; hosted CI was
+  not required.
 - [ ] **XIMG-083 P1 — Add redacted telemetry, health, and audit surfaces.**
 - [ ] **XIMG-084 P1 — Complete privacy, security, accessibility, and license audits.**
 - [ ] **XIMG-085 P1 — Package Monas product and Firefox extension.**
