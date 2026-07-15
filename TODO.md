@@ -399,15 +399,15 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   Acceptance: site, page, canonical media URL, discovery time, and adapter
   version are retained; committed aliases deduplicate account-connector media.
 
-- [ ] **XIMG-066 P0 — Define user-selected video candidate plans.** Depends on
-  XIMG-037/060/062/063/064. Offer a DownloadThemAll-like task pane only for
-  observed or explicitly selected candidates; show title/source, duration,
-  dimensions, container/codecs, size, audio/subtitles, policy/support,
-  endpoint/ObjectStore, and intended profile. Acceptance rejects automatic
-  opening, hidden traversal, playlist/channel bulk discovery, DRM bypass, and
-  cookie/credential extraction, and requires explicit confirmation.
-  Planning evidence: `docs/adr/0005-video-selection-normalization.md` in commit
-  `5ad8eee`.
+- [x] **XIMG-066 P0 — Define user-selected video candidate plans.** Completed
+  in `1b1835a`; metadata-only candidate plans show the required review details,
+  bind the reviewed endpoint/ObjectStore and intended Firefox profile, require
+  explicit confirmation, and block unobserved, rights-disallowed, DRM,
+  unsupported segmented, and non-video-destination candidates. Aggregate codec
+  gaps are deterministic and privacy-preserving; project-level prioritisation
+  is tracked in [GitHub issue #1](https://github.com/sagrudd/x-img/issues/1)
+  without user URLs, titles, credentials, cookies, or media. Native, wasm,
+  quality, contract, and local Docker Sphinx verification passed.
 
 - [ ] **XIMG-067 P0 — Define versioned normalized video objects and profiles.**
   Depends on XIMG-033/034/066. Specify `pinakotheke-video-webm-v1` and

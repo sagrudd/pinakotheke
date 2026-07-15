@@ -46,6 +46,10 @@ parameters, cookies, authorization, credentials, and browsing history must
 not be placed in project tickets or diagnostics.  Maintainers review an
 aggregate recurring gap, then open or update a redacted GitHub issue and add a
 synthetic fixture before implementing an adapter or playback profile.
+The project-level tracker is `GitHub issue 1`_; it accepts only this aggregate
+triage information.
+
+.. _GitHub issue 1: https://github.com/sagrudd/x-img/issues/1
 
 Verification
 ------------
