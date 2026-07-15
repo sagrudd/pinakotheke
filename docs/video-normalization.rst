@@ -44,6 +44,9 @@ then cleans scratch.  After a crash, an unfinished job is not assumed committed
 and is never resumed from stale local bytes; it moves to ``Reconciliation
 required``.  A retry must create a new authorized attempt after revalidating
 policy, destination, quota, pairing, image digest, and source identity.
+The worker emits the Normalizing, Probing, Ingesting, and terminal state events
+through a host progress sink so the Monas task pane can report progress without
+receiving payload bytes or container logs.
 
 Successful normalization stops at ``Awaiting Firefox playback``.  It is not
 catalogue-ready until XIMG-069 proves authorized Firefox MIME/range playback.

@@ -194,6 +194,23 @@ pub struct NormalizationResult {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NormalizationProgressEvent {
+    pub job_id: String,
+    pub phase: NormalizationPhase,
+    pub detail: Option<String>,
+}
+
+pub trait NormalizationProgressSink {
+    fn report(&mut self, event: NormalizationProgressEvent);
+}
+
+struct NoProgress;
+
+impl NormalizationProgressSink for NoProgress {
+    fn report(&mut self, _: NormalizationProgressEvent) {}
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DockerRuntimeError {
     Unavailable,
     Failed,
@@ -415,6 +432,19 @@ impl<R: DockerRuntime> DockerFfmpegAdapter<R> {
         ingestor: &mut StreamingObjectIngestor<B>,
         cancellation: &CancellationToken,
     ) -> Result<NormalizationResult, NormalizationError> {
+        self.normalize_and_ingest_with_progress(plan, ingestor, cancellation, &mut NoProgress)
+    }
+
+    pub fn normalize_and_ingest_with_progress<
+        B: ObjectIngestBackend,
+        P: NormalizationProgressSink,
+    >(
+        &mut self,
+        plan: &PairedDeviceNormalizationPlan,
+        ingestor: &mut StreamingObjectIngestor<B>,
+        cancellation: &CancellationToken,
+        progress: &mut P,
+    ) -> Result<NormalizationResult, NormalizationError> {
         let invocations = match Self::build_invocations(plan) {
             Ok(invocations) => invocations,
             Err(error) => {
@@ -422,13 +452,15 @@ impl<R: DockerRuntime> DockerFfmpegAdapter<R> {
                 return Err(error);
             }
         };
-        let result = (|| {
+        let result: Result<NormalizationResult, NormalizationError> = (|| {
+            report_progress(progress, plan, NormalizationPhase::Normalizing, None);
             self.runtime
                 .run(&invocations[0], cancellation)
                 .map_err(NormalizationError::Runtime)?;
             self.runtime
                 .run(&invocations[1], cancellation)
                 .map_err(NormalizationError::Runtime)?;
+            report_progress(progress, plan, NormalizationPhase::Probing, None);
             let probe_json = self
                 .runtime
                 .run(&invocations[2], cancellation)
@@ -442,6 +474,7 @@ impl<R: DockerRuntime> DockerFfmpegAdapter<R> {
             let (checksum, size) = checksum_and_size(&normalized_path)?;
             let probe = parse_probe(&probe_json, plan, profile.content_type, checksum, size)?;
             enforce_scratch_limit(plan, &[&normalized_path, &poster_path])?;
+            report_progress(progress, plan, NormalizationPhase::Ingesting, None);
             let normalized_video = ingest_file(
                 ingestor,
                 plan,
@@ -476,15 +509,44 @@ impl<R: DockerRuntime> DockerFfmpegAdapter<R> {
         })();
         let cleanup = cleanup_scratch(plan);
         match (result, cleanup) {
-            (Ok(result), Ok(())) => Ok(result),
+            (Ok(result), Ok(())) => {
+                report_progress(
+                    progress,
+                    plan,
+                    NormalizationPhase::AwaitingFirefoxPlayback,
+                    None,
+                );
+                Ok(result)
+            }
             (Ok(_), Err(error)) => Err(error),
-            (Err(error), _) => Err(error),
+            (Err(error), _) => {
+                let phase = if error == NormalizationError::Runtime(DockerRuntimeError::Cancelled) {
+                    NormalizationPhase::Cancelled
+                } else {
+                    NormalizationPhase::Failed
+                };
+                report_progress(progress, plan, phase, Some(error.to_string()));
+                Err(error)
+            }
         }
     }
 
     pub fn into_runtime(self) -> R {
         self.runtime
     }
+}
+
+fn report_progress<P: NormalizationProgressSink>(
+    sink: &mut P,
+    plan: &PairedDeviceNormalizationPlan,
+    phase: NormalizationPhase,
+    detail: Option<String>,
+) {
+    sink.report(NormalizationProgressEvent {
+        job_id: plan.job_id.clone(),
+        phase,
+        detail,
+    });
 }
 
 fn validate_plan(plan: &PairedDeviceNormalizationPlan) -> Result<(), NormalizationError> {
@@ -809,6 +871,15 @@ mod tests {
     }
 
     #[derive(Default)]
+    struct Progress(Vec<NormalizationProgressEvent>);
+
+    impl NormalizationProgressSink for Progress {
+        fn report(&mut self, event: NormalizationProgressEvent) {
+            self.0.push(event);
+        }
+    }
+
+    #[derive(Default)]
     struct Backend;
 
     impl ObjectIngestBackend for Backend {
@@ -918,10 +989,29 @@ mod tests {
         fs::write(plan.scratch_root.join("poster.webp"), b"poster").expect("poster fixture");
         let mut adapter = DockerFfmpegAdapter::new(FixtureRuntime::default());
         let mut ingestor = StreamingObjectIngestor::new(Backend);
+        let mut progress = Progress::default();
         let result = adapter
-            .normalize_and_ingest(&plan, &mut ingestor, &CancellationToken::new())
+            .normalize_and_ingest_with_progress(
+                &plan,
+                &mut ingestor,
+                &CancellationToken::new(),
+                &mut progress,
+            )
             .expect("normalization result");
         assert_eq!(result.phase, NormalizationPhase::AwaitingFirefoxPlayback);
+        assert_eq!(
+            progress
+                .0
+                .iter()
+                .map(|event| event.phase)
+                .collect::<Vec<_>>(),
+            vec![
+                NormalizationPhase::Normalizing,
+                NormalizationPhase::Probing,
+                NormalizationPhase::Ingesting,
+                NormalizationPhase::AwaitingFirefoxPlayback,
+            ]
+        );
         assert!(!plan.scratch_root.exists());
     }
 
