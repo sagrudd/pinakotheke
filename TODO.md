@@ -454,12 +454,20 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
 
 ## 0.7.0 — External cache
 
-- [ ] **XIMG-070 P0 — Implement low-latency cache alias lookup.**
+- [x] **XIMG-070 P0 — Implement low-latency cache alias lookup.**
   Acceptance: bounded memory, invalidation, immutable hit identity, measured
   p95 budget, offline/object-unavailable state, and no browsing-history leak;
   only previously displayed/observed thumbnails may be cached automatically,
   and every substitution is per-site opt-in, transparent, same-instance, and
   fail-open to the origin.
+  Completed in this run: a capacity-bounded server index rejects signed query
+  keys and immutable identity conflicts, separates observed thumbnails from
+  explicitly opened originals, supports exact/origin invalidation and
+  checksum-bound offline state, and requires host actor/pairing/instance/site/
+  adapter/substitution authorization. The Axum endpoint returns bounded hit or
+  origin-fallback metadata without echoing aliases; 10,000 synthetic lookups
+  over 4,096 entries measured 5.5 microseconds p95 against a 2 ms budget. See
+  `docs/cache-alias-lookup.rst`.
 
 - [ ] **XIMG-071 P0 — Implement image substitution.**
   Restrict to enabled sites and proven aliases; fail open without loops.

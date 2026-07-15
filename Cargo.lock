@@ -1211,6 +1211,7 @@ name = "x-img-api"
 version = "0.2.0"
 dependencies = [
  "axum",
+ "serde",
  "serde_json",
  "tokio",
  "tower",

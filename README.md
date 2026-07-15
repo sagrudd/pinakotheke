@@ -182,6 +182,13 @@ MIME/length/ETag/single-range response, and has no origin fallback. Firefox
 range, seek, pause, and resume evidence is reproducible with an ephemeral
 worker output; see [direct normalized playback](docs/direct-playback.rst).
 
+The Firefox cache foundation now has a bounded, host-authenticated alias lookup
+endpoint. It admits only canonical query-free aliases for verified committed
+objects, structurally separates observed thumbnails from explicitly opened
+originals, rejects immutable identity conflicts, revalidates same-instance/site
+policy, and returns explicit origin-fallback states for misses, stale records,
+or unavailable authority. See [cache alias lookup](docs/cache-alias-lookup.rst).
+
 x-img now validates a versioned metadata-only endpoint/device and ObjectStore
 inventory. It distinguishes managed local folder profiles from paired HTTPS
 appliances, requires stable endpoint-plus-store IDs and explicit defaults, and

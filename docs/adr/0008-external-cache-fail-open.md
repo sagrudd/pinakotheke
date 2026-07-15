@@ -1,7 +1,7 @@
 # ADR 0008: External-cache aliases and fail-open delivery
 
-- Status: Proposed; cache implementation remains gated by XIMG-007 and the
-  DASObjectStore read/range contracts
+- Status: Accepted; XIMG-070 lookup is implemented, while image/video delivery
+  remains gated by XIMG-071/XIMG-072 and the DASObjectStore read/range contracts
 - Date: 2026-07-14
 - Deciders: x-img maintainers
 - Scope: Firefox image/video substitution, alias lookup, range delivery, and

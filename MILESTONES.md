@@ -392,6 +392,13 @@ Exit criteria:
 
 Goal: serve previously committed media from the object store on enabled sites.
 
+- XIMG-070 implements the bounded cache-alias lookup foundation (this run):
+  immutable verified ObjectStore identity, observed-thumbnail versus
+  explicitly-opened-original eligibility, server-owned same-instance/site/
+  adapter/pairing policy, eviction/invalidation, stale/offline/unavailable
+  origin-fallback states, query-free privacy, and a measured 4,096-entry p95
+  below the 2 ms budget. XIMG-071/XIMG-072 consume its delivery metadata.
+
 Exit criteria:
 
 - cache lookup meets a measured latency budget and fails open to the origin;

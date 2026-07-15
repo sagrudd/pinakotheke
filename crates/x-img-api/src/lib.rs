@@ -17,7 +17,12 @@ use axum::{
     response::Response,
     routing::{get, post},
 };
+use serde::{Deserialize, Serialize};
 use x_img_core::{
+    cache_alias::{
+        CacheBypassReason, CacheLookupOutcome, CacheLookupRequest, CacheLookupService,
+        CacheRepresentation,
+    },
     host_context::{AuthenticatedHostContext, XIMG_ACCESS},
     object_read::{ObjectReadBackend, ObjectReadBackendError, ObjectReadRequest, ObjectReadResult},
     playback_delivery::{DirectPlaybackError, DirectPlaybackResponse, DirectPlaybackService},
@@ -26,6 +31,34 @@ use x_img_core::{
 
 type CapturePlans = Arc<Mutex<CapturePlanService>>;
 type PlaybackDelivery = Arc<Mutex<DirectPlaybackService<HostObjectReadBackend>>>;
+type CacheAliases = Arc<Mutex<CacheLookupService>>;
+
+const CACHE_LOOKUP_SCHEMA_VERSION: &str = "x-img.cache-alias-lookup.v1";
+const CACHE_RESULT_SCHEMA_VERSION: &str = "x-img.cache-alias-result.v1";
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CacheAliasLookupEnvelope {
+    schema_version: String,
+    pairing_id: String,
+    instance_id: String,
+    origin: String,
+    canonical_alias: String,
+    adapter_id: String,
+    adapter_version: String,
+}
+
+#[derive(Debug, Serialize)]
+struct CacheAliasLookupResponse {
+    schema_version: &'static str,
+    outcome: &'static str,
+    reason: Option<&'static str>,
+    media_class: Option<&'static str>,
+    content_type: Option<String>,
+    content_length: Option<u64>,
+    object_checksum: Option<String>,
+    delivery_path: Option<String>,
+}
 
 /// Server-side callback used to bridge a host's scoped DASObjectStore read
 /// client to Axum. The callback returns a body stream and never exposes a
@@ -68,6 +101,10 @@ pub fn router() -> Router {
         .route("/health", get(health))
         .route("/context", get(context))
         .route("/api/extension/v1/capture-plans", post(capture_plan))
+        .route(
+            "/api/extension/v1/cache-aliases/lookup",
+            post(cache_alias_lookup),
+        )
         .route("/api/playback/v1/{playback_id}", get(deliver_playback))
         .with_state(None::<CapturePlans>)
 }
@@ -81,6 +118,10 @@ pub fn router_with_capture_plans(capture_plans: CapturePlanService) -> Router {
         .route("/health", get(health))
         .route("/context", get(context))
         .route("/api/extension/v1/capture-plans", post(capture_plan))
+        .route(
+            "/api/extension/v1/cache-aliases/lookup",
+            post(cache_alias_lookup),
+        )
         .route("/api/playback/v1/{playback_id}", get(deliver_playback))
         .with_state(Some(Arc::new(Mutex::new(capture_plans))))
 }
@@ -95,9 +136,29 @@ pub fn router_with_direct_playback(
         .route("/health", get(health))
         .route("/context", get(context))
         .route("/api/extension/v1/capture-plans", post(capture_plan))
+        .route(
+            "/api/extension/v1/cache-aliases/lookup",
+            post(cache_alias_lookup),
+        )
         .route("/api/playback/v1/{playback_id}", get(deliver_playback))
         .with_state(None::<CapturePlans>)
         .layer(Extension(Arc::new(Mutex::new(playback))))
+}
+
+/// Returns a host composition with a bounded, server-authorized cache-alias
+/// lookup. A miss or policy/authority failure is an explicit origin fallback.
+pub fn router_with_cache_aliases(cache_aliases: CacheLookupService) -> Router {
+    Router::new()
+        .route("/health", get(health))
+        .route("/context", get(context))
+        .route("/api/extension/v1/capture-plans", post(capture_plan))
+        .route(
+            "/api/extension/v1/cache-aliases/lookup",
+            post(cache_alias_lookup),
+        )
+        .route("/api/playback/v1/{playback_id}", get(deliver_playback))
+        .with_state(None::<CapturePlans>)
+        .layer(Extension(Arc::new(Mutex::new(cache_aliases))))
 }
 
 async fn health() -> &'static str {
@@ -149,6 +210,88 @@ fn capture_plan_status(error: CapturePlanError) -> StatusCode {
         | CapturePlanError::AdapterMismatch
         | CapturePlanError::CaptureNotEligible
         | CapturePlanError::CandidateBudgetExceeded => StatusCode::UNPROCESSABLE_ENTITY,
+    }
+}
+
+async fn cache_alias_lookup(
+    context: Option<Extension<AuthenticatedHostContext>>,
+    cache_aliases: Option<Extension<CacheAliases>>,
+    Json(envelope): Json<CacheAliasLookupEnvelope>,
+) -> Result<Json<CacheAliasLookupResponse>, StatusCode> {
+    let context = context.ok_or(StatusCode::UNAUTHORIZED)?.0;
+    if !context.permits(XIMG_ACCESS) {
+        return Err(StatusCode::FORBIDDEN);
+    }
+    if envelope.schema_version != CACHE_LOOKUP_SCHEMA_VERSION {
+        return Err(StatusCode::UNPROCESSABLE_ENTITY);
+    }
+    let now_epoch_seconds = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .as_secs();
+    let request = CacheLookupRequest {
+        pairing_id: envelope.pairing_id,
+        instance_id: envelope.instance_id,
+        site_origin: envelope.origin,
+        canonical_alias: envelope.canonical_alias,
+        adapter_id: envelope.adapter_id,
+        adapter_version: envelope.adapter_version,
+        now_epoch_seconds,
+    };
+    let cache_aliases = cache_aliases.ok_or(StatusCode::SERVICE_UNAVAILABLE)?.0;
+    let cache_aliases = cache_aliases
+        .lock()
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    Ok(Json(
+        match cache_aliases.lookup(context.actor_id(), &request) {
+            CacheLookupOutcome::Hit(hit) => {
+                let digest = hit.object.checksum.trim_start_matches("sha256:");
+                CacheAliasLookupResponse {
+                    schema_version: CACHE_RESULT_SCHEMA_VERSION,
+                    outcome: "hit",
+                    reason: None,
+                    media_class: Some(match hit.representation {
+                        CacheRepresentation::ThumbnailImage => "thumbnail_image",
+                        CacheRepresentation::OriginalImage => "original_image",
+                        CacheRepresentation::NormalizedMp4 => "normalized_mp4",
+                    }),
+                    content_type: Some(hit.content_type.clone()),
+                    content_length: Some(hit.content_length),
+                    object_checksum: Some(hit.object.checksum.clone()),
+                    delivery_path: Some(format!("/api/cache/v1/objects/{digest}")),
+                }
+            }
+            CacheLookupOutcome::Miss => cache_fallback("miss", None),
+            CacheLookupOutcome::OriginFallback(reason) => {
+                cache_fallback("origin_fallback", Some(cache_bypass_reason(reason)))
+            }
+        },
+    ))
+}
+
+fn cache_fallback(outcome: &'static str, reason: Option<&'static str>) -> CacheAliasLookupResponse {
+    CacheAliasLookupResponse {
+        schema_version: CACHE_RESULT_SCHEMA_VERSION,
+        outcome,
+        reason,
+        media_class: None,
+        content_type: None,
+        content_length: None,
+        object_checksum: None,
+        delivery_path: None,
+    }
+}
+
+fn cache_bypass_reason(reason: CacheBypassReason) -> &'static str {
+    match reason {
+        CacheBypassReason::InvalidRequest => "invalid_request",
+        CacheBypassReason::SubstitutionPaused => "substitution_paused",
+        CacheBypassReason::PairingInvalid => "pairing_invalid",
+        CacheBypassReason::WrongInstance => "wrong_instance",
+        CacheBypassReason::AdapterMismatch => "adapter_mismatch",
+        CacheBypassReason::Stale => "stale",
+        CacheBypassReason::EndpointOffline => "endpoint_offline",
+        CacheBypassReason::ObjectUnavailable => "object_unavailable",
     }
 }
 
@@ -231,6 +374,10 @@ mod tests {
     };
     use tower::ServiceExt;
     use x_img_core::{
+        cache_alias::{
+            CacheAliasIndex, CacheAliasRecord, CacheEligibility, CacheLookupAuthorization,
+            CacheLookupService, CacheObjectAvailability, CacheRepresentation,
+        },
         host_context::{HostContextAdapter, MonasHostContextAdapter},
         object_read::{
             AuthorizedObjectReader, AuthorizedObjectReference, ObjectContentMetadata,
@@ -245,7 +392,8 @@ mod tests {
     };
 
     use super::{
-        HostObjectReadBackend, router, router_with_capture_plans, router_with_direct_playback,
+        HostObjectReadBackend, router, router_with_cache_aliases, router_with_capture_plans,
+        router_with_direct_playback,
     };
 
     const CHECKSUM: &str =
@@ -291,6 +439,61 @@ mod tests {
                 total_length: PLAYBACK_BYTES.len() as u64,
                 state: NormalizedVideoState::Ready,
             }],
+        )
+    }
+
+    fn cache_aliases() -> CacheLookupService {
+        let mut index = CacheAliasIndex::new(8).expect("bounded index");
+        index
+            .admit(CacheAliasRecord {
+                instance_id: "ximg-instance-1".into(),
+                site_origin: "https://example.invalid".into(),
+                canonical_alias: "https://media.example.invalid/image-1.jpg".into(),
+                adapter_id: "generic-observed-image".into(),
+                adapter_version: "1.0.0".into(),
+                representation: CacheRepresentation::ThumbnailImage,
+                eligibility: CacheEligibility::ObservedThumbnail,
+                object: AuthorizedObjectReference {
+                    endpoint_id: "synthetic-endpoint".into(),
+                    object_store_id: "synthetic-store".into(),
+                    object_key: "images/image-1.jpg".into(),
+                    checksum: CHECKSUM.into(),
+                },
+                content_type: "image/jpeg".into(),
+                content_length: 1_024,
+                valid_until_epoch_seconds: u64::MAX,
+                availability: CacheObjectAvailability::Ready,
+            })
+            .expect("synthetic alias is eligible");
+        CacheLookupService::new(
+            index,
+            [CacheLookupAuthorization {
+                pairing_id: "pair-cache-1".into(),
+                actor_id: "synthetic-monas-user".into(),
+                instance_id: "ximg-instance-1".into(),
+                site_origin: "https://example.invalid".into(),
+                adapter_id: "generic-observed-image".into(),
+                adapter_version: "1.0.0".into(),
+                substitution_enabled: true,
+                expires_at_epoch_seconds: u64::MAX,
+                revoked: false,
+            }],
+        )
+        .expect("synthetic lookup authorization")
+    }
+
+    fn cache_lookup_body(alias: &str) -> Body {
+        Body::from(
+            serde_json::to_vec(&serde_json::json!({
+                "schema_version": "x-img.cache-alias-lookup.v1",
+                "pairing_id": "pair-cache-1",
+                "instance_id": "ximg-instance-1",
+                "origin": "https://example.invalid",
+                "canonical_alias": alias,
+                "adapter_id": "generic-observed-image",
+                "adapter_version": "1.0.0"
+            }))
+            .expect("synthetic cache lookup serializes"),
         )
     }
 
@@ -509,5 +712,92 @@ mod tests {
             .expect("router is infallible");
         assert_eq!(response.status(), StatusCode::NOT_MODIFIED);
         assert_eq!(response.headers()["etag"], ETAG);
+    }
+
+    #[tokio::test]
+    async fn cache_alias_lookup_requires_host_context_and_returns_bounded_hit_metadata() {
+        let unauthorized = router_with_cache_aliases(cache_aliases())
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/api/extension/v1/cache-aliases/lookup")
+                    .header("content-type", "application/json")
+                    .body(cache_lookup_body(
+                        "https://media.example.invalid/image-1.jpg",
+                    ))
+                    .expect("request must build"),
+            )
+            .await
+            .expect("router is infallible");
+        assert_eq!(unauthorized.status(), StatusCode::UNAUTHORIZED);
+
+        let context = MonasHostContextAdapter
+            .authenticate(include_bytes!(
+                "../../../fixtures/host-context/v1/monas-valid.json"
+            ))
+            .expect("synthetic host context is valid");
+        let response = router_with_cache_aliases(cache_aliases())
+            .layer(Extension(context))
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/api/extension/v1/cache-aliases/lookup")
+                    .header("content-type", "application/json")
+                    .body(cache_lookup_body(
+                        "https://media.example.invalid/image-1.jpg",
+                    ))
+                    .expect("request must build"),
+            )
+            .await
+            .expect("router is infallible");
+        assert_eq!(response.status(), StatusCode::OK);
+        let body: serde_json::Value = serde_json::from_slice(
+            &to_bytes(response.into_body(), 4_096)
+                .await
+                .expect("bounded response"),
+        )
+        .expect("lookup response is JSON");
+        assert_eq!(body["outcome"], "hit");
+        assert_eq!(body["media_class"], "thumbnail_image");
+        assert_eq!(
+            body["delivery_path"],
+            format!(
+                "/api/cache/v1/objects/{}",
+                CHECKSUM.trim_start_matches("sha256:")
+            )
+        );
+        assert!(body.get("canonical_alias").is_none());
+        assert!(body.get("endpoint_id").is_none());
+    }
+
+    #[tokio::test]
+    async fn cache_alias_signed_query_returns_origin_fallback_without_echoing_the_alias() {
+        let context = MonasHostContextAdapter
+            .authenticate(include_bytes!(
+                "../../../fixtures/host-context/v1/monas-valid.json"
+            ))
+            .expect("synthetic host context is valid");
+        let response = router_with_cache_aliases(cache_aliases())
+            .layer(Extension(context))
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/api/extension/v1/cache-aliases/lookup")
+                    .header("content-type", "application/json")
+                    .body(cache_lookup_body(
+                        "https://media.example.invalid/image-1.jpg?signature=secret",
+                    ))
+                    .expect("request must build"),
+            )
+            .await
+            .expect("router is infallible");
+        assert_eq!(response.status(), StatusCode::OK);
+        let bytes = to_bytes(response.into_body(), 4_096)
+            .await
+            .expect("bounded response");
+        let body: serde_json::Value = serde_json::from_slice(&bytes).expect("JSON response");
+        assert_eq!(body["outcome"], "origin_fallback");
+        assert_eq!(body["reason"], "invalid_request");
+        assert!(!String::from_utf8_lossy(&bytes).contains("signature"));
     }
 }

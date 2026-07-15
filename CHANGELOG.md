@@ -7,6 +7,11 @@ All notable changes to x-img will be documented in this file. The project uses
 
 ### Planning
 
+- Added XIMG-070's bounded cache-alias index and host-authenticated lookup
+  endpoint. Immutable ObjectStore hits require server-owned same-instance,
+  origin, adapter, pairing, expiry, substitution, and observation/open gates;
+  signed queries are rejected without echo, authority failures explicitly fall
+  back to origin, and the 4,096-entry synthetic p95 is measured below 2 ms.
 - Added XIMG-053's Mnemosyne-aligned quick preview task pane. It provides
   selected-record context, alt text, fit/original visual state, keyboard focus
   handling, explicit unavailable-object behavior, and only attaches native

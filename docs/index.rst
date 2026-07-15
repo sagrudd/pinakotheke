@@ -29,6 +29,7 @@ Configuration
    destinations
    object-ingest
    object-read
+   cache-alias-lookup
    x-oauth
    x-followed-accounts
    x-media-discovery
