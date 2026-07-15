@@ -7,6 +7,12 @@ All notable changes to x-img will be documented in this file. The project uses
 
 ### Planning
 
+- Added XIMG-067's two immutable normalized-video candidate profiles: WebM
+  VP9/Opus or AV1/Opus and MP4 H.264/AAC. Docker-first plans pin an image digest,
+  resource limits, authorized DASObjectStore/paired-device/future-Keryx worker
+  placement, and managed-or-bounded scratch. A rendition cannot become Ready
+  without typed checksummed ObjectStore derivatives and matching Firefox
+  profile evidence; source-only objects remain explicitly non-ready.
 - Added XIMG-066's explicit, metadata-only video candidate planner. Observed
   or user-selected, policy-eligible candidates expose review details and need
   confirmation before later work; DRM, unsupported segmented delivery,

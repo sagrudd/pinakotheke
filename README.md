@@ -38,6 +38,11 @@ single-click refresh of configured social accounts.
   Candidate planning records aggregate unusual codec combinations for
   prioritisation without sending individual browsing URLs, media, cookies, or
   credentials to project diagnostics or tickets.
+- Video normalization is Docker-first and may execute only on an authorized
+  DASObjectStore host, paired device worker, or future governed worker. Every
+  plan pins an image digest and resource bounds; durable source and derived
+  bytes remain DASObjectStore objects. See
+  [normalized-video profile documentation](docs/normalized-video-profiles.rst).
 - Acquisition is idempotent: once a media identity has a verified committed
   object, routine refreshes do not download it again.
 - The UI follows sibling `../mnemosyne_design_language` and retains a future

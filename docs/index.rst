@@ -40,6 +40,7 @@ Configuration
    site-adapters
    review-admission
    video-candidates
+   normalized-video-profiles
    identity-migration
 
 Release and quality
