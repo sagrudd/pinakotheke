@@ -191,10 +191,27 @@ fn authority_command(plan: &LocalProfilePlan, action: &str) -> io::Result<Output
     if output.status.success() {
         return Ok(output);
     }
+    let diagnostic = bounded_authority_diagnostic(&output.stderr);
     Err(io::Error::other(format!(
-        "DASObjectStore authority action `{action}` failed with status {}",
-        output.status
+        "DASObjectStore authority action `{action}` failed with status {}{diagnostic}",
+        output.status,
     )))
+}
+
+fn bounded_authority_diagnostic(stderr: &[u8]) -> String {
+    const LIMIT: usize = 512;
+    let text = String::from_utf8_lossy(stderr);
+    let line = text
+        .lines()
+        .rev()
+        .find(|line| !line.trim().is_empty())
+        .unwrap_or("")
+        .trim();
+    if line.is_empty() {
+        return String::new();
+    }
+    let bounded: String = line.chars().take(LIMIT).collect();
+    format!(": {bounded}")
 }
 
 fn discover(plan: &LocalProfilePlan) -> Result<AuthorityDescription, Box<dyn std::error::Error>> {
@@ -327,5 +344,14 @@ mod tests {
         .unwrap();
         assert!(!is_ready(&root));
         std::fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn authority_diagnostics_are_single_line_and_bounded() {
+        let long = format!("ignored\nerror: {}", "x".repeat(700));
+        let diagnostic = bounded_authority_diagnostic(long.as_bytes());
+        assert!(diagnostic.starts_with(": error: "));
+        assert!(diagnostic.len() <= 514);
+        assert!(!diagnostic.contains('\n'));
     }
 }
