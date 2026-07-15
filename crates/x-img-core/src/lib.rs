@@ -14,6 +14,7 @@ pub mod extension_pairing;
 pub mod host_context;
 pub mod host_product;
 pub mod instagram_discovery;
+pub mod migration_backup;
 pub mod object_ingest;
 pub mod object_read;
 pub mod playback_delivery;

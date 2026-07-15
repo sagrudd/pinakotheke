@@ -68,6 +68,11 @@ command, ``scripts/faults/check.sh``. It covers critical authority, ingest,
 scheduler, normalizer, and Firefox fail-open boundaries using synthetic data;
 see [fault injection and recovery](docs/fault-injection-recovery.rst).
 
+Checksummed metadata snapshots now provide a tested copy-on-write recovery path
+for configuration, immutable catalogue references, and non-secret pairing
+identity. Restore produces a validated review candidate rather than overwriting
+live state; see [migration, export, and restore](docs/migration-export-restore.rst).
+
 The CLI now strictly validates, lists, and atomically replaces local versioned
 account/site configuration; it performs no network access or source refresh.
 See [configuration documentation](docs/configuration.rst) for commands and

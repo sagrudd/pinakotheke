@@ -7,6 +7,11 @@ All notable changes to x-img will be documented in this file. The project uses
 
 ### Planning
 
+- Added XIMG-081's strict metadata snapshot boundary and native migration,
+  export, and restore proofs. Checksummed copy-on-write artifacts preserve
+  catalogue/ObjectStore identities, reject corruption and future schemas, and
+  require explicit reviewed Firefox re-pairing without containing secrets or
+  media bytes.
 - Added XIMG-080's deterministic fault/recovery acceptance suite. Nine
   synthetic cases prove bounded ingest, idempotent crash reconciliation,
   destination stability, scheduler cancellation, normalizer cleanup, cache and

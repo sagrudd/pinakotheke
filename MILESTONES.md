@@ -452,6 +452,9 @@ Exit criteria:
   cannot create conflicting claims;
 - schema migration, export, restore, and DASObjectStore loss/unavailability
   runbooks are tested;
+- checksummed metadata snapshots round-trip without rewriting historic labels,
+  endpoint/ObjectStore/object identities, or checksums; corruption, future
+  majors, unknown fields, and silent Firefox re-pairing fail before mutation;
 - platform deletion/compliance behavior matches the approved policy decision;
 - structured logs, metrics, health, and audit events contain no secrets;
 - dependency, license, vulnerability, and extension-permission audits pass; and

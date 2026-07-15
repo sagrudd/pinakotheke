@@ -50,6 +50,7 @@ Configuration
    video-normalization
    direct-playback
    identity-migration
+   migration-export-restore
 
 Release and quality
 -------------------
