@@ -456,6 +456,9 @@ Exit criteria:
   endpoint/ObjectStore/object identities, or checksums; corruption, future
   majors, unknown fields, and silent Firefox re-pairing fail before mutation;
 - platform deletion/compliance behavior matches the approved policy decision;
+- catalogue-only and catalogue-plus-object compliance scopes require explicit
+  policy approval; exact authority removal is separately requested, retryable,
+  checksum-bound, and never reported complete before DASObjectStore verifies it;
 - structured logs, metrics, health, and audit events contain no secrets;
 - dependency, license, vulnerability, and extension-permission audits pass; and
 - package/install documentation covers Monas, DASObjectStore, Firefox, and

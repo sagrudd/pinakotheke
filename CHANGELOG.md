@@ -7,6 +7,10 @@ All notable changes to x-img will be documented in this file. The project uses
 
 ### Planning
 
+- Added XIMG-082's approved deletion/compliance reconciliation contract.
+  Catalogue tombstoning is separate from exact DASObjectStore removal,
+  approval scope is mandatory, pending retries converge, mismatched authority
+  evidence conflicts, and only verified removal becomes terminal.
 - Added XIMG-081's strict metadata snapshot boundary and native migration,
   export, and restore proofs. Checksummed copy-on-write artifacts preserve
   catalogue/ObjectStore identities, reject corruption and future schemas, and

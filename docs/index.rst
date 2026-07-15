@@ -51,6 +51,7 @@ Configuration
    direct-playback
    identity-migration
    migration-export-restore
+   deletion-compliance
 
 Release and quality
 -------------------

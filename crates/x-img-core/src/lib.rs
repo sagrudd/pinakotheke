@@ -7,6 +7,7 @@ pub mod application_identity;
 pub mod bioinformatics;
 pub mod bioinformatics_commit;
 pub mod cache_alias;
+pub mod compliance_reconciliation;
 pub mod connector_fixtures;
 pub mod destination;
 pub mod destination_selection;

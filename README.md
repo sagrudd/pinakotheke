@@ -73,6 +73,11 @@ for configuration, immutable catalogue references, and non-secret pairing
 identity. Restore produces a validated review candidate rather than overwriting
 live state; see [migration, export, and restore](docs/migration-export-restore.rst).
 
+Approved deletion/compliance actions now use an explicit metadata lifecycle:
+catalogue visibility is tombstoned first, while durable object removal requires
+a separately approved exact-object request and matching DASObjectStore
+verification. See [deletion and compliance reconciliation](docs/deletion-compliance.rst).
+
 The CLI now strictly validates, lists, and atomically replaces local versioned
 account/site configuration; it performs no network access or source refresh.
 See [configuration documentation](docs/configuration.rst) for commands and
