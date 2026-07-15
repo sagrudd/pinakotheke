@@ -391,7 +391,11 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   wasm, quality, contract, and local Docker Sphinx checks pass. A plan is not an
   ObjectStore commit or review item.
 
-- [ ] **XIMG-065 P1 — Integrate captures into the common review queue.**
+- [x] **XIMG-065 P1 — Integrate captures into the common review queue.**
+  Completed in `6752ec8`; verified committed website captures retain their
+  site/page/media/adapter provenance and enter the shared `New` queue only
+  after ObjectStore verification. A matching connector alias reuses its
+  canonical media identity, avoiding a duplicate review record.
   Acceptance: site, page, canonical media URL, discovery time, and adapter
   version are retained; committed aliases deduplicate account-connector media.
 
