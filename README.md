@@ -93,6 +93,13 @@ DEB/RPM for Linux x86_64 and arm64, PKG for macOS x86_64 and arm64, and
 deterministic Firefox XPIs labelled for macOS/Windows/Linux on both
 architectures. See [native packages and Firefox bundles](docs/packaging.rst).
 
+``make upgrade-rollback`` installs and removes the native DEB and RPM in
+network-isolated digest-pinned containers for the current host architecture,
+checks exact metadata preservation, and validates the pinned Monas and
+DASObjectStore authority contracts. Cross-version release-candidate rollback
+remains the explicit final XIMG-086 step; see
+[install, upgrade, and rollback acceptance](docs/upgrade-rollback-acceptance.rst).
+
 The CLI now strictly validates, lists, and atomically replaces local versioned
 account/site configuration; it performs no network access or source refresh.
 See [configuration documentation](docs/configuration.rst) for commands and

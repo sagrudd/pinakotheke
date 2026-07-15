@@ -7,6 +7,9 @@ All notable changes to x-img will be documented in this file. The project uses
 
 ### Planning
 
+- Added XIMG-086's local package lifecycle and metadata rollback acceptance
+  foundation for digest-pinned Debian/Fedora containers and pinned Monas plus
+  DASObjectStore contracts.
 - Added the XIMG-085 packaging foundation: a Makefile for cross-linked Linux
   DEB/RPM, dual-architecture macOS PKG, deterministic six-label Firefox XPI,
   SHA-256 manifests, a deterministic typed release-artifact inventory, and

@@ -55,6 +55,7 @@ Configuration
    operations
    release-audits
    packaging
+   upgrade-rollback-acceptance
 
 Release and quality
 -------------------

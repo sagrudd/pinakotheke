@@ -9,7 +9,7 @@ DIST := $(CURDIR)/dist
 	linux-deb-x86_64 linux-deb-arm64 linux-rpm-x86_64 linux-rpm-arm64 \
 	macos-pkg macos-pkg-x86_64 macos-pkg-arm64 firefox firefox-macos-x86_64 \
 	firefox-macos-arm64 firefox-windows-x86_64 firefox-windows-arm64 \
-	firefox-linux-x86_64 firefox-linux-arm64 checksums verify quality clean
+	firefox-linux-x86_64 firefox-linux-arm64 checksums verify upgrade-rollback quality clean
 
 help:
 	@echo "x-img $(VERSION) packaging targets"
@@ -18,6 +18,7 @@ help:
 	@echo "  make macos-pkg             Build macOS PKG for x86_64 and arm64 (macOS only)"
 	@echo "  make firefox               Build labelled XPIs for macOS/Windows/Linux x86_64/arm64"
 	@echo "  make verify                Verify produced package structure and checksums"
+	@echo "  make upgrade-rollback      Exercise native package and metadata rollback acceptance"
 	@echo "  make quality               Run local source, audit, and package checks"
 	@echo "  make clean                 Remove dist/ and packaging scratch"
 
@@ -70,6 +71,9 @@ checksums:
 
 verify:
 	python3 packaging/check.py --dist "$(DIST)" --version $(VERSION)
+
+upgrade-rollback: verify
+	scripts/release/check_upgrade_rollback.sh
 
 quality:
 	scripts/quality/check.sh
