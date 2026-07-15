@@ -334,9 +334,10 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   tooltip, a reversible non-obstructive frame/badge/overlay, and a user toggle;
   stored bytes are never watermarked or mutated.
 
-- [ ] **XIMG-055 P1 — Implement refresh controls and progress.**
-  Surface XIMG-045 as one `Refresh accounts` action with per-account progress,
-  partial-failure details, safe retry, and final new-item summary.
+- [x] **XIMG-055 P1 — Implement refresh controls and progress.** Completed in
+  `a48fc13`; one Refresh accounts control renders word-first per-account
+  progress, partial failure, safe retry, and final new-item summary states over
+  the XIMG-045 orchestration contract. Connector execution remains host-side.
 
 - [x] **XIMG-056 P2 — Add browse/search metadata filters.** Completed in
   `fd07323`; the browser has keyboard-operable client-side metadata text search

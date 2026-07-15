@@ -304,6 +304,8 @@ Goal: deliver the dense, fast visual browser.
   selection and source counts.
 - XIMG-056 implements client-side metadata search (commit `fd07323`) for the
   first-version synthetic browser; catalogue-backed structured filters follow.
+- XIMG-055 implements visible refresh progress (commit `a48fc13`) with a single
+  action, per-account state, partial failure, retry, and new-item summary.
 
 Exit criteria:
 
