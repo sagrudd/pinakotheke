@@ -483,6 +483,12 @@ Exit criteria:
 
 Goal: freeze contracts and validate end-to-end behavior with user-owned data.
 
+Published: ``v0.9.0`` is an explicitly unsigned GitHub prerelease with thirteen
+verified artifacts, checksums, typed manifest, CycloneDX SBOM, local quality
+evidence, and 0.3.0↔0.9.0 DEB/RPM rollback proof on both architectures. Its
+release notes distinguish fixture/host boundaries and unsupported behavior from
+evaluation-ready functionality.
+
 Exit criteria:
 
 - all supported connectors and site adapters pass end-to-end acceptance tests;

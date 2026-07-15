@@ -622,7 +622,18 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   SHA-256 and endpoint/ObjectStore/object/checksum/review identities remained
   exact. Strict export/restore/repeat-migration and current pinned Monas plus
   DASObjectStore contract checks passed. Signing/notarization remains XIMG-087.
-- [ ] **XIMG-087 P1 — Publish 0.9.0 release candidate.**
+- [x] **XIMG-087 P1 — Publish 0.9.0 release candidate.** Completed in
+  ``267d392``, ``c4b0344``, and ``4916360`` and published as the explicit
+  GitHub prerelease ``v0.9.0``. Fifteen uploaded files comprise thirteen
+  verified artifacts plus ``SHA256SUMS`` and the typed release manifest:
+  dual-architecture DEB/RPM/PKG, six platform-labelled Firefox XPIs, and a
+  deterministic CycloneDX 1.6 SBOM. Genuine 0.3.0 → 0.9.0 → 0.3.0 DEB/RPM
+  rollback passed on x86_64 and arm64, as did workspace, wasm, audit, fault,
+  contract, packaging, and pinned local Sphinx checks. Release notes state that
+  artifacts are unsigned evaluation builds, hosted CI was not used, live
+  connector/authority boundaries remain limited, and Pinakotheke is the 1.0
+  coordinated migration. Published at
+  https://github.com/sagrudd/x-img/releases/tag/v0.9.0.
 - [ ] **XIMG-088 P0 — Close all release blockers and publish 1.0.0.**
   Acceptance includes the coordinated Pinakotheke rename/rebrand matrix and
   repository migration, compatibility aliases/migrations, and local-container

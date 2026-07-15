@@ -56,6 +56,12 @@ single-click refresh of configured social accounts.
 
 ## Current status
 
+The unsigned `v0.9.0` evaluation release candidate is available from the
+[GitHub release page](https://github.com/sagrudd/x-img/releases/tag/v0.9.0),
+with checksums, typed artifact manifest, CycloneDX SBOM, explicit limitations,
+and dual-architecture upgrade/rollback evidence. It is not the coordinated
+Pinakotheke 1.0 migration.
+
 The `0.2.0` Rust workspace scaffold is available: shared model and core
 boundaries, a `clap` CLI, an Axum composition boundary, and a Yew client
 boundary compile without enabling any live source, storage, authentication, or
