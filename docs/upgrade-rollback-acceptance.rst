@@ -24,7 +24,7 @@ ObjectStore, object, checksum, review, and historic identity evidence must
 survive exactly. No media bytes or credentials are used. Finally, the runner
 checks the Monas product/auth paths at commit
 ``3d21b0bc7b83fa8408d01b93347a56f43f3a96b7`` and DASObjectStore authority
-paths at commit ``73d3e6398cbfb8f7ac53b8040cea7c5b718ac140``.
+paths at commit ``76f6411eab1e2c486c0bc1b4695b71f09307d9df``.
 
 Acceptance evidence
 -------------------

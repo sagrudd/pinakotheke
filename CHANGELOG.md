@@ -11,6 +11,8 @@ All notable changes to x-img will be documented in this file. The project uses
 
 - Added a deterministic CycloneDX 1.6 release SBOM covering locked Rust
   dependencies and the Firefox extension component.
+- Published 0.9.0 as an explicitly unsigned evaluation release candidate with
+  local package, rollback, audit, contract, and documentation evidence.
 
 ## [0.3.0] - 2026-07-15
 

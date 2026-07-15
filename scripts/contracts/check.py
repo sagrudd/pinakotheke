@@ -15,7 +15,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 PINS = {
     "monas": "3d21b0bc7b83fa8408d01b93347a56f43f3a96b7",
-    "DASObjectStore": "73d3e6398cbfb8f7ac53b8040cea7c5b718ac140",
+    "DASObjectStore": "76f6411eab1e2c486c0bc1b4695b71f09307d9df",
     "mnemosyne": "9877017e3139711ed6313c53603409c53020541d",
     "mnemosyne_design_language": "5539df8f662a78ebdf7cf4c868d71831380c8cfd",
 }

@@ -12,7 +12,7 @@ synthetic inventory fixtures cover a managed local folder profile, a remote
 appliance with multiple stores, an explicit site override, and fail-closed
 unmanaged-folder, mutable-ID, broad-secret, and arbitrary-first-store cases.
 It was reviewed against DASObjectStore commit
-``73d3e6398cbfb8f7ac53b8040cea7c5b718ac140``. This is a copied x-img
+``76f6411eab1e2c486c0bc1b4695b71f09307d9df``. This is a copied x-img
 contract, not a sibling path dependency or a live pairing client.
 
 Local and remote setup
