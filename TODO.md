@@ -584,7 +584,20 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   check/test/clippy, wasm, quality, public-contract, nine-case fault/Firefox,
   privacy, and pinned local Sphinx container build/run passed on 2026-07-15;
   hosted CI was not required.
-- [ ] **XIMG-084 P1 — Complete privacy, security, accessibility, and license audits.**
+- [x] **XIMG-084 P1 — Complete privacy, security, accessibility, and license audits.**
+  Delivered in ``e23d748``. ``scripts/audit/check.sh`` enforces a strict
+  six-category matrix across tracked/untracked candidates: credential/payload
+  privacy, unsafe/dynamic-code and extension CSP/permission security, semantic
+  HTML/Yew focus accessibility, MPL/SPDX coverage, cargo-deny locked dependency
+  advisories/licenses/bans/sources, JavaScript syntax, and version mirrors.
+  Findings fixed the missed Firefox manifest version path, explicit extension
+  CSP, semantic popup/options documents and live regions, visible Yew keyboard
+  focus, and missing script SPDX notices. Two non-exploitable unmaintained
+  transitive-Yew advisories have narrow documented ``deny.toml`` exceptions;
+  duplicate dependency generations remain visible warnings. Audit, workspace
+  fmt/check/test/clippy, wasm, quality, public-contract, nine-case fault/Firefox,
+  toolbar, privacy, and pinned local Sphinx container build/run passed on
+  2026-07-15; hosted CI was not required.
 - [ ] **XIMG-085 P1 — Package Monas product and Firefox extension.**
 - [ ] **XIMG-086 P1 — Run production-like upgrade/rollback acceptance.**
 - [ ] **XIMG-087 P1 — Publish 0.9.0 release candidate.**
