@@ -1,0 +1,1 @@
+{"schema_version":"x-img.site-adapter-fixtures.v1","cases":[{"url":"https://example.invalid/art","experimental":true,"match":"generic-observed-image"},{"url":"https://example.invalid/login","experimental":true,"match":null},{"url":"https://example.invalid/art","experimental":false,"match":null}]}

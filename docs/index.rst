@@ -35,6 +35,7 @@ Configuration
    instagram-media-discovery
    account-refresh
    firefox-extension
+   site-adapters
    review-admission
    identity-migration
 

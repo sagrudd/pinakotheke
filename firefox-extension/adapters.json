@@ -1,0 +1,1 @@
+{"schema_version":"x-img.site-adapters.v1","adapters":[{"id":"generic-observed-image","version":"1.0.0","origins":["https://example.invalid"],"exclude_paths":["/login","/settings"],"capabilities":{"observed_thumbnail":true,"explicit_original":false,"image_substitution":false,"mp4_substitution":false,"segmented_video":false},"experimental":true}]}
