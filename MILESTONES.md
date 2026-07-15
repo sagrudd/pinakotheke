@@ -574,6 +574,14 @@ ordinary writable media folder. Secret DASObjectStore configuration and keys
 remain in an OS-private configuration root such as
 ``~/.config/dasobjectstore``.
 
+The XIMG-091 implementation is available in ``7b5423a`` and consumes the
+DASObjectStore ``0.84.0`` local-profile authority at ``0d71b2a1``. It provides
+reviewed CLI orchestration, strict secret-free identity validation, stable
+selection persistence, and storage-aware readiness. Docker-backed acceptance
+and the local documentation-container proof remain required before the item is
+closed; an unresponsive Docker Desktop backend prevented that evidence on
+2026-07-15.
+
 Exit criteria:
 
 - ``pinakotheke serve`` starts a coherent Axum/Yew service as the invoking user,

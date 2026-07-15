@@ -720,7 +720,16 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   ``~/.x-img/dasobjectstore`` with private credentials under
   ``~/.config/dasobjectstore``. Provision/discover a named logical ObjectStore
   through DASObjectStore authority, retain stable endpoint/store IDs, and never
-  write media by treating the managed root as an ordinary directory.
+  write media by treating the managed root as an ordinary directory. Core
+  implementation is pushed in ``7b5423a`` against DASObjectStore ``0.84.0``
+  commits ``42463234`` and ``0d71b2a1``: reviewed plan/provision/status/down
+  commands delegate to the canonical helper, validate its versioned
+  secret-free identity, atomically retain the stable selection, and expose
+  honest storage readiness. Unit, workspace, clippy, wasm, quality, audit, and
+  pinned sibling checks pass. Remaining acceptance evidence: Docker Desktop's
+  backend was unresponsive on 2026-07-15, so run the real isolated-home
+  provision/status/down proof and the mandatory local Sphinx container
+  build/run before marking this item complete.
 - [ ] **XIMG-092 P0 — Compose Monas authentication into the monolith.** Mount
   the Pinakotheke product through Monas/Prosopikon, inject authenticated host
   context into product APIs, and prove login/session/logout and direct-route
