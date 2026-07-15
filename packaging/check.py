@@ -12,6 +12,7 @@ import zipfile
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 HOSTS = [(os_name, arch) for os_name in ("macos", "windows", "linux") for arch in ("x86_64", "arm64")]
+RELEASE_MANIFEST = "release-manifest.v1.json"
 
 
 def digest(path: pathlib.Path) -> str:
@@ -31,6 +32,27 @@ def check_sources(version: str) -> None:
     makefile = (ROOT / "Makefile").read_text()
     for target in ["linux-x86_64", "linux-arm64", "macos-pkg-x86_64", "macos-pkg-arm64", "firefox"]:
         assert f"{target}:" in makefile
+
+
+def artifact_record(path: pathlib.Path, dist: pathlib.Path) -> dict[str, object]:
+    relative = path.relative_to(dist).as_posix()
+    parts = relative.split("/")
+    if parts[0] == "firefox":
+        kind, os_name, arch = "firefox-xpi", parts[1], parts[2]
+    elif parts[0] == "linux":
+        kind = "linux-deb" if path.suffix == ".deb" else "linux-rpm"
+        os_name, arch = "linux", parts[1]
+    else:
+        kind, os_name, arch = "macos-pkg", "macos", parts[1]
+    return {
+        "path": relative,
+        "kind": kind,
+        "os": os_name,
+        "architecture": arch,
+        "bytes": path.stat().st_size,
+        "sha256": digest(path),
+        "signed": False,
+    }
 
 
 def main() -> int:
@@ -59,7 +81,8 @@ def main() -> int:
     missing = [path.relative_to(args.dist) for path in expected if not path.is_file()]
     if missing:
         raise SystemExit("missing required package artifacts: " + ", ".join(map(str, missing)))
-    artifacts = sorted(path for path in args.dist.rglob("*") if path.is_file() and path.name != "SHA256SUMS")
+    ignored = {"SHA256SUMS", RELEASE_MANIFEST}
+    artifacts = sorted(path for path in args.dist.rglob("*") if path.is_file() and path.name not in ignored)
     if not artifacts:
         raise SystemExit("no package artifacts found; build a package target first")
     for os_name, arch in HOSTS:
@@ -70,10 +93,22 @@ def main() -> int:
                 assert json.loads(archive.read("manifest.json"))["version"] == args.version
     checksums = "".join(f"{digest(path)}  {path.relative_to(args.dist)}\n" for path in artifacts)
     checksum_path = args.dist / "SHA256SUMS"
+    release_manifest = {
+        "schema_version": "x-img.release-artifacts.v1",
+        "product": "x-img",
+        "version": args.version,
+        "artifacts": [artifact_record(path, args.dist) for path in artifacts],
+    }
+    release_manifest_path = args.dist / RELEASE_MANIFEST
+    release_manifest_text = json.dumps(release_manifest, indent=2, sort_keys=True) + "\n"
     if args.write_checksums:
         checksum_path.write_text(checksums)
-    elif not checksum_path.is_file() or checksum_path.read_text() != checksums:
-        raise SystemExit("SHA256SUMS is missing or stale; run make checksums")
+        release_manifest_path.write_text(release_manifest_text)
+    else:
+        if not checksum_path.is_file() or checksum_path.read_text() != checksums:
+            raise SystemExit("SHA256SUMS is missing or stale; run make checksums")
+        if not release_manifest_path.is_file() or release_manifest_path.read_text() != release_manifest_text:
+            raise SystemExit(f"{RELEASE_MANIFEST} is missing or stale; run make checksums")
     print(f"package verification passed: {len(artifacts)} artifact(s)")
     return 0
 

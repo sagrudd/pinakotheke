@@ -51,11 +51,14 @@ Expected outputs are:
 * macOS x86_64/arm64: two PKG files; and
 * Firefox macOS/Windows/Linux x86_64/arm64: six XPI files.
 
-``make checksums`` writes ``dist/SHA256SUMS``. ``make verify`` requires all
-twelve artifacts, validates the six XPI manifests and product version, and
-rejects a missing or stale checksum list. ``make quality`` checks packaging
-sources alongside the existing local quality and release audits without
-requiring hosted CI.
+``make checksums`` writes ``dist/SHA256SUMS`` and a deterministic
+``dist/release-manifest.v1.json``. The manifest identifies each artefact's
+kind, operating system, architecture, byte length, SHA-256, and signing state;
+development outputs explicitly say ``signed: false``. ``make verify`` requires
+all twelve artifacts, validates the six XPI manifests and product version, and
+rejects missing or stale checksum and release manifests. ``make quality``
+checks packaging sources alongside the existing local quality and release
+audits without requiring hosted CI.
 
 Troubleshooting
 ---------------
