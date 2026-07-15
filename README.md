@@ -321,7 +321,7 @@ rollback constraints.
 ## Versioning
 
 The project uses Semantic Versioning. The workspace package version is the
-single product-version authority and is currently `0.2.0`; the stable
+single product-version authority and is currently `0.3.0`; the stable
 connector, storage, Web, and Firefox contracts are the `1.0.0` gate.
 
 ## License

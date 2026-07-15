@@ -5,6 +5,8 @@ All notable changes to x-img will be documented in this file. The project uses
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-07-15
+
 ### Planning
 
 - Added XIMG-086's local package lifecycle and metadata rollback acceptance
