@@ -331,6 +331,10 @@ Exit criteria:
 Goal: allow users to add supported websites and capture viewed media into the
 same x-img instance.
 
+- XIMG-060 establishes the least-privilege Manifest V3 extension scaffold
+  (commit `c7f317c`) with optional origin permissions and no credential/cookie
+  access, automatic navigation, hidden traversal, or bulk crawling.
+
 Exit criteria:
 
 - signed Firefox Manifest V3-compatible extension has a trivial options UI for

@@ -34,6 +34,7 @@ Configuration
    x-media-discovery
    instagram-media-discovery
    account-refresh
+   firefox-extension
    review-admission
    identity-migration
 

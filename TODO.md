@@ -344,7 +344,11 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
 
 ## 0.6.0 — Firefox capture
 
-- [ ] **XIMG-060 P0 — Scaffold least-privilege Firefox extension.**
+- [x] **XIMG-060 P0 — Scaffold least-privilege Firefox extension.** Completed in
+  `c7f317c`; Manifest V3 uses optional per-origin HTTPS permissions and a
+  minimal toolbar/options surface, with no private browsing default, cookies,
+  credential forwarding, automatic opening, hidden traversal, crawling, or
+  simulated browsing. The extension identity remains migration-ready.
   Use supported manifest behavior, per-origin optional permissions, no private
   browsing by default, and a minimal toolbar/options surface. Capture and
   substitution are per-site opt-in, transparent, routed through the same x-img
