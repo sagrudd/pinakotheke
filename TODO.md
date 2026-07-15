@@ -368,9 +368,10 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   consequences are visible before Firefox permission request; capture and
   substitution are visibly per-site opt-in and can be paused independently.
 
-- [ ] **XIMG-063 P1 — Implement site-adapter registry.**
-  Version matching, canonicalization, exclusions, capabilities, and fixtures.
-  Start with explicit adapters; generic mode remains experimental and opt-in.
+- [x] **XIMG-063 P1 — Implement site-adapter registry.** Completed in
+  `d5feaba`; versioned explicit adapters canonicalize origins, exclude unsafe
+  paths, declare capabilities, and use fixtures. Generic observed-image mode is
+  experimental and requires explicit opt-in; registry matching enables nothing.
 
 - [ ] **XIMG-064 P0 — Implement viewed-media capture.**
   Stream or re-fetch only through an approved design from XIMG-007, submit to the

@@ -341,6 +341,9 @@ same x-img instance.
 - XIMG-060 establishes the least-privilege Manifest V3 extension scaffold
   (commit `c7f317c`) with optional origin permissions and no credential/cookie
   access, automatic navigation, hidden traversal, or bulk crawling.
+- XIMG-063 establishes explicit versioned site-adapter matching (commit
+  `d5feaba`) with canonical origins, exclusions, capabilities, fixtures, and
+  an opt-in experimental generic mode.
 
 Exit criteria:
 
