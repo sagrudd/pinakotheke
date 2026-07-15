@@ -7,6 +7,7 @@ All notable changes to x-img will be documented in this file. The project uses
 
 ### Planning
 
+- Added XIMG-056's keyboard-operable client-side metadata search.
 - Added XIMG-060's least-privilege Firefox Manifest V3 scaffold.
 - Added XIMG-051's selected-context X/Instagram/website source navigation.
 - Added XIMG-050's Mnemosyne-compatible Yew/Monas shell.

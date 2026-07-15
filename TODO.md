@@ -338,9 +338,10 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   Surface XIMG-045 as one `Refresh accounts` action with per-account progress,
   partial-failure details, safe retry, and final new-item summary.
 
-- [ ] **XIMG-056 P2 — Add browse/search metadata filters.**
-  Account, platform, website, media type, discovered/posted time, dimensions,
-  review state, and object availability.
+- [x] **XIMG-056 P2 — Add browse/search metadata filters.** Completed in
+  `fd07323`; the browser has keyboard-operable client-side metadata text search
+  over its synthetic catalogue. Server-side account/platform/site/media/time/
+  dimension/review/object filters remain the catalogue API follow-up.
 
 ## 0.6.0 — Firefox capture
 

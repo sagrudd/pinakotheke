@@ -302,6 +302,8 @@ Goal: deliver the dense, fast visual browser.
 - XIMG-051 implements source/account navigation (commit `ffdd275`): All, X,
   Instagram, and website contexts share one catalogue view with explicit
   selection and source counts.
+- XIMG-056 implements client-side metadata search (commit `fd07323`) for the
+  first-version synthetic browser; catalogue-backed structured filters follow.
 
 Exit criteria:
 
