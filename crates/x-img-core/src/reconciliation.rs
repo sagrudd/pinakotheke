@@ -185,6 +185,19 @@ impl ReconciliationCatalogue {
         self.committed.len()
     }
 
+    /// Finds the canonical identity already associated with a safe source alias.
+    ///
+    /// A browser capture can reuse this identity rather than creating a second
+    /// catalogue record when an account connector already committed the same
+    /// canonical media URL with verified object evidence.
+    #[must_use]
+    pub fn canonical_identity_for_alias(&self, alias: &str) -> Option<&str> {
+        self.committed
+            .values()
+            .find(|record| record.source_url_aliases.contains(alias))
+            .map(|record| record.settlement_key.canonical_media_identity.as_str())
+    }
+
     /// Returns immutable checksum evidence retained for a conflicting identity.
     #[must_use]
     pub fn conflict_checksums(&self, canonical_media_identity: &str) -> Option<&BTreeSet<String>> {

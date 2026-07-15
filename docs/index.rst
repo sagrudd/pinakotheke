@@ -36,6 +36,7 @@ Configuration
    account-refresh
    firefox-extension
    firefox-capture
+   website-capture-review
    site-adapters
    review-admission
    identity-migration

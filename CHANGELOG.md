@@ -7,6 +7,11 @@ All notable changes to x-img will be documented in this file. The project uses
 
 ### Planning
 
+- Added XIMG-065's verified website-capture provenance handoff to the shared
+  review queue. It records site/page/media/adapter evidence only after a
+  verified ObjectStore commit, rejects premature or mismatched acquisitions,
+  and reuses a matching committed connector identity rather than creating a
+  duplicate review item.
 - Added XIMG-064's host-authenticated Firefox viewed-media capture-plan
   boundary. It admits bounded, actually viewport-displayed thumbnail metadata
   only after paired actor, exact-origin policy, adapter, and scheduler checks;

@@ -62,6 +62,10 @@ cannot enter plan metadata or diagnostics. A plan state of
 ``awaiting_approved_acquisition`` is explicitly not an ObjectStore commit and
 must not be shown as a stored original or admitted to review.
 
+After a future acquisition has verified and committed an ObjectStore object,
+the metadata can enter the common review queue through
+:doc:`website-capture-review`. A capture plan never bypasses that boundary.
+
 Compatibility evidence
 ----------------------
 

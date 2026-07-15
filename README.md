@@ -117,6 +117,12 @@ site policy, adapter, and candidate bound before adding a redacted plan to the
 common scheduler. It does not accept browser media bytes or mark anything as
 stored. See [Firefox capture plans](docs/firefox-capture.rst).
 
+Verified website captures can now enter the same `New` review queue as account
+media. Their site, page, media alias, discovery time, and adapter provenance
+are retained; a matching committed connector alias reuses its canonical
+identity instead of creating a duplicate. See
+[website capture review admission](docs/website-capture-review.rst).
+
 One authenticated refresh action now has a fixture-tested orchestration model:
 it selects all enabled social accounts, coalesces repeat presses, exposes
 per-account bounded progress and terminal states, supports cancellation/retry,
