@@ -572,7 +572,18 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   clippy, wasm, quality, public-contract, nine-case fault/Firefox, privacy, and
   pinned local Sphinx container build/run passed on 2026-07-15; hosted CI was
   not required.
-- [ ] **XIMG-083 P1 — Add redacted telemetry, health, and audit surfaces.**
+- [x] **XIMG-083 P1 — Add redacted telemetry, health, and audit surfaces.**
+  Delivered in ``d522e1c``. Public ``/health`` exposes only versioned liveness
+  and build identity; the host-authenticated operations snapshot exposes typed
+  word-first health for five components, saturating aggregate counters, and a
+  128-entry fixed-code audit ring with eviction count. A host-retained shared
+  recorder supports live updates, while the schema has no free-form field for
+  URLs, browsing/account/actor data, credentials, sessions, object keys,
+  checksums, or payloads. Core and Axum tests prove worst-state aggregation,
+  bounds, redaction, coarse public output, and authentication. Workspace fmt/
+  check/test/clippy, wasm, quality, public-contract, nine-case fault/Firefox,
+  privacy, and pinned local Sphinx container build/run passed on 2026-07-15;
+  hosted CI was not required.
 - [ ] **XIMG-084 P1 — Complete privacy, security, accessibility, and license audits.**
 - [ ] **XIMG-085 P1 — Package Monas product and Firefox extension.**
 - [ ] **XIMG-086 P1 — Run production-like upgrade/rollback acceptance.**
