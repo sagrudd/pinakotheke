@@ -5,6 +5,8 @@ All notable changes to x-img will be documented in this file. The project uses
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-07-15
+
 ### Added
 
 - Added a deterministic CycloneDX 1.6 release SBOM covering locked Rust

@@ -244,7 +244,7 @@ mod tests {
 
     #[test]
     fn summary_contains_the_workspace_version() {
-        assert_eq!(build_info().summary(), "x-img 0.3.0");
+        assert_eq!(build_info().summary(), "x-img 0.9.0");
     }
 
     #[test]
