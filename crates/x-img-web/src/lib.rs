@@ -10,6 +10,9 @@ pub fn app() -> Html {
     let density = use_state(|| "compact".to_owned());
     let active_card = use_state(|| 0usize);
     let refresh_state = use_state(|| "Not started".to_owned());
+    let refresh_detail = use_state(|| {
+        "X / SelectedArtist — Pending; Instagram / SampleCreator — Pending".to_owned()
+    });
     let preview_open = use_state(|| false);
     let review_notice = use_state(|| "3 items need review".to_owned());
     let filter = use_state(String::new);
@@ -42,7 +45,7 @@ pub fn app() -> Html {
                 <h1>{ "x-img library" }</h1>
                 <p>{ "Review committed media from configured sources." }</p>
                 <section class="ximg-filters" aria-label="Browse metadata filters"><label>{"Search metadata "}<input value={(*filter).clone()} oninput={{let filter=filter.clone();Callback::from(move |event:InputEvent|filter.set(event.target_unchecked_into::<web_sys::HtmlInputElement>().value()))}} placeholder="Account, media type, date"/></label><p>{if filter.is_empty(){"Filters: all records"}else{"Filter active: matching synthetic records"}}</p></section>
-                <section class="ximg-refresh" aria-labelledby="refresh-title"><h2 id="refresh-title">{ "Account refresh" }</h2><p>{ format!("Status: {}", *refresh_state) }</p><button onclick={{ let refresh_state=refresh_state.clone(); Callback::from(move |_| refresh_state.set("Complete · 2 accounts · 0 new items".to_owned())) }}>{ "Refresh accounts" }</button><button onclick={{ let refresh_state=refresh_state.clone(); Callback::from(move |_| refresh_state.set("Partial failure · retry available".to_owned())) }}>{ "Show retry state" }</button></section>
+                <section class="ximg-refresh" aria-labelledby="refresh-title"><h2 id="refresh-title">{ "Account refresh" }</h2><p>{ format!("Status: {}", *refresh_state) }</p><p>{format!("Per-account progress: {}",*refresh_detail)}</p><button onclick={{ let refresh_state=refresh_state.clone();let refresh_detail=refresh_detail.clone(); Callback::from(move |_| {refresh_state.set("Complete · 2 accounts · 3 new items".to_owned());refresh_detail.set("X / SelectedArtist — Complete (2 new); Instagram / SampleCreator — Complete (1 new)".to_owned())}) }}>{ "Refresh accounts" }</button><button onclick={{ let refresh_state=refresh_state.clone();let refresh_detail=refresh_detail.clone(); Callback::from(move |_| {refresh_state.set("Partial failure · retry available".to_owned());refresh_detail.set("X / SelectedArtist — Complete (2 new); Instagram / SampleCreator — Failed: retry available".to_owned())}) }}>{ "Show retry state" }</button><button onclick={{let refresh_state=refresh_state.clone();Callback::from(move |_|refresh_state.set("Retry scheduled safely for Instagram / SampleCreator".to_owned()))}}>{"Retry failed account"}</button></section>
                 <section class="ximg-review" aria-labelledby="review-title"><h2 id="review-title">{"Review queue"}</h2><p>{format!("State: {}",*review_notice)}</p><p>{"Selected records: 0 · New · Stored in ObjectStore"}</p><button onclick={{let review_notice=review_notice.clone();Callback::from(move |_|review_notice.set("Batch reviewed · 3 items".to_owned()))}}>{"Mark selected reviewed"}</button><button onclick={{let review_notice=review_notice.clone();Callback::from(move |_|review_notice.set("Batch hidden · 3 items".to_owned()))}}>{"Hide selected"}</button></section>
                 <section class="ximg-source-nav" aria-labelledby="source-context">
                     <h2 id="source-context">{ "Sources" }</h2>
