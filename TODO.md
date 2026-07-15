@@ -419,14 +419,16 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   scratch. Native, wasm, quality, contract, and local Docker Sphinx verification
   passed. See `docs/normalized-video-profiles.rst`.
 
-- [ ] **XIMG-068 P0 — Implement the containerized video normalization adapter.**
-  Depends on XIMG-024/033/067. Use a pinned FFmpeg image/tool with structured
-  arguments, bounded resources, DAS-managed staging or isolated ephemeral
-  scratch, cleanup, probe/checksum manifests, cancellation, retry/resume,
-  progress, and crash/idempotency handling. Acceptance has no shell
-  interpolation, durable x-img-local payload, secret, or copyrighted fixture.
-  Planning evidence: `docs/adr/0005-video-selection-normalization.md` in commit
-  `5ad8eee`.
+- [x] **XIMG-068 P0 — Implement the containerized video normalization adapter.**
+  Completed in `c1346e8` and `6af0ae2`; the first adapter runs only on a paired
+  device with a digest-pinned Docker/FFmpeg image, structured network-isolated
+  arguments, capability/read-only/resource restrictions, bounded ephemeral
+  scratch, direct bounded DASObjectStore ingest, poster/probe/checksum/provenance
+  artifacts, cleanup, cancellation, idempotency/crash reconciliation, and host
+  phase progress. It never marks a rendition Ready: Firefox proof remains
+  XIMG-069. No shell interpolation, durable product-local payload, secret, or
+  copyrighted fixture is used. Native, wasm, quality, contract, and local Docker
+  Sphinx verification passed. See `docs/video-normalization.rst`.
 
 - [ ] **XIMG-069 P0 — Prove normalized Firefox playback and delivery.** Depends
   on XIMG-067/068/072. Acceptance requires DAS commit, checksum, probe, real
