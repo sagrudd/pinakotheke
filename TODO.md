@@ -362,11 +362,10 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   least-privilege credentials. Acceptance: origin binding, expiry, rotation,
   revocation, CSRF, replay, and local-network threat tests pass.
 
-- [ ] **XIMG-062 P1 — Implement trivial website policy UI.**
-  Add current site, enable/disable capture and substitution, choose supported
-  media classes, and remove permission. Acceptance: exact requested origin and
-  consequences are visible before Firefox permission request; capture and
-  substitution are visibly per-site opt-in and can be paused independently.
+- [x] **XIMG-062 P1 — Implement trivial website policy UI.** Completed in
+  `bb14d50`; options disclose the exact HTTPS origin and consequences before
+  permission, select images/videos, independently pause capture/substitution,
+  and remove the origin permission. All behavior is visibly per-site opt-in.
 
 - [x] **XIMG-063 P1 — Implement site-adapter registry.** Completed in
   `d5feaba`; versioned explicit adapters canonicalize origins, exclude unsafe

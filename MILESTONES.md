@@ -344,6 +344,9 @@ same x-img instance.
 - XIMG-063 establishes explicit versioned site-adapter matching (commit
   `d5feaba`) with canonical origins, exclusions, capabilities, fixtures, and
   an opt-in experimental generic mode.
+- XIMG-062 implements per-site Firefox policy controls (commit `bb14d50`) with
+  exact origin disclosure, media classes, independent capture/substitution
+  pause, and permission removal.
 
 Exit criteria:
 
