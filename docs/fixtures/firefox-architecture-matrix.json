@@ -2,7 +2,7 @@
   "schema": "x-img.firefox-architecture-matrix",
   "schema_major": 1,
   "fixture_kind": "synthetic",
-  "checked_at": "2026-07-14",
+  "checked_at": "2026-07-15",
   "browser": {
     "family": "Firefox",
     "manifest": "mv3-target",
@@ -65,8 +65,8 @@
       "eligibility": "observed_or_explicitly_selected",
       "interception": "adapter_specific_manifest_and_segment_rules",
       "permissions": ["exact_optional_host_permission", "site_capability"],
-      "status": "blocked_until_proven",
-      "required_evidence": ["manifest_identity", "segment_identity", "authorization", "mse_or_native_playback", "normalized_ready_object", "origin_fail_open"]
+      "status": "gate_implemented_no_adapter_approved",
+      "required_evidence": ["manifest_identity", "segment_identity", "versioned_manifest_canonicalization", "versioned_segment_canonicalization", "authorization", "mse_or_native_playback", "normalized_ready_object", "explicit_user_open", "no_drm_or_encryption", "origin_fail_open"]
     }
   ],
   "cases": [
@@ -139,7 +139,7 @@
       "id": "segmented-video-gate",
       "kind": "segmented_media",
       "setup": "A synthetic HLS/DASH manifest references multiple segments and a DRM-marked variant.",
-      "expected": "No generic discovery or substitution occurs; only a site capability with manifest/segment and playback evidence may proceed.",
+      "expected": "No generic discovery or substitution occurs; settings show a bounded Origin served reason, and only exact versioned manifest/segment plus Firefox evidence may pass the server gate.",
       "failure": "DRM, hidden manifests, and unsupported MSE remain explicitly blocked or origin-served."
     },
     {

@@ -1,7 +1,8 @@
 # ADR 0010: Firefox interception architecture spike
 
-- Status: Accepted for design and fixture planning; implementation remains
-  gated by the browser and host-contract checks below
+- Status: Accepted; progressive image/MP4 paths and the fail-closed segmented
+  adapter evidence gate are implemented, while exact HLS/DASH adapters remain
+  individually gated by the browser and host-contract checks below
 - Date: 2026-07-14
 - Deciders: x-img maintainers
 - Scope: XIMG-007 response observation, capture, and cache substitution for

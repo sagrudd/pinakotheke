@@ -7,6 +7,11 @@ All notable changes to x-img will be documented in this file. The project uses
 
 ### Planning
 
+- Added XIMG-073's fail-closed segmented-video adapter gate. HLS/DASH requires
+  exact versioned manifest/segment canonicalization, synthetic fixtures, real
+  Firefox evidence, explicit-open evidence, no DRM/encryption, and a matching
+  Ready normalized profile. Generic manifest/MSE sources stay origin-served
+  with a bounded URL-free Firefox diagnostic.
 - Added XIMG-072 normalized MP4 external-cache delivery. Exact reviewed video
   records support authenticated full, conditional, and single-range streams;
   the opted-in Firefox path uses native video playback and restores the origin

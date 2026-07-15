@@ -228,6 +228,25 @@ async function lookupAlias(instanceUrl, instanceId, pairId, origin, adapter, ali
     ? hit : null;
 }
 
+function segmentedMediaKind(rawUrl) {
+  const url = new URL(rawUrl);
+  const path = url.pathname.toLowerCase();
+  if (path.endsWith(".m3u8")) return "HLS";
+  if (path.endsWith(".mpd")) return "DASH";
+  if (url.protocol === "blob:") return "MSE or segmented";
+  return null;
+}
+
+async function recordSegmentedOriginFallback(origin, kind) {
+  await browser.storage.local.set({
+    lastDiagnostic: {
+      origin,
+      state: "Origin served",
+      reason: `${kind} substitution requires a proven site adapter`,
+    },
+  });
+}
+
 browser.action.onClicked.addListener(async tab => {
   try {
     if (!tab.id || !tab.url) return;
@@ -285,6 +304,11 @@ browser.action.onClicked.addListener(async tab => {
         target: { tabId: tab.id }, func: displayedVideos,
       }))[0].result || [];
       for (const observed of videos) {
+        const segmentedKind = segmentedMediaKind(observed.url);
+        if (segmentedKind) {
+          await recordSegmentedOriginFallback(origin, segmentedKind);
+          continue;
+        }
         const alias = canonicalAlias(observed.url);
         const hit = await lookupAlias(instanceUrl, instanceId, pairId, origin, adapter, alias);
         if (!hit || hit.media_class !== "normalized_mp4" || hit.content_type !== "video/mp4"

@@ -142,6 +142,12 @@ conditional-request behavior. Only explicitly opened, ready normalized
 renditions qualify; any delivery failure restores the origin video once. See
 [normalized MP4 substitution](docs/mp4-substitution.rst).
 
+Segmented HLS/DASH and MSE sources remain origin-served unless an exact site
+adapter supplies versioned manifest/segment canonicalization, synthetic and
+real-Firefox evidence, and a matching Ready normalized rendition. The generic
+adapter reports this as a bounded diagnostic and performs no manifest rewrite
+or segment traversal. See [segmented video gating](docs/segmented-video-gate.rst).
+
 Verified website captures can now enter the same `New` review queue as account
 media. Their site, page, media alias, discovery time, and adapter provenance
 are retained; a matching committed connector alias reuses its canonical

@@ -1,8 +1,8 @@
 # ADR 0008: External-cache aliases and fail-open delivery
 
 - Status: Accepted; XIMG-070 lookup, XIMG-071 image delivery, and XIMG-072
-  normalized-MP4 range delivery are implemented; segmented delivery remains
-  gated by XIMG-073
+  normalized-MP4 range delivery, and XIMG-073's fail-closed segmented adapter
+  evidence gate are implemented; no generic segmented adapter is enabled
 - Date: 2026-07-14
 - Deciders: x-img maintainers
 - Scope: Firefox image/video substitution, alias lookup, range delivery, and

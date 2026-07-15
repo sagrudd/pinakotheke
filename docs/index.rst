@@ -32,6 +32,7 @@ Configuration
    cache-alias-lookup
    image-substitution
    mp4-substitution
+   segmented-video-gate
    x-oauth
    x-followed-accounts
    x-media-discovery

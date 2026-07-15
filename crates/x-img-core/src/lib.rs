@@ -20,6 +20,7 @@ pub mod playback_delivery;
 pub mod reconciliation;
 pub mod review_admission;
 pub mod scheduler;
+pub mod segmented_video;
 pub mod video_candidate;
 pub mod video_normalization;
 pub mod video_profile;

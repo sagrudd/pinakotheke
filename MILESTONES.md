@@ -406,6 +406,10 @@ Goal: serve previously committed media from the object store on enabled sites.
   Firefox owns streaming and decoding while Axum preserves authorization,
   conditional and single-range semantics; installed Firefox proves concurrent
   range, cancellation, seek, pause/resume, and origin fallback behavior.
+- XIMG-073 makes segmented delivery fail closed by adapter evidence. The
+  generic extension leaves HLS/DASH/MSE origin-served and reports a bounded
+  reason; an exact adapter must prove canonicalization, Firefox behavior, no
+  DRM/encryption, explicit open, and a matching Ready normalized profile.
 
 Exit criteria:
 
