@@ -638,6 +638,12 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   Acceptance includes the coordinated Pinakotheke rename/rebrand matrix and
   repository migration, compatibility aliases/migrations, and local-container
   Sphinx documentation verification described above.
+  The first delivery slice adds ``make v1-preflight`` and the deliberately
+  strict ``make v1-cutover`` gate: the former proves the exact surface inventory
+  while reporting current blockers, and the latter refuses release until every
+  canonical identity and the public GitHub repository are ready together.
+  Remaining work is the coordinated identity implementation, compatibility
+  proof, repository rename, 1.0.0 packages/docs verification, tag, and release.
 
 ## Post-1.0
 

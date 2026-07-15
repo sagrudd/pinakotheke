@@ -508,6 +508,11 @@ Exit criteria:
 
 Goal: stable public interfaces and dependable day-to-day operation.
 
+Cutover control: ``make v1-preflight`` inventories the exact coordinated
+identity surface and names blockers safely during 0.9 development;
+``make v1-cutover`` is the mandatory fail-closed gate and additionally verifies
+the canonical public GitHub repository. It must pass before the v1 tag.
+
 Exit criteria:
 
 - no unresolved P0/P1 TODOs;

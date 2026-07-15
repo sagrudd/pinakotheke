@@ -47,3 +47,29 @@ committed ObjectStore bytes are never rewritten or deleted for branding.
 
 The detailed sequence, surface inventory, and required proof cases are in
 :doc:`adr/0011-pinakotheke-v1-identity-migration`.
+
+Executable cutover gate
+-----------------------
+
+The migration is enforced rather than inferred from documentation. Run the
+inventory-safe preflight at any time:
+
+.. code-block:: console
+
+   make v1-preflight
+
+It validates the exact migration surface inventory and reports every identity
+that is not yet canonical. Blockers are expected in a 0.9 release and do not
+make preflight fail. The actual release command is intentionally strict:
+
+.. code-block:: console
+
+   make v1-cutover
+
+It also queries the public canonical GitHub repository and exits unsuccessfully
+unless version, repository, Rust packages, CLI plus legacy wrapper, Monas and
+DASObjectStore registrations, Firefox identity, documentation, legacy schema
+reader, migration proof, and GitHub state are all ready together. A failed
+cutover check is a release refusal, not a checklist warning. The report contains
+surface names only and never reads credentials, media, browsing history, or
+ObjectStore records.

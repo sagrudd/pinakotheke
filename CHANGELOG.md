@@ -5,6 +5,9 @@ All notable changes to x-img will be documented in this file. The project uses
 
 ## [Unreleased]
 
+- Add an executable Pinakotheke v1 preflight and no-partial-cutover release
+  gate that reports canonical identity blockers without exposing private data.
+
 ## [0.9.0] - 2026-07-15
 
 ### Added

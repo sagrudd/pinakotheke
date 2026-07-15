@@ -11,7 +11,7 @@ BASELINE_VERSION ?=
 	linux-deb-x86_64 linux-deb-arm64 linux-rpm-x86_64 linux-rpm-arm64 \
 	macos-pkg macos-pkg-x86_64 macos-pkg-arm64 firefox firefox-macos-x86_64 \
 	firefox-macos-arm64 firefox-windows-x86_64 firefox-windows-arm64 \
-	firefox-linux-x86_64 firefox-linux-arm64 sbom checksums verify upgrade-rollback quality clean
+	firefox-linux-x86_64 firefox-linux-arm64 sbom checksums verify upgrade-rollback v1-preflight v1-cutover quality clean
 
 help:
 	@echo "x-img $(VERSION) packaging targets"
@@ -23,6 +23,8 @@ help:
 	@echo "  make sbom                  Generate the deterministic CycloneDX release SBOM"
 	@echo "  make upgrade-rollback BASELINE_DIST=... BASELINE_VERSION=..."
 	@echo "                              Exercise genuine package upgrade/downgrade acceptance"
+	@echo "  make v1-preflight          Inventory coordinated Pinakotheke cutover blockers"
+	@echo "  make v1-cutover            Refuse release unless every identity is canonical"
 	@echo "  make quality               Run local source, audit, and package checks"
 	@echo "  make clean                 Remove dist/ and packaging scratch"
 
@@ -81,6 +83,12 @@ verify:
 
 upgrade-rollback: verify
 	BASELINE_DIST="$(BASELINE_DIST)" BASELINE_VERSION="$(BASELINE_VERSION)" scripts/release/check_upgrade_rollback.sh
+
+v1-preflight:
+	scripts/release/check_v1_cutover.sh --phase preflight
+
+v1-cutover:
+	scripts/release/check_v1_cutover.sh --phase cutover --github
 
 quality:
 	scripts/quality/check.sh
