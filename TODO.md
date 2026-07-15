@@ -486,9 +486,22 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   contracts, quality, privacy, and pinned local Docker/Sphinx checks pass. See
   `docs/image-substitution.rst`.
 
-- [ ] **XIMG-072 P0 — Implement MP4 and range substitution.**
+- [x] **XIMG-072 P0 — Implement MP4 and range substitution.**
   Acceptance: seek, pause/resume, concurrent ranges, cancellation, conditional
   requests, and fallback pass real Firefox tests.
+  Completed in `13ee87a`: alias lookup returns a video-specific opaque route
+  only for explicitly opened normalized MP4 records. The Axum route repeats
+  host/pairing/site/adapter/object authorization, streams the exact reviewed
+  DASObjectStore object, supports full, conditional, and single-range reads,
+  returns exact ``206``/``304``/``416`` metadata, and leaves response bodies
+  independently streamable. The opted-in extension replaces only visible,
+  metadata-loaded videos through Firefox's native media element, never buffers
+  video bytes, and restores the original source/time/play state once on error.
+  Firefox 152 passed range, concurrent-range, cancellation, conditional,
+  seek, pause/resume, and fallback tests with an ephemeral Docker-generated
+  H.264/AAC MP4. Rust, clippy, wasm, JavaScript, contracts, quality/privacy,
+  and pinned local Docker/Sphinx checks passed. See
+  `docs/mp4-substitution.rst`.
 
 - [ ] **XIMG-073 P0 — Gate segmented video substitution by adapter.**
   Implement HLS/DASH only where manifest and segment canonicalization are proven.
