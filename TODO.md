@@ -409,14 +409,15 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   without user URLs, titles, credentials, cookies, or media. Native, wasm,
   quality, contract, and local Docker Sphinx verification passed.
 
-- [ ] **XIMG-067 P0 — Define versioned normalized video objects and profiles.**
-  Depends on XIMG-033/034/066. Specify `pinakotheke-video-webm-v1` and
-  `pinakotheke-video-mp4-v1` candidate contracts, profile evidence for VP9/Opus,
-  AV1/Opus, and H.264/AAC, typed derived objects, readiness states, retention,
-  and provenance. Acceptance never marks source-only video ready and documents
-  browser, hardware, licensing, quality, encoding, and storage evidence.
-  Planning evidence: `docs/adr/0005-video-selection-normalization.md` in commit
-  `5ad8eee`.
+- [x] **XIMG-067 P0 — Define versioned normalized video objects and profiles.**
+  Completed in `50c9a00`; immutable WebM VP9/Opus-or-AV1/Opus and MP4 H.264/AAC
+  profiles require Firefox, hardware/software, encoder, quality, storage, and
+  licensing evidence. Typed checksummed ObjectStore derivatives, source
+  retention, provenance, and readiness reject source-only videos. Docker-first
+  plans require a pinned image digest, resource bounds, authorized
+  DASObjectStore/paired-device/future-Keryx placement, and managed or bounded
+  scratch. Native, wasm, quality, contract, and local Docker Sphinx verification
+  passed. See `docs/normalized-video-profiles.rst`.
 
 - [ ] **XIMG-068 P0 — Implement the containerized video normalization adapter.**
   Depends on XIMG-024/033/067. Use a pinned FFmpeg image/tool with structured
