@@ -88,6 +88,11 @@ security, accessibility, Firefox permissions/CSP, MPL/SPDX coverage, locked
 dependency advisories/licenses/sources, JavaScript syntax, and every product
 version mirror; see [release audits](docs/release-audits.rst).
 
+Local native and browser packages are driven by the top-level ``Makefile``:
+DEB/RPM for Linux x86_64 and arm64, PKG for macOS x86_64 and arm64, and
+deterministic Firefox XPIs labelled for macOS/Windows/Linux on both
+architectures. See [native packages and Firefox bundles](docs/packaging.rst).
+
 The CLI now strictly validates, lists, and atomically replaces local versioned
 account/site configuration; it performs no network access or source refresh.
 See [configuration documentation](docs/configuration.rst) for commands and

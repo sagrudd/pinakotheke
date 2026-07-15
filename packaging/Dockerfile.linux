@@ -1,0 +1,31 @@
+# syntax=docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e
+# SPDX-License-Identifier: MPL-2.0
+FROM rust:1.97-bookworm@sha256:8fa55b2f3ddf97471ab6a767bfa3f37e6bad0986ba823e75fea57e2a2a5c3073 AS build
+ARG VERSION
+ARG RUST_TARGET
+ARG DEB_ARCH
+ARG RPM_ARCH
+WORKDIR /workspace
+RUN apt-get update && apt-get install -y --no-install-recommends rpm ca-certificates gcc-aarch64-linux-gnu gcc-x86-64-linux-gnu && rm -rf /var/lib/apt/lists/*
+COPY Cargo.toml Cargo.lock LICENSE ./
+COPY crates ./crates
+COPY contracts/monas/x-img-product-bootstrap.v1.json ./contracts/monas/x-img-product-bootstrap.v1.json
+COPY packaging/x-img.spec ./packaging/x-img.spec
+RUN test "$(cargo metadata --format-version 1 --no-deps | python3 -c 'import json,sys; print(json.load(sys.stdin)["packages"][0]["version"])')" = "$VERSION"
+RUN rustup target add "$RUST_TARGET" && \
+    CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc \
+    CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc \
+    cargo build --locked --release -p x-img-cli --target "$RUST_TARGET"
+RUN set -eu; \
+    mkdir -p /tmp/deb/DEBIAN /tmp/deb/usr/bin /tmp/deb/usr/share/x-img/monas /tmp/deb/usr/share/doc/x-img /out; \
+    install -m 0755 "target/$RUST_TARGET/release/x-img" /tmp/deb/usr/bin/x-img; \
+    install -m 0644 contracts/monas/x-img-product-bootstrap.v1.json /tmp/deb/usr/share/x-img/monas/product-bootstrap.json; \
+    install -m 0644 LICENSE /tmp/deb/usr/share/doc/x-img/LICENSE; \
+    printf 'Package: x-img\nVersion: %s\nSection: utils\nPriority: optional\nArchitecture: %s\nMaintainer: x-img maintainers\nDescription: x-img metadata CLI and Monas product contract\n' "$VERSION" "$DEB_ARCH" > /tmp/deb/DEBIAN/control; \
+    dpkg-deb --root-owner-group --build /tmp/deb "/out/x-img-${VERSION}-linux-${DEB_ARCH}.deb"; \
+    mkdir -p /tmp/rpmbuild/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}; \
+    rpmbuild -bb --target "$RPM_ARCH" --define "_topdir /tmp/rpmbuild" --define "ximg_version $VERSION" --define "ximg_binary /workspace/target/$RUST_TARGET/release/x-img" packaging/x-img.spec; \
+    find /tmp/rpmbuild/RPMS -name '*.rpm' -exec cp {} "/out/x-img-${VERSION}-linux-${RPM_ARCH}.rpm" \;
+
+FROM scratch AS export
+COPY --from=build /out/ /

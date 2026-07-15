@@ -469,6 +469,10 @@ Exit criteria:
   duplicate-generation warnings remaining explicit in ``deny.toml``;
 - package/install documentation covers Monas, DASObjectStore, Firefox, and
   upgrades.
+- the XIMG-085 packaging foundation builds the current CLI plus checked-in Monas
+  bootstrap/license as native packages and deterministic Firefox bundles;
+  daemon/appliance assembly, signing, notarization, and final install acceptance
+  remain explicit completion gates rather than being inferred from archive creation.
 - video jobs enforce bounded streaming, cancellation, resumable transfer where
   possible, quotas, backpressure, pinned containerized FFmpeg, scratch cleanup,
   crash reconciliation, and profile-version idempotency.

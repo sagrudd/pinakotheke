@@ -54,6 +54,7 @@ Configuration
    deletion-compliance
    operations
    release-audits
+   packaging
 
 Release and quality
 -------------------

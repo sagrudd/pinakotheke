@@ -7,6 +7,9 @@ All notable changes to x-img will be documented in this file. The project uses
 
 ### Planning
 
+- Added the XIMG-085 packaging foundation: a Makefile for cross-linked Linux
+  DEB/RPM, dual-architecture macOS PKG, deterministic six-label Firefox XPI,
+  SHA-256 manifests, and strict source/artifact verification.
 - Added XIMG-084's single-command local release audit covering privacy,
   security, accessibility, extension permissions/CSP, licenses, locked Rust
   dependencies/advisories/sources, JavaScript syntax, and version mirrors.

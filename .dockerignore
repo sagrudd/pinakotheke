@@ -1,0 +1,9 @@
+.git
+.codex
+dist
+target
+docs/_build
+accounts.local.json
+sites.local.json
+*.sqlite
+*.db
