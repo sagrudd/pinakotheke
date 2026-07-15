@@ -21,6 +21,8 @@ All notable changes to x-img will be documented in this file. The project uses
   default and future CLI compatibility alias.
 - Add an isolated, compile-tested rehearsal of the coordinated Pinakotheke 1.0
   identity cutover while leaving the live 0.9 repository unchanged.
+- Prove dual-architecture DEB/RPM transition from x-img 0.9.0 to canonical
+  Pinakotheke 1.0.0 and rollback with exact metadata preservation.
 
 ## [0.9.0] - 2026-07-15
 

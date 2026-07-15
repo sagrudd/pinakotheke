@@ -525,6 +525,10 @@ The complete local identity transition is now an executable transaction that is
 rehearsed in an isolated copy: the canonical Rust workspace compiles and tests,
 reviewed authority and Firefox candidates activate, and strict cutover/package
 gates pass without partially renaming the live 0.9 repository.
+Real x86_64 and arm64 DEB/RPM transition rehearsals now move from the published
+x-img 0.9 packages to temporary canonical Pinakotheke 1.0 packages and back,
+while preserving the legacy CLI alias, canonical host identity, and byte-exact
+metadata state.
 
 Exit criteria:
 

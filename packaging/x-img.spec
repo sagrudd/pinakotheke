@@ -6,6 +6,10 @@ Release: 1%{?dist}
 Summary: %{product_name} metadata CLI and Monas product contract
 License: MPL-2.0
 URL: https://github.com/sagrudd/%{product_name}
+%if "%{product_name}" == "pinakotheke"
+Provides: x-img = %{version}-%{release}
+Obsoletes: x-img < %{version}-%{release}
+%endif
 
 %description
 %{product_name} command-line metadata tools and the versioned Monas product bootstrap.

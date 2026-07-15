@@ -92,6 +92,22 @@ retains no output:
 
    python3 packaging/check_v1_plan.py
 
+Before the live cutover, the production package transition is exercised with:
+
+.. code-block:: console
+
+   make v1-package-transition
+
+This builds temporary canonical 1.0.0 DEB and RPM packages for x86_64 and
+arm64, then uses pinned, network-isolated Debian and Fedora containers to move
+from the published x-img 0.9.0 package to Pinakotheke 1.0.0 and back. The check
+requires the canonical command and the warning-emitting legacy command at 1.0,
+verifies the active canonical Monas product identity, and proves a synthetic
+metadata snapshot remains byte-exact. Temporary packages and state are removed
+after the check. RPM declares the canonical package as the provider and
+successor of x-img; DEB declares the equivalent provides/conflicts/replaces
+relationship.
+
 Troubleshooting
 ---------------
 

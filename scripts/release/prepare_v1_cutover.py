@@ -117,6 +117,8 @@ def apply(root: Path) -> None:
     replace(root / "docs/conf.py", 'project = "x-img"', 'project = "Pinakotheke"')
     replace(root / "docs/conf.py", 'release = "0.9.0"', 'release = "1.0.0"')
     replace(root / "docs/conf.py", 'html_title = "x-img documentation"', 'html_title = "Pinakotheke documentation"')
+    replace(root / "packaging/Dockerfile.linux", "-p x-img-cli", "-p pinakotheke-cli")
+    replace(root / "packaging/build-macos-pkg.sh", "-p x-img-cli", "-p pinakotheke-cli")
 
 
 def main() -> int:

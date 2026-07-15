@@ -28,6 +28,7 @@ def main() -> int:
         assert "pinakotheke" in source
         assert "x-img" in source
     assert "Conflicts: x-img" in dockerfile and "Replaces: x-img" in dockerfile
+    assert "Provides: x-img" in rpm and "Obsoletes: x-img" in rpm
     assert "release/$binary" in dockerfile and "release/x-img" in dockerfile
     assert "release/pinakotheke" in macos and "release/x-img" in macos
 

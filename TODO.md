@@ -667,6 +667,11 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   strict cutover and packaging gates, then deletes the temporary tree. The live
   0.9 repository remains unchanged until the coordinated authority and GitHub
   change window.
+  The seventh delivery slice builds real canonical DEB/RPM candidates for
+  x86_64 and arm64 and exercises 0.9 → 1.0 → 0.9 transitions in pinned,
+  network-isolated Debian/Fedora containers. Both CLI identities and the
+  canonical Monas registration are verified, RPM/DEB successor metadata is
+  explicit, and the synthetic authority/catalogue snapshot remains byte-exact.
 
 ## Post-1.0
 

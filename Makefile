@@ -12,7 +12,7 @@ PRODUCT ?= x-img
 	linux-deb-x86_64 linux-deb-arm64 linux-rpm-x86_64 linux-rpm-arm64 \
 	macos-pkg macos-pkg-x86_64 macos-pkg-arm64 firefox firefox-macos-x86_64 \
 	firefox-macos-arm64 firefox-windows-x86_64 firefox-windows-arm64 \
-	firefox-linux-x86_64 firefox-linux-arm64 sbom checksums verify upgrade-rollback v1-preflight v1-cutover quality clean
+	firefox-linux-x86_64 firefox-linux-arm64 sbom checksums verify upgrade-rollback v1-preflight v1-package-transition v1-cutover quality clean
 
 help:
 	@echo "$(PRODUCT) $(VERSION) packaging targets"
@@ -90,6 +90,9 @@ upgrade-rollback: verify
 v1-preflight:
 	scripts/release/check_v1_cutover.sh --phase preflight
 	python3 scripts/release/check_v1_rehearsal.py
+
+v1-package-transition:
+	python3 scripts/release/check_v1_package_transition.py
 
 v1-cutover:
 	scripts/release/check_v1_cutover.sh --phase cutover --github
