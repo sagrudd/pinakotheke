@@ -470,9 +470,11 @@ Exit criteria:
 - package/install documentation covers Monas, DASObjectStore, Firefox, and
   upgrades.
 - the XIMG-085 packaging foundation builds the current CLI plus checked-in Monas
-  bootstrap/license as native packages and deterministic Firefox bundles;
-  daemon/appliance assembly, signing, notarization, and final install acceptance
-  remain explicit completion gates rather than being inferred from archive creation.
+  bootstrap/license as native packages and deterministic Firefox bundles, with
+  twelve-artifact checksum and typed release-manifest verification; Monas owns
+  host composition/auth rather than x-img shipping a competing daemon, while
+  signing/notarization and production-like install acceptance remain explicit
+  XIMG-087 and XIMG-086 gates respectively;
 - video jobs enforce bounded streaming, cancellation, resumable transfer where
   possible, quotas, backpressure, pinned containerized FFmpeg, scratch cleanup,
   crash reconciliation, and profile-version idempotency.
