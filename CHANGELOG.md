@@ -10,6 +10,9 @@ All notable changes to x-img will be documented in this file. The project uses
 - Prepare one shared clap implementation for the canonical ``pinakotheke``
   command and behavior-preserving, warning-emitting ``x-img`` legacy alias;
   0.9 packages continue to install only the legacy command.
+- Add validated, inert Pinakotheke 1.0 Monas and DASObjectStore registration
+  candidates while preserving the active x-img registrations and historical
+  authority identity.
 
 ## [0.9.0] - 2026-07-15
 

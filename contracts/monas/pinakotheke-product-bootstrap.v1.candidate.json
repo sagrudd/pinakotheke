@@ -1,0 +1,31 @@
+{
+  "schema_version": "x-img.monas-product-bootstrap.v1",
+  "product_id": "pinakotheke",
+  "product_version": "1.0.0",
+  "host": "monas",
+  "host_mode": "monas_standalone",
+  "product_root": "/opt/pinakotheke",
+  "web_mount": "/products/pinakotheke/app/",
+  "api_mount": "/products/pinakotheke/api/",
+  "bootstrap_path": "/products/pinakotheke/.well-known/mnemosyne/product-bootstrap.json",
+  "capabilities": [
+    "monas_mandatory_web_authentication",
+    "dasobjectstore_required",
+    "pinakotheke_catalogue_review",
+    "pinakotheke_account_refresh",
+    "pinakotheke_browser_capture",
+    "pinakotheke_bioinformatics_plan"
+  ],
+  "correlation_policy": "host_generated",
+  "visibility": "cutover_candidate",
+  "external_sql_required": false,
+  "object_store_required": true,
+  "authentication_required": true,
+  "authentication_framework": "Prosopikon",
+  "device_token_requirement": "NotRequired",
+  "synoptikon_equivalent": {
+    "host_modes": ["monas_standalone", "synoptikon_integrated"],
+    "bootstrap_schema": "mnemosyne.product_ui.bootstrap.v1",
+    "host_context_owner": "host"
+  }
+}

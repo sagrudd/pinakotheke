@@ -82,6 +82,19 @@ impl std::error::Error for ApplicationIdentityError {}
 
 impl ScopedApplicationIdentity {
     pub fn parse_registration(bytes: &[u8]) -> Result<Self, ApplicationIdentityError> {
+        Self::parse_for(bytes, "x-img", true)
+    }
+
+    /// Parses the inert Pinakotheke service-principal cutover candidate.
+    pub fn parse_pinakotheke_candidate(bytes: &[u8]) -> Result<Self, ApplicationIdentityError> {
+        Self::parse_for(bytes, "pinakotheke", false)
+    }
+
+    fn parse_for(
+        bytes: &[u8],
+        expected_application_id: &str,
+        expected_active: bool,
+    ) -> Result<Self, ApplicationIdentityError> {
         let document: Value = serde_json::from_slice(bytes)
             .map_err(|error| ApplicationIdentityError::Json(error.to_string()))?;
         let object = document.as_object().ok_or_else(|| {
@@ -110,7 +123,7 @@ impl ScopedApplicationIdentity {
             }
         }
         require_string(object, "schema_version", APPLICATION_IDENTITY_SCHEMA)?;
-        require_string(object, "application_id", "x-img")?;
+        require_string(object, "application_id", expected_application_id)?;
         let owner_ref = required_identifier(object, "owner_ref")?;
         if !owner_ref.starts_with("monas.host-context:") {
             return Err(ApplicationIdentityError::Invalid(
@@ -166,10 +179,10 @@ impl ScopedApplicationIdentity {
                 "identity expiry must follow issue time".to_owned(),
             ));
         }
-        if object.get("active").and_then(Value::as_bool) != Some(true) {
-            return Err(ApplicationIdentityError::Invalid(
-                "identity must be active".to_owned(),
-            ));
+        if object.get("active").and_then(Value::as_bool) != Some(expected_active) {
+            return Err(ApplicationIdentityError::Invalid(format!(
+                "identity active state must be `{expected_active}`"
+            )));
         }
         Ok(Self {
             endpoint_id,
@@ -354,6 +367,23 @@ mod tests {
             "../../../contracts/dasobjectstore/x-img-application-identity.v1.json"
         ))
         .expect("registration must be valid")
+    }
+
+    #[test]
+    fn pinakotheke_candidate_preserves_scope_without_claiming_activation() {
+        let legacy = identity();
+        let candidate = ScopedApplicationIdentity::parse_pinakotheke_candidate(include_bytes!(
+            "../../../contracts/dasobjectstore/pinakotheke-application-identity.v1.candidate.json"
+        ))
+        .expect("candidate registration must be valid and inactive");
+
+        assert_eq!(candidate.endpoint_id, legacy.endpoint_id);
+        assert_eq!(candidate.object_store_id, legacy.object_store_id);
+        assert_eq!(candidate.operations, legacy.operations);
+        assert_eq!(candidate.max_object_bytes, legacy.max_object_bytes);
+        assert_eq!(candidate.max_total_bytes, legacy.max_total_bytes);
+        assert_eq!(candidate.prefix, "pinakotheke/");
+        assert_eq!(legacy.prefix, "x-img/");
     }
 
     #[test]

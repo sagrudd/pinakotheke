@@ -21,7 +21,9 @@ PINS = {
 }
 VENDORED_REQUIRED = (
     "contracts/monas/x-img-product-bootstrap.v1.json",
+    "contracts/monas/pinakotheke-product-bootstrap.v1.candidate.json",
     "contracts/dasobjectstore/x-img-application-identity.v1.json",
+    "contracts/dasobjectstore/pinakotheke-application-identity.v1.candidate.json",
     "contracts/dasobjectstore/x-img-destination-inventory.v1.json",
     "fixtures/monas/v1/invalid-anonymous-api.json",
     "fixtures/host-context/v1/monas-valid.json",

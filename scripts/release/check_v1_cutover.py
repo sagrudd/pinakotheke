@@ -38,6 +38,10 @@ def current_checks(*, github: bool) -> list[Check]:
     monas = load_json(ROOT / "contracts/monas/x-img-product-bootstrap.v1.json")
     das = load_json(ROOT / "contracts/dasobjectstore/x-img-application-identity.v1.json")
     extension = load_json(ROOT / "firefox-extension/manifest.json")
+    monas_candidate = load_json(ROOT / "contracts/monas/pinakotheke-product-bootstrap.v1.candidate.json")
+    das_candidate = load_json(
+        ROOT / "contracts/dasobjectstore/pinakotheke-application-identity.v1.candidate.json"
+    )
 
     checks = [
         Check("version", 'version = "1.0.0"' in cargo, "workspace version is exactly 1.0.0"),
@@ -63,6 +67,11 @@ def current_checks(*, github: bool) -> list[Check]:
         Check("migration-proof", contains("docs/fixtures/pinakotheke-identity-migration-matrix.json",
                                           '"no_partial_release": true'),
               "no-partial migration proof remains enabled"),
+        Check("authority-candidates", monas_candidate.get("product_id") == "pinakotheke" and
+              monas_candidate.get("visibility") == "cutover_candidate" and
+              das_candidate.get("application_id") == "pinakotheke" and
+              das_candidate.get("active") is False,
+              "inert canonical Monas and DASObjectStore candidates are validated"),
     ]
     if github:
         checks.append(github_check())

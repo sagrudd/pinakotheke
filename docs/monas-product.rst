@@ -44,3 +44,15 @@ Validation fixtures
 negative fixtures prove that a product declaring anonymous API access or a
 direct x-img login route is rejected. They do not contain credentials, cookies,
 or any real host endpoint.
+
+Pinakotheke cutover candidate
+-----------------------------
+
+``contracts/monas/pinakotheke-product-bootstrap.v1.candidate.json`` prepares
+the canonical 1.0 product ID, root, and mounts. Its visibility is explicitly
+``cutover_candidate``: x-img does not install or activate it in 0.9, and Monas
+remains authoritative for mounting it. Native tests validate the candidate
+against the same mandatory Prosopikon authentication, DASObjectStore
+requirement, host-context ownership, and no-direct-login rules as the legacy
+registration. The legacy mount remains available through the compatibility
+window after the coordinated activation.

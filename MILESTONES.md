@@ -512,6 +512,9 @@ Cutover control: ``make v1-preflight`` inventories the exact coordinated
 identity surface and names blockers safely during 0.9 development;
 ``make v1-cutover`` is the mandatory fail-closed gate and additionally verifies
 the canonical public GitHub repository. It must pass before the v1 tag.
+The canonical Monas product and scoped DASObjectStore principal now have
+validated inert candidates; activation remains an authority-owned cutover step,
+and legacy registrations plus historical object/audit identities stay intact.
 
 Exit criteria:
 

@@ -11,6 +11,17 @@ use serde_json::Value;
 
 pub const MONAS_PRODUCT_BOOTSTRAP_SCHEMA: &str = "x-img.monas-product-bootstrap.v1";
 
+#[derive(Debug, Clone, Copy)]
+struct ProductExpectation {
+    product_id: &'static str,
+    product_version: &'static str,
+    product_root: &'static str,
+    web_mount: &'static str,
+    api_mount: &'static str,
+    bootstrap_path: &'static str,
+    visibility: &'static str,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum HostProductError {
     Json(String),
@@ -38,6 +49,40 @@ impl std::error::Error for HostProductError {}
 /// a DASObjectStore requirement, and a bootstrap shape portable to a future
 /// Synoptikon host. x-img login/session routes are not part of this contract.
 pub fn validate_monas_product_bootstrap(bytes: &[u8]) -> Result<(), HostProductError> {
+    validate_product_bootstrap(
+        bytes,
+        ProductExpectation {
+            product_id: "x-img",
+            product_version: env!("CARGO_PKG_VERSION"),
+            product_root: "/opt/x-img",
+            web_mount: "/products/x-img/app/",
+            api_mount: "/products/x-img/api/",
+            bootstrap_path: "/products/x-img/.well-known/mnemosyne/product-bootstrap.json",
+            visibility: "local_profile_enabled",
+        },
+    )
+}
+
+/// Validates the inert Pinakotheke v1 Monas registration candidate.
+pub fn validate_pinakotheke_product_candidate(bytes: &[u8]) -> Result<(), HostProductError> {
+    validate_product_bootstrap(
+        bytes,
+        ProductExpectation {
+            product_id: "pinakotheke",
+            product_version: "1.0.0",
+            product_root: "/opt/pinakotheke",
+            web_mount: "/products/pinakotheke/app/",
+            api_mount: "/products/pinakotheke/api/",
+            bootstrap_path: "/products/pinakotheke/.well-known/mnemosyne/product-bootstrap.json",
+            visibility: "cutover_candidate",
+        },
+    )
+}
+
+fn validate_product_bootstrap(
+    bytes: &[u8],
+    expected: ProductExpectation,
+) -> Result<(), HostProductError> {
     let document: Value =
         serde_json::from_slice(bytes).map_err(|error| HostProductError::Json(error.to_string()))?;
     let object = document
@@ -71,20 +116,16 @@ pub fn validate_monas_product_bootstrap(bytes: &[u8]) -> Result<(), HostProductE
     }
 
     require_string(object, "schema_version", MONAS_PRODUCT_BOOTSTRAP_SCHEMA)?;
-    require_string(object, "product_id", "x-img")?;
-    require_string(object, "product_version", env!("CARGO_PKG_VERSION"))?;
+    require_string(object, "product_id", expected.product_id)?;
+    require_string(object, "product_version", expected.product_version)?;
     require_string(object, "host", "monas")?;
     require_string(object, "host_mode", "monas_standalone")?;
-    require_string(object, "product_root", "/opt/x-img")?;
-    require_string(object, "web_mount", "/products/x-img/app/")?;
-    require_string(object, "api_mount", "/products/x-img/api/")?;
-    require_string(
-        object,
-        "bootstrap_path",
-        "/products/x-img/.well-known/mnemosyne/product-bootstrap.json",
-    )?;
+    require_string(object, "product_root", expected.product_root)?;
+    require_string(object, "web_mount", expected.web_mount)?;
+    require_string(object, "api_mount", expected.api_mount)?;
+    require_string(object, "bootstrap_path", expected.bootstrap_path)?;
     require_string(object, "correlation_policy", "host_generated")?;
-    require_string(object, "visibility", "local_profile_enabled")?;
+    require_string(object, "visibility", expected.visibility)?;
     require_bool(object, "external_sql_required", false)?;
     require_bool(object, "object_store_required", true)?;
     require_bool(object, "authentication_required", true)?;
@@ -183,6 +224,14 @@ mod tests {
             "../../../contracts/monas/x-img-product-bootstrap.v1.json"
         ))
         .expect("product registration must remain valid");
+    }
+
+    #[test]
+    fn accepts_the_inert_pinakotheke_cutover_candidate() {
+        validate_pinakotheke_product_candidate(include_bytes!(
+            "../../../contracts/monas/pinakotheke-product-bootstrap.v1.candidate.json"
+        ))
+        .expect("candidate registration must remain valid");
     }
 
     #[test]

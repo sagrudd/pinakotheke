@@ -41,3 +41,15 @@ long-lived identity key or certificate in the daemon/approved secret boundary,
 and supply only the opaque ``credential_ref`` to x-img. XIMG-033 will consume
 short-lived, server-side authority through the storage-ingest port; this task
 does not contact a daemon or issue any access token.
+
+Pinakotheke cutover candidate
+-----------------------------
+
+``contracts/dasobjectstore/pinakotheke-application-identity.v1.candidate.json``
+is a non-secret, explicitly inactive registration candidate. It preserves the
+reviewed endpoint, ObjectStore, operations, and byte limits while using a new
+canonical application ID, opaque authority references, and namespace for new
+writes. Historical ``x-img`` principal IDs, prefixes, object keys, receipts,
+and audit records remain unchanged and readable. At cutover an administrator
+must register, review, and activate the candidate in DASObjectStore; checking
+this fixture cannot issue a token or activate a principal.

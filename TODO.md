@@ -648,6 +648,10 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   a warning-emitting ``x-img`` alias over one clap implementation, with golden
   parser-equivalence tests; 0.9 packages intentionally continue installing only
   ``x-img`` until the coordinated cutover.
+  The third delivery slice adds inert, strictly validated Pinakotheke Monas and
+  DASObjectStore registration candidates. They preserve authentication, scope,
+  destination, quota, and legacy audit/object identities but cannot mount a
+  product, activate a principal, or issue a credential before cutover.
 
 ## Post-1.0
 
