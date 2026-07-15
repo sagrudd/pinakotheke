@@ -9,6 +9,11 @@ Current XIMG-091 managed local-profile baseline: ``../DASObjectStore`` commit
 canonical helper admits only the exact Pinakotheke home root, accepts reviewed
 logical-store parameters, and exposes a secret-free versioned identity.
 
+Current XIMG-092 authenticated forwarding baseline: ``../monas`` commit
+``6e62943dedbe21f0f7551d5fd1371f61f26fa42b`` (workspace ``0.2.0``). Monas
+owns the Pinakotheke mount, Prosopikon cookie verification, strict context
+injection, streaming loopback forwarding, and private dispatch configuration.
+
 Status: proposed planning contract
 Snapshot: 2026-07-14 UTC
 TODO: XIMG-003

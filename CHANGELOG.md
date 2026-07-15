@@ -21,6 +21,9 @@ All notable changes to Pinakotheke will be documented in this file. The project 
   process-local credential admits only strict non-secret host context, strips
   dispatch headers before product handling, and leaves browser sessions wholly
   owned by Monas/Prosopikon.
+- Complete XIMG-092 against Monas ``0.2.0`` with the authenticated canonical
+  product mount, streaming loopback forwarding, cookie stripping, strict host
+  context injection, and session revocation proof.
 
 ## [1.0.0] - 2026-07-15
 

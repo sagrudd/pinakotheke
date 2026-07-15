@@ -26,7 +26,7 @@ Host replacement
 
 ``MonasHostContextAdapter`` and ``SynoptikonHostContextAdapter`` implement the
 same narrow adapter contract. The former is shaped against ``../monas`` commit
-``3d21b0bc7b83fa8408d01b93347a56f43f3a96b7`` and the latter against
+``6e62943dedbe21f0f7551d5fd1371f61f26fa42b`` and the latter against
 ``../mnemosyne`` commit ``9877017e3139711ed6313c53603409c53020541d``. These are
 compatibility inspection pins, not path dependencies. Synthetic fixtures prove
 that either host can supply a valid, authorized context and that missing product

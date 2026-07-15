@@ -735,7 +735,8 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   shutdown. The pinned local Sphinx container build and run also passed. The
   final diagnostic fix exposes only one bounded authority-error line instead
   of an opaque exit status.
-- [ ] **XIMG-092 P0 — Compose Monas authentication into the monolith.** Mount
+- [x] **XIMG-092 P0 — Compose Monas authentication into the monolith.** Completed
+  in ``74f035e`` with Monas ``0.2.0`` commits ``e0999e3`` and ``6e62943``. Mount
   the Pinakotheke product through Monas/Prosopikon, inject authenticated host
   context into product APIs, and prove login/session/logout and direct-route
   rejection without adding Pinakotheke-owned credentials or cookies. The first
@@ -743,11 +744,14 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   process-local dispatch credential admits only strict
   ``x-img.host-context.v1`` Monas context, strips both dispatch headers before
   product handling, rejects direct/forged/invalid requests, and reports the
-  configured boundary honestly in readiness. Remaining work is Monas-owned:
-  add the authenticated Pinakotheke forwarding mount, mint and retain the
-  matching process credential, inject actor/authorization/correlation context,
-  then prove real registration/login/session/logout and direct-backend
-  rejection before closing this item.
+  configured boundary honestly in readiness. Monas now registers the canonical
+  product mount, verifies Prosopikon sessions, strips cookies and forged host
+  headers, injects actor/authorization/correlation context, streams request and
+  response bodies, and accepts only a loopback backend plus private token file.
+  Synthetic real-store registration/login/session/logout tests prove admission
+  and revocation through an Axum backend; Pinakotheke tests independently prove
+  direct-backend and forged dispatch rejection. Neither public repository gains
+  an unpublished sibling path dependency.
 - [ ] **XIMG-093 P1 — Add macOS per-user service management.** Provide
   non-root ``launchd`` install/status/logs/restart/uninstall commands with
   absolute paths, private permissions, transactional updates, preserved state,

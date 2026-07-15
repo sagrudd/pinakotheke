@@ -4,15 +4,15 @@ Monas product registration
 x-img is registered as one authenticated Monas product. The versioned public
 registration is ``contracts/monas/x-img-product-bootstrap.v1.json``. It was
 shaped against ``../monas`` commit
-``3d21b0bc7b83fa8408d01b93347a56f43f3a96b7``; that inspection pin is not a
+``6e62943dedbe21f0f7551d5fd1371f61f26fa42b``; that inspection pin is not a
 build dependency.
 
 Mount and authority boundary
 ----------------------------
 
 The registration has exactly one application mount,
-``/products/x-img/app/``, and one API mount,
-``/products/x-img/api/``. Its product root is ``/opt/x-img``. The product
+``/products/pinakotheke/app/``, and one API mount,
+``/products/pinakotheke/api/``. Its product root is ``/opt/pinakotheke``. The product
 requires both Monas host authentication and DASObjectStore availability.
 
 Monas and its Prosopikon integration own login, logout, registration, session

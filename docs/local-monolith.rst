@@ -90,13 +90,29 @@ dispatch headers are removed before product code runs. When configured,
 readiness reports the trusted dispatch boundary as ``Ready``; this means only
 that the backend is prepared for Monas dispatch, not that a login has occurred.
 
-The token file is an operator-facing integration seam for the current Monas
-revision. Monas must create and retain the matching credential, verify its own
-Prosopikon cookie, generate the correlation identifier, and inject the context.
-Pinakotheke never parses the Monas cookie or issues login, session, or logout
-state. Until the Monas forwarding mount is delivered and its login/logout flow
-is proven, XIMG-092 remains in progress and the backend should stay loopback
-only.
+Monas ``0.2.0`` provides the matching authenticated forwarding mount. Create
+one private credential and start the backend on a separate loopback port, then
+start Monas as the only user-facing listener:
+
+.. code-block:: console
+
+   install -d -m 700 "$HOME/.x-img/run"
+   (umask 077; openssl rand -hex 32 > "$HOME/.x-img/run/monas-dispatch.token")
+   pinakotheke serve --port 8732 \
+     --monas-dispatch-token-file "$HOME/.x-img/run/monas-dispatch.token"
+
+.. code-block:: console
+
+   MONAS_BIND_ADDR=127.0.0.1:8731 \
+   PINAKOTHEKE_UPSTREAM=http://127.0.0.1:8732 \
+   PINAKOTHEKE_DISPATCH_TOKEN_FILE="$HOME/.x-img/run/monas-dispatch.token" \
+   monas-server
+
+Open ``http://127.0.0.1:8731/products/pinakotheke/app/``. Monas verifies its
+Prosopikon cookie, generates the correlation identifier, strips the cookie and
+any caller-supplied dispatch headers, and streams to the backend. Pinakotheke
+never parses the cookie or issues login, session, or logout state. Keep port
+8732 loopback-only; direct protected requests remain rejected.
 
 Stop the foreground process with ``Control-C``. Axum stops accepting new work
 and completes graceful shutdown.

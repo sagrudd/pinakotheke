@@ -72,9 +72,9 @@ integration. The first local monolith slice can now run a loopback Axum service
 with an isolated private metadata root. Explicit local-profile commands now
 provision and discover a named DASObjectStore-managed ObjectStore without
 granting Pinakotheke direct filesystem authority. Monas authentication remains
-the next integration slice; its backend ingress now has a fail-closed,
-process-credentialed boundary for Monas-injected non-secret host context, but
-does not parse Monas cookies or issue sessions. See
+composes through the Monas ``0.2.0`` authenticated forwarding mount and a
+fail-closed, process-credentialed backend boundary. Pinakotheke does not parse
+Monas cookies or issue sessions. See
 [local monolith](docs/local-monolith.rst) and
 [MILESTONES.md](MILESTONES.md) for release gates
 and [TODO.md](TODO.md) for dependency-ordered work. Automated contributors must
