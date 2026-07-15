@@ -33,8 +33,10 @@ def contains(path: str, value: str) -> bool:
 
 def current_checks(*, github: bool) -> list[Check]:
     cargo = (ROOT / "Cargo.toml").read_text(encoding="utf-8")
-    cli_manifest = (ROOT / "crates/x-img-cli/Cargo.toml").read_text(encoding="utf-8")
-    cli_legacy = (ROOT / "crates/x-img-cli/src/main.rs").read_text(encoding="utf-8")
+    cli_root = ROOT / ("crates/pinakotheke-cli" if (ROOT / "crates/pinakotheke-cli").is_dir() else "crates/x-img-cli")
+    model_root = ROOT / ("crates/pinakotheke-model" if (ROOT / "crates/pinakotheke-model").is_dir() else "crates/x-img-model")
+    cli_manifest = (cli_root / "Cargo.toml").read_text(encoding="utf-8")
+    cli_legacy = (cli_root / "src/main.rs").read_text(encoding="utf-8")
     monas = load_json(ROOT / "contracts/monas/x-img-product-bootstrap.v1.json")
     das = load_json(ROOT / "contracts/dasobjectstore/x-img-application-identity.v1.json")
     extension = load_json(ROOT / "firefox-extension/manifest.json")
@@ -63,7 +65,7 @@ def current_checks(*, github: bool) -> list[Check]:
         Check("documentation", contains("docs/index.rst", "Pinakotheke documentation") and
               contains("README.md", "github.com/sagrudd/pinakotheke"),
               "public documentation leads with the canonical identity"),
-        Check("legacy-schemas", contains("crates/x-img-model/src/lib.rs", "x-img.instance.v1"),
+        Check("legacy-schemas", "x-img.instance.v1" in (model_root / "src/lib.rs").read_text(encoding="utf-8"),
               "legacy schema readers remain present"),
         Check("migration-proof", contains("docs/fixtures/pinakotheke-identity-migration-matrix.json",
                                           '"no_partial_release": true'),

@@ -660,6 +660,13 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   SBOM, checksum, and artifact manifest behind an explicit product switch.
   ``x-img`` remains the 0.9 default; canonical mode is version-locked, installs
   ``pinakotheke`` plus the ``x-img`` CLI alias, and consumes reviewed candidates.
+  The sixth delivery slice adds an executable all-local-surface cutover
+  transformer and an isolated rehearsal. The rehearsal renames and compiles the
+  Rust workspace, activates copies of reviewed authority/Firefox candidates,
+  updates canonical version/repository/documentation identity, passes the
+  strict cutover and packaging gates, then deletes the temporary tree. The live
+  0.9 repository remains unchanged until the coordinated authority and GitHub
+  change window.
 
 ## Post-1.0
 

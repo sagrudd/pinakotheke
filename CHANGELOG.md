@@ -19,6 +19,8 @@ All notable changes to x-img will be documented in this file. The project uses
 - Parameterize native, Firefox, SBOM, checksum, and artifact-manifest packaging
   for a version-locked Pinakotheke cutover while retaining x-img as the 0.9
   default and future CLI compatibility alias.
+- Add an isolated, compile-tested rehearsal of the coordinated Pinakotheke 1.0
+  identity cutover while leaving the live 0.9 repository unchanged.
 
 ## [0.9.0] - 2026-07-15
 

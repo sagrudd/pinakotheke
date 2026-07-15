@@ -21,6 +21,31 @@ are updated after the cutover:
 GitHub redirects the old repository URL, but the redirect is not a permanent
 interface and the old ``sagrudd/x-img`` name must not be recreated.
 
+Cutover rehearsal
+-----------------
+
+The local identity transition is rehearsed as one transaction before any live
+repository or authority is changed:
+
+.. code-block:: console
+
+   python3 scripts/release/check_v1_rehearsal.py
+
+The command creates an isolated temporary copy, moves every Rust package to its
+canonical ``pinakotheke-*`` path and package name, updates the workspace to
+1.0.0 and the canonical repository, activates copies of the reviewed Monas and
+DASObjectStore candidates, installs the reviewed Firefox identity, and updates
+the public documentation lead. It then compiles and tests the renamed workspace
+and runs the strict local cutover and package-source gates. The live 0.9 tree is
+never modified and the temporary copy is deleted after verification.
+
+The underlying transformer requires both an explicit root and ``--apply``. It
+is a release-operator mechanism, not an ordinary development command. During
+the real cutover it must be used only after the canonical GitHub repository and
+authority-owner change window are confirmed; the final ``make v1-cutover``
+still verifies the live repository and cannot be bypassed by a successful
+rehearsal.
+
 What stays stable
 -----------------
 

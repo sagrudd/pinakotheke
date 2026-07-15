@@ -521,6 +521,10 @@ endpoint, and ObjectStore selection instead of resetting extension storage.
 All package families, Firefox XPIs, SBOM, checksums, and typed artifact manifests
 now support a version-locked canonical product mode while retaining x-img as the
 0.9 default and v1 CLI compatibility alias.
+The complete local identity transition is now an executable transaction that is
+rehearsed in an isolated copy: the canonical Rust workspace compiles and tests,
+reviewed authority and Firefox candidates activate, and strict cutover/package
+gates pass without partially renaming the live 0.9 repository.
 
 Exit criteria:
 

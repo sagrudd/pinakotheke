@@ -89,6 +89,7 @@ upgrade-rollback: verify
 
 v1-preflight:
 	scripts/release/check_v1_cutover.sh --phase preflight
+	python3 scripts/release/check_v1_rehearsal.py
 
 v1-cutover:
 	scripts/release/check_v1_cutover.sh --phase cutover --github
