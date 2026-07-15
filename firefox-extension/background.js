@@ -222,10 +222,26 @@ async function lookupAlias(instanceUrl, instanceId, pairId, origin, adapter, ali
       adapter_version: adapter.version,
     }),
   });
-  if (!response.ok) return null;
-  const hit = await response.json();
-  return hit.schema_version === "x-img.cache-alias-result.v1" && hit.outcome === "hit"
-    ? hit : null;
+  if (!response.ok) throw new Error("cache lookup unavailable");
+  const result = await response.json();
+  return result.schema_version === "x-img.cache-alias-result.v1" ? result : null;
+}
+
+async function recordSiteDiagnostic(origin, update) {
+  const stored = await browser.storage.local.get(["sites", "siteDiagnostics"]);
+  if (!(stored.sites || []).some(site => site.origin === origin)) return;
+  const diagnostics = stored.siteDiagnostics || {};
+  const existing = diagnostics[origin];
+  diagnostics[origin] = {
+    state: update.state,
+    reason: update.reason,
+    previouslyObserved: Boolean(existing?.previouslyObserved || update.previouslyObserved),
+    storedInObjectStore: Boolean(existing?.storedInObjectStore || update.storedInObjectStore),
+  };
+  for (const key of Object.keys(diagnostics)) {
+    if (!(stored.sites || []).some(site => site.origin === key)) delete diagnostics[key];
+  }
+  await browser.storage.local.set({ siteDiagnostics: diagnostics });
 }
 
 function segmentedMediaKind(rawUrl) {
@@ -238,16 +254,15 @@ function segmentedMediaKind(rawUrl) {
 }
 
 async function recordSegmentedOriginFallback(origin, kind) {
-  await browser.storage.local.set({
-    lastDiagnostic: {
-      origin,
-      state: "Origin served",
-      reason: `${kind} substitution requires a proven site adapter`,
-    },
+  await recordSiteDiagnostic(origin, {
+    state: "Origin served",
+    reason: `${kind} substitution requires a proven site adapter`,
+    previouslyObserved: true,
+    storedInObjectStore: false,
   });
 }
 
-browser.action.onClicked.addListener(async tab => {
+async function runCacheForTab(tab) {
   try {
     if (!tab.id || !tab.url) return;
     const origin = new URL(tab.url).origin;
@@ -262,7 +277,7 @@ browser.action.onClicked.addListener(async tab => {
       : [];
     for (const observed of images) {
       if (rule.capture && adapter.capabilities.observed_thumbnail) {
-        await fetch(`${instanceUrl}/api/extension/v1/capture-plans`, {
+        const capture = await fetch(`${instanceUrl}/api/extension/v1/capture-plans`, {
           method: "POST",
           credentials: "include",
           headers: { "content-type": "application/json" },
@@ -279,14 +294,30 @@ browser.action.onClicked.addListener(async tab => {
             height: observed.height,
           }),
         });
+        if (capture.ok) {
+          await recordSiteDiagnostic(origin, {
+            state: "Previously observed",
+            reason: "Visible thumbnail accepted for review",
+            previouslyObserved: true,
+            storedInObjectStore: false,
+          });
+        }
       }
       if (rule.substitution && adapter.capabilities.image_substitution) {
         const alias = canonicalAlias(observed.url);
         const hit = await lookupAlias(instanceUrl, instanceId, pairId, origin, adapter, alias);
-        if (!hit || !hit.media_class?.endsWith("_image") || !hit.delivery_path) continue;
+        if (!hit || hit.outcome !== "hit" || !hit.media_class?.endsWith("_image") || !hit.delivery_path) {
+          await recordSiteDiagnostic(origin, {
+            state: "Origin served",
+            reason: hit?.reason || hit?.outcome || "Cache lookup unavailable",
+            previouslyObserved: true,
+            storedInObjectStore: false,
+          });
+          continue;
+        }
         const deliveryUrl = new URL(hit.delivery_path, instanceUrl);
         if (deliveryUrl.origin !== instanceUrl) continue;
-        await browser.scripting.executeScript({
+        const substitution = await browser.scripting.executeScript({
           target: { tabId: tab.id },
           func: substituteDisplayedImage,
           args: [{
@@ -296,6 +327,13 @@ browser.action.onClicked.addListener(async tab => {
             contentLength: hit.content_length,
             objectChecksum: hit.object_checksum,
           }],
+        });
+        const outcome = substitution[0]?.result;
+        await recordSiteDiagnostic(origin, {
+          state: outcome?.outcome === "objectstore" ? "Cache hit" : "Origin served",
+          reason: outcome?.outcome === "objectstore" ? "Image delivered from the reviewed ObjectStore" : "Image substitution failed open",
+          previouslyObserved: hit.media_class === "thumbnail_image",
+          storedInObjectStore: outcome?.outcome === "objectstore",
         });
       }
     }
@@ -311,18 +349,52 @@ browser.action.onClicked.addListener(async tab => {
         }
         const alias = canonicalAlias(observed.url);
         const hit = await lookupAlias(instanceUrl, instanceId, pairId, origin, adapter, alias);
-        if (!hit || hit.media_class !== "normalized_mp4" || hit.content_type !== "video/mp4"
-          || !hit.delivery_path) continue;
+        if (!hit || hit.outcome !== "hit" || hit.media_class !== "normalized_mp4"
+          || hit.content_type !== "video/mp4" || !hit.delivery_path) {
+          await recordSiteDiagnostic(origin, {
+            state: "Origin served",
+            reason: hit?.reason || hit?.outcome || "Normalized video cache miss",
+            previouslyObserved: true,
+            storedInObjectStore: false,
+          });
+          continue;
+        }
         const deliveryUrl = new URL(hit.delivery_path, instanceUrl);
         if (deliveryUrl.origin !== instanceUrl) continue;
-        await browser.scripting.executeScript({
+        const substitution = await browser.scripting.executeScript({
           target: { tabId: tab.id },
           func: substituteDisplayedVideo,
           args: [{ canonicalAlias: alias, deliveryUrl: deliveryUrl.href }],
         });
+        const outcome = substitution[0]?.result;
+        await recordSiteDiagnostic(origin, {
+          state: outcome?.outcome === "objectstore" ? "Cache hit" : "Origin served",
+          reason: outcome?.outcome === "objectstore" ? "Normalized video delivered from the reviewed ObjectStore" : "Video substitution failed open",
+          previouslyObserved: true,
+          storedInObjectStore: outcome?.outcome === "objectstore",
+        });
       }
     }
   } catch (_) {
-    // Capture is deliberately fail-open: page browsing never depends on x-img.
+    if (tab?.url) {
+      try {
+        const origin = new URL(tab.url).origin;
+        await recordSiteDiagnostic(origin, {
+          state: "Origin served",
+          reason: "x-img cache operation unavailable",
+          previouslyObserved: false,
+          storedInObjectStore: false,
+        });
+      } catch (_) {
+        // Non-Web tabs have no site policy or diagnostic record.
+      }
+    }
   }
+}
+
+browser.runtime.onMessage.addListener(async message => {
+  if (message?.command !== "run-cache") return undefined;
+  const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
+  await runCacheForTab(tab);
+  return { completed: true };
 });

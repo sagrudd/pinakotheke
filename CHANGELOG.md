@@ -7,6 +7,10 @@ All notable changes to x-img will be documented in this file. The project uses
 
 ### Planning
 
+- Added XIMG-074's Firefox cache popup with per-site pause/resume, explicit run,
+  current hit/miss/error reason, host source-view link, clear permission text,
+  and accessible ``Previously observed`` versus ``Stored in ObjectStore``
+  evidence. Diagnostics are one bounded URL-free record per configured origin.
 - Added XIMG-073's fail-closed segmented-video adapter gate. HLS/DASH requires
   exact versioned manifest/segment canonicalization, synthetic fixtures, real
   Firefox evidence, explicit-open evidence, no DRM/encryption, and a matching

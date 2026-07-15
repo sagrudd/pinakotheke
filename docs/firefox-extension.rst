@@ -22,3 +22,7 @@ capture plan. The extension does not automatically open an original. The
 paired host must authenticate and authorize the plan before it enters the
 shared scheduler; this is never a direct browser payload upload. See
 :doc:`firefox-capture` for the endpoint, policy, and fail-open contract.
+
+The toolbar now opens the explicit per-site cache control and diagnostic
+surface described in :doc:`firefox-toolbar`. Image, normalized-MP4, and
+fail-closed segmented behavior remain governed by their adapter/authority gates.

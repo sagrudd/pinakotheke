@@ -39,6 +39,7 @@ Configuration
    instagram-media-discovery
    account-refresh
    firefox-extension
+   firefox-toolbar
    firefox-capture
    website-capture-review
    site-adapters

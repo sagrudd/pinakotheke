@@ -148,6 +148,12 @@ real-Firefox evidence, and a matching Ready normalized rendition. The generic
 adapter reports this as a bounded diagnostic and performs no manifest rewrite
 or segment traversal. See [segmented video gating](docs/segmented-video-gate.rst).
 
+The Firefox toolbar exposes the active site's capture/substitution state,
+pause/resume and explicit run controls, its latest coarse cache result, and the
+distinct evidence labels `Previously observed` and `Stored in ObjectStore`.
+Diagnostics are bounded and URL-free; ordinary origin loading remains the
+fallback. See [Firefox cache toolbar](docs/firefox-toolbar.rst).
+
 Verified website captures can now enter the same `New` review queue as account
 media. Their site, page, media alias, discovery time, and adapter provenance
 are retained; a matching committed connector alias reuses its canonical

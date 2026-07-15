@@ -410,6 +410,10 @@ Goal: serve previously committed media from the object store on enabled sites.
   generic extension leaves HLS/DASH/MSE origin-served and reports a bounded
   reason; an exact adapter must prove canonicalization, Firefox behavior, no
   DRM/encryption, explicit open, and a matching Ready normalized profile.
+- XIMG-074 adds the active-site Firefox control surface: explicit run,
+  substitution pause/resume, source-view navigation, worded hit/miss/error,
+  and accessible observed-versus-stored evidence backed by one bounded,
+  URL-free diagnostic per configured origin.
 
 Exit criteria:
 

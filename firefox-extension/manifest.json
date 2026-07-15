@@ -6,7 +6,7 @@
   "permissions": ["storage", "activeTab", "scripting", "permissions"],
   "optional_host_permissions": ["https://*/*"],
   "background": {"service_worker": "background.js"},
-  "action": {"default_title": "x-img"},
+  "action": {"default_title": "x-img cache", "default_popup": "popup.html"},
   "options_ui": {"page": "options.html", "open_in_tab": true},
   "browser_specific_settings": {"gecko": {"id": "x-img@example.invalid", "strict_min_version": "128.0"}}
 }
