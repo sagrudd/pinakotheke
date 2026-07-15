@@ -39,3 +39,13 @@ proof, quota and health checks, authoritative stream persistence, and final
 commit. The protocol was reviewed against ``../DASObjectStore`` commit
 ``8368d34a365689e19321ecd6a35aab7c819268f6``; no sibling path dependency or
 live daemon exchange is used here.
+
+Ephemeral worker files
+----------------------
+
+The normalization worker may use ``stream_ephemeral_file`` only for an
+isolated, bounded worker scratch file.  It opens that file once and forwards it
+in the request's bounded chunk size; it does not copy the bytes into x-img
+state.  The worker owns deletion of the entire scratch directory after verified
+completion or any failure.  Paths are deliberately not recorded in receipts or
+errors.

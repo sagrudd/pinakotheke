@@ -41,6 +41,7 @@ Configuration
    review-admission
    video-candidates
    normalized-video-profiles
+   video-normalization
    identity-migration
 
 Release and quality

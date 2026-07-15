@@ -7,9 +7,11 @@
 
 #![allow(missing_docs)]
 
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, fs::File, io::Read, path::Path};
 
 use sha2::{Digest, Sha256};
+
+pub const MAX_INGEST_CHUNK_BYTES: usize = 1_048_576;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct IngestRequest {
@@ -48,6 +50,7 @@ pub enum ObjectIngestError {
     ChecksumMismatch { expected: String, actual: String },
     AuthorityMismatch,
     IdempotencyConflict,
+    EphemeralFileIo,
 }
 
 impl std::fmt::Display for ObjectIngestError {
@@ -84,6 +87,9 @@ impl std::fmt::Display for ObjectIngestError {
             }
             Self::IdempotencyConflict => {
                 formatter.write_str("ingest ID was already committed differently")
+            }
+            Self::EphemeralFileIo => {
+                formatter.write_str("bounded ephemeral ingest file could not be read")
             }
         }
     }
@@ -224,6 +230,34 @@ impl<B: ObjectIngestBackend> StreamingObjectIngestor<B> {
     pub fn into_backend(self) -> B {
         self.backend
     }
+
+    /// Streams one bounded ephemeral worker file directly to DASObjectStore.
+    ///
+    /// The caller owns the file's isolated scratch lifecycle. x-img retains no
+    /// copy after this method returns, and the method does not reveal its path
+    /// in errors or receipts.
+    pub fn stream_ephemeral_file(
+        &mut self,
+        request: IngestRequest,
+        path: &Path,
+    ) -> Result<CommitReceipt, ObjectIngestError> {
+        let mut session = match self.begin(request)? {
+            BeginIngest::AlreadyCommitted(receipt) => return Ok(receipt),
+            BeginIngest::Active(session) => session,
+        };
+        let mut file = File::open(path).map_err(|_| ObjectIngestError::EphemeralFileIo)?;
+        let mut buffer = vec![0_u8; session.request.max_chunk_bytes];
+        loop {
+            let bytes_read = file
+                .read(&mut buffer)
+                .map_err(|_| ObjectIngestError::EphemeralFileIo)?;
+            if bytes_read == 0 {
+                break;
+            }
+            self.write_chunk(&mut session, &buffer[..bytes_read])?;
+        }
+        self.finish(session)
+    }
 }
 
 fn validate_request(request: &IngestRequest) -> Result<(), ObjectIngestError> {
@@ -243,9 +277,12 @@ fn validate_request(request: &IngestRequest) -> Result<(), ObjectIngestError> {
             "`object_key` must be safe".to_owned(),
         ));
     }
-    if request.expected_size_bytes == 0 || request.max_chunk_bytes == 0 {
+    if request.expected_size_bytes == 0
+        || request.max_chunk_bytes == 0
+        || request.max_chunk_bytes > MAX_INGEST_CHUNK_BYTES
+    {
         return Err(ObjectIngestError::Invalid(
-            "expected size and chunk limit must be positive".to_owned(),
+            "expected size must be positive and chunk limit must be bounded".to_owned(),
         ));
     }
     if !is_sha256_checksum(&request.expected_checksum) {
@@ -292,6 +329,11 @@ fn is_sha256_checksum(value: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
+    use std::{
+        env, fs,
+        time::{SystemTime, UNIX_EPOCH},
+    };
+
     use super::*;
 
     #[derive(Debug, Default)]
@@ -429,5 +471,26 @@ mod tests {
             ingestor.begin(conflicting),
             Err(ObjectIngestError::IdempotencyConflict)
         ));
+    }
+
+    #[test]
+    fn streams_an_ephemeral_file_in_bounded_chunks_without_retaining_it() {
+        let path = env::temp_dir().join(format!(
+            "x-img-ingest-{}",
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .expect("clock")
+                .as_nanos()
+        ));
+        fs::write(&path, b"abc").expect("synthetic ephemeral file");
+        let mut ingestor = StreamingObjectIngestor::new(CountingBackend::default());
+        let receipt = ingestor
+            .stream_ephemeral_file(request(), &path)
+            .expect("stream completes");
+        fs::remove_file(path).expect("caller cleans ephemeral file");
+        assert_eq!(receipt.size_bytes, 3);
+        let backend = ingestor.into_backend();
+        assert_eq!(backend.chunks, 2);
+        assert_eq!(backend.bytes, 3);
     }
 }

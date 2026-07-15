@@ -19,6 +19,7 @@ pub mod reconciliation;
 pub mod review_admission;
 pub mod scheduler;
 pub mod video_candidate;
+pub mod video_normalization;
 pub mod video_profile;
 pub mod viewed_media;
 pub mod website_capture_review;

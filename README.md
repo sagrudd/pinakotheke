@@ -43,6 +43,10 @@ single-click refresh of configured social accounts.
   plan pins an image digest and resource bounds; durable source and derived
   bytes remain DASObjectStore objects. See
   [normalized-video profile documentation](docs/normalized-video-profiles.rst).
+  The first adapter is an explicitly paired-device worker with network-isolated,
+  digest-pinned Docker/FFmpeg execution and bounded ephemeral scratch; it
+  streams all derived objects to DASObjectStore before cleanup. See
+  [video normalization](docs/video-normalization.rst).
 - Acquisition is idempotent: once a media identity has a verified committed
   object, routine refreshes do not download it again.
 - The UI follows sibling `../mnemosyne_design_language` and retains a future

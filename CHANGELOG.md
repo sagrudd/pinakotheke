@@ -7,6 +7,11 @@ All notable changes to x-img will be documented in this file. The project uses
 
 ### Planning
 
+- Added XIMG-068's paired-device Docker FFmpeg adapter. It requires an
+  approved pairing, digest-pinned image, resource limits, isolated scratch,
+  structured network-disabled invocation, bounded ObjectStore ingest, probe
+  and checksum provenance, cleanup, cancellation, and crash-reconciliation
+  states. It leaves every rendition Awaiting Firefox playback rather than Ready.
 - Added XIMG-067's two immutable normalized-video candidate profiles: WebM
   VP9/Opus or AV1/Opus and MP4 H.264/AAC. Docker-first plans pin an image digest,
   resource limits, authorized DASObjectStore/paired-device/future-Keryx worker
