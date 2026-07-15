@@ -382,6 +382,17 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   bodies, credentials, or general history reach x-img; avoiding a site API does
   not waive platform terms.
 
+  Implementation is in `f5ce32d`: a host-authenticated, metadata-only capture
+  plan endpoint validates the paired actor, exact enabled origin, adapter,
+  current-page provenance, visible-thumbnail eligibility, redaction, and
+  scheduler admission; the Firefox toolbar now submits only viewport-displayed
+  images and fails open. Native/wasm/quality/contract and local Sphinx checks
+  pass. This item remains open solely for the mandatory Docker documentation
+  verification: both BuildKit and the legacy builder hung before a build step
+  because the local Docker daemon stopped responding. Do not treat a plan as an
+  ObjectStore commit or review item; resume by running the documented Docker
+  build and container command once the local daemon is responsive.
+
 - [ ] **XIMG-065 P1 — Integrate captures into the common review queue.**
   Acceptance: site, page, canonical media URL, discovery time, and adapter
   version are retained; committed aliases deduplicate account-connector media.
