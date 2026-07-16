@@ -465,6 +465,14 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   container build could not start because Docker Desktop's local socket did not
   answer its health probe; rerun the documented build when that host service is
   available.
+  The runnable foreground and per-user-service monolith now load a bounded,
+  strict, private metadata-only pairing/site authority document and mount the
+  real capture-plan endpoint only behind Monas dispatch. Native tests prove
+  direct denial, admitted actor-bound planning, unsafe configuration rejection,
+  and operation with or without object delivery. Persisted plan execution,
+  verified DASObjectStore commit, and crash reconciliation remain.
+  The packaged extension now targets the canonical Monas product API and app
+  mounts, closing the former origin-only pairing plus legacy-path mismatch.
 
 ## 0.6.0 — Firefox capture
 

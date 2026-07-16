@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/sagrudd/pinakotheke/contracts/monas/pinakotheke-capture-authority.v1.schema.json",
+  "title": "Pinakotheke capture authority",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "pairings", "sites"],
+  "properties": {
+    "schema_version": { "const": "pinakotheke.capture-authority.v1" },
+    "pairings": {
+      "type": "array",
+      "maxItems": 128,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["pairing_id", "actor_id", "expires_at", "revoked"],
+        "properties": {
+          "pairing_id": { "$ref": "#/$defs/identifier" },
+          "actor_id": { "$ref": "#/$defs/identifier" },
+          "expires_at": { "type": "integer", "minimum": 1 },
+          "revoked": { "type": "boolean" }
+        }
+      }
+    },
+    "sites": {
+      "type": "array",
+      "maxItems": 256,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["site_id", "origin", "capture_enabled", "adapter_kind", "adapter_version", "allow_observed_thumbnails", "allow_explicit_originals", "max_candidates_per_page"],
+        "properties": {
+          "site_id": { "$ref": "#/$defs/identifier" },
+          "origin": { "type": "string", "pattern": "^https://[^/?#@*]+$", "maxLength": 512 },
+          "capture_enabled": { "type": "boolean" },
+          "adapter_kind": { "enum": ["explicit", "experimental_generic"] },
+          "adapter_version": { "type": "string", "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$" },
+          "allow_observed_thumbnails": { "type": "boolean" },
+          "allow_explicit_originals": { "type": "boolean" },
+          "max_candidates_per_page": { "type": "integer", "minimum": 1, "maximum": 1000 }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "identifier": { "type": "string", "pattern": "^[A-Za-z0-9._:-]{1,128}$" }
+  }
+}

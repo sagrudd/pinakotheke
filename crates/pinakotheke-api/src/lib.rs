@@ -209,6 +209,29 @@ pub async fn serve_monolith_with_gallery_and_web(
     .await
 }
 
+/// Serves persistent gallery metadata and the reviewed capture-plan boundary.
+pub async fn serve_monolith_with_gallery_web_and_capture(
+    listener: tokio::net::TcpListener,
+    dasobjectstore_ready: bool,
+    monas_dispatch: Option<MonasDispatchVerifier>,
+    gallery: GalleryCatalogue,
+    web_root: Option<PathBuf>,
+    capture_plans: CapturePlanService,
+) -> io::Result<()> {
+    axum::serve(
+        listener,
+        monolith_router_with_gallery_web_and_capture_authority(
+            dasobjectstore_ready,
+            monas_dispatch,
+            gallery,
+            web_root,
+            capture_plans,
+        ),
+    )
+    .with_graceful_shutdown(shutdown_signal())
+    .await
+}
+
 /// Serves the complete authenticated gallery with a host-owned object stream.
 pub async fn serve_monolith_with_gallery_web_and_delivery(
     listener: tokio::net::TcpListener,
@@ -218,14 +241,37 @@ pub async fn serve_monolith_with_gallery_web_and_delivery(
     web_root: Option<PathBuf>,
     backend: HostObjectReadBackend,
 ) -> io::Result<()> {
+    serve_monolith_with_gallery_web_delivery_and_capture(
+        listener,
+        dasobjectstore_ready,
+        monas_dispatch,
+        gallery,
+        web_root,
+        backend,
+        None,
+    )
+    .await
+}
+
+/// Serves the complete gallery plus the reviewed Firefox capture-plan boundary.
+pub async fn serve_monolith_with_gallery_web_delivery_and_capture(
+    listener: tokio::net::TcpListener,
+    dasobjectstore_ready: bool,
+    monas_dispatch: Option<MonasDispatchVerifier>,
+    gallery: GalleryCatalogue,
+    web_root: Option<PathBuf>,
+    backend: HostObjectReadBackend,
+    capture_plans: Option<CapturePlanService>,
+) -> io::Result<()> {
     axum::serve(
         listener,
-        monolith_router_with_gallery_web_delivery_authority(
+        monolith_router_with_gallery_web_delivery_and_capture_authority(
             dasobjectstore_ready,
             monas_dispatch,
             gallery,
             web_root,
             backend,
+            capture_plans,
         ),
     )
     .with_graceful_shutdown(shutdown_signal())
@@ -278,7 +324,6 @@ pub fn router() -> Router {
             post(cache_alias_lookup),
         )
         .route("/api/playback/v1/{playback_id}", get(deliver_playback))
-        .with_state(None::<CapturePlans>)
 }
 
 /// Returns the initial locally runnable monolith surface.
@@ -358,6 +403,49 @@ pub fn monolith_router_with_gallery_and_web_authority(
         .merge(protected)
 }
 
+/// Returns the Monas-admitted gallery plus capture planning without delivery.
+pub fn monolith_router_with_gallery_web_and_capture_authority(
+    dasobjectstore_ready: bool,
+    monas_dispatch: Option<MonasDispatchVerifier>,
+    gallery: GalleryCatalogue,
+    web_root: Option<PathBuf>,
+    capture_plans: CapturePlanService,
+) -> Router {
+    let authentication_ready = monas_dispatch.is_some();
+    let mut protected = Router::new()
+        .route("/products/pinakotheke/api/context", get(context))
+        .route(
+            "/products/pinakotheke/api/gallery/v1/catalogue",
+            get(gallery_catalogue),
+        )
+        .route(
+            "/products/pinakotheke/api/extension/v1/capture-plans",
+            post(capture_plan),
+        )
+        .layer(Extension(Arc::new(gallery)))
+        .layer(Extension(Arc::new(Mutex::new(capture_plans))));
+    if let Some(web_root) = web_root {
+        protected = protected.nest_service(
+            "/products/pinakotheke/app",
+            ServeDir::new(web_root).append_index_html_on_directories(true),
+        );
+    }
+    let protected = protected.layer(middleware::from_fn_with_state(
+        monas_dispatch,
+        admit_monas_dispatch,
+    ));
+    Router::new()
+        .route("/", get(monolith_landing))
+        .route("/health", get(health))
+        .route(
+            "/ready",
+            get(move || async move {
+                monolith_readiness(dasobjectstore_ready, authentication_ready).await
+            }),
+        )
+        .merge(protected)
+}
+
 /// Returns the Monas-admitted monolith with exact gallery image streaming.
 pub fn monolith_router_with_gallery_delivery_authority(
     dasobjectstore_ready: bool,
@@ -382,6 +470,25 @@ pub fn monolith_router_with_gallery_web_delivery_authority(
     web_root: Option<PathBuf>,
     backend: HostObjectReadBackend,
 ) -> Router {
+    monolith_router_with_gallery_web_delivery_and_capture_authority(
+        dasobjectstore_ready,
+        monas_dispatch,
+        gallery,
+        web_root,
+        backend,
+        None,
+    )
+}
+
+/// Returns the complete Monas-admitted gallery and capture-plan boundary.
+pub fn monolith_router_with_gallery_web_delivery_and_capture_authority(
+    dasobjectstore_ready: bool,
+    monas_dispatch: Option<MonasDispatchVerifier>,
+    gallery: GalleryCatalogue,
+    web_root: Option<PathBuf>,
+    backend: HostObjectReadBackend,
+    capture_plans: Option<CapturePlanService>,
+) -> Router {
     let authentication_ready = monas_dispatch.is_some();
     let mut protected = Router::new()
         .route("/products/pinakotheke/api/context", get(context))
@@ -401,6 +508,14 @@ pub fn monolith_router_with_gallery_web_delivery_authority(
         .layer(Extension(Arc::new(Mutex::new(
             AuthorizedObjectReader::new(backend),
         ))));
+    if let Some(capture_plans) = capture_plans {
+        protected = protected
+            .route(
+                "/products/pinakotheke/api/extension/v1/capture-plans",
+                post(capture_plan),
+            )
+            .layer(Extension(Arc::new(Mutex::new(capture_plans))));
+    }
     if let Some(web_root) = web_root {
         protected = protected.nest_service(
             "/products/pinakotheke/app",
@@ -531,7 +646,7 @@ pub fn router_with_capture_plans(capture_plans: CapturePlanService) -> Router {
             post(cache_alias_lookup),
         )
         .route("/api/playback/v1/{playback_id}", get(deliver_playback))
-        .with_state(Some(Arc::new(Mutex::new(capture_plans))))
+        .layer(Extension(Arc::new(Mutex::new(capture_plans))))
 }
 
 /// Returns a host composition with authenticated redacted operational details.
@@ -541,7 +656,6 @@ pub fn router_with_operations(operations: Arc<Mutex<OperationalTelemetry>>) -> R
         .route("/health", get(health))
         .route("/context", get(context))
         .route("/api/operations/v1/snapshot", get(operations_snapshot))
-        .with_state(None::<CapturePlans>)
         .layer(Extension(operations))
 }
 
@@ -861,7 +975,6 @@ pub fn router_with_direct_playback(
             post(cache_alias_lookup),
         )
         .route("/api/playback/v1/{playback_id}", get(deliver_playback))
-        .with_state(None::<CapturePlans>)
         .layer(Extension(Arc::new(Mutex::new(playback))))
 }
 
@@ -877,7 +990,6 @@ pub fn router_with_cache_aliases(cache_aliases: CacheLookupService) -> Router {
             post(cache_alias_lookup),
         )
         .route("/api/playback/v1/{playback_id}", get(deliver_playback))
-        .with_state(None::<CapturePlans>)
         .layer(Extension(Arc::new(Mutex::new(cache_aliases))))
 }
 
@@ -912,7 +1024,6 @@ pub fn router_with_cache_substitution(
             "/api/cache/v1/videos/{pairing_id}/{delivery_id}",
             get(deliver_cached_video),
         )
-        .with_state(None::<CapturePlans>)
         .layer(Extension(Arc::new(Mutex::new(cache_aliases))))
         .layer(Extension(Arc::new(Mutex::new(
             AuthorizedObjectReader::new(backend),
@@ -958,7 +1069,7 @@ async fn context(
 }
 
 async fn capture_plan(
-    State(capture_plans): State<Option<CapturePlans>>,
+    capture_plans: Option<Extension<CapturePlans>>,
     context: Option<Extension<AuthenticatedHostContext>>,
     Json(request): Json<CapturePlanRequest>,
 ) -> Result<Json<CapturePlan>, StatusCode> {
@@ -966,7 +1077,7 @@ async fn capture_plan(
     if !context.permits(XIMG_ACCESS) {
         return Err(StatusCode::FORBIDDEN);
     }
-    let capture_plans = capture_plans.ok_or(StatusCode::SERVICE_UNAVAILABLE)?;
+    let capture_plans = capture_plans.ok_or(StatusCode::SERVICE_UNAVAILABLE)?.0;
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
@@ -1411,6 +1522,7 @@ mod tests {
         HostObjectReadBackend, MonasDispatchVerifier, monolith_router,
         monolith_router_with_authorities, monolith_router_with_gallery_authority,
         monolith_router_with_gallery_delivery_authority,
+        monolith_router_with_gallery_web_and_capture_authority,
         monolith_router_with_gallery_web_delivery_authority, monolith_router_with_storage, router,
         router_with_cache_aliases, router_with_cache_substitution, router_with_capture_plans,
         router_with_direct_playback, router_with_gallery_catalogue, router_with_gallery_delivery,
@@ -2312,6 +2424,46 @@ mod tests {
             )
             .await
             .expect("router is infallible");
+        assert_eq!(admitted.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn monolith_mounts_capture_plans_only_behind_monas_dispatch() {
+        let token = "synthetic-monas-dispatch-token-0001";
+        let router = || {
+            monolith_router_with_gallery_web_and_capture_authority(
+                true,
+                Some(MonasDispatchVerifier::new(token.into()).unwrap()),
+                GalleryCatalogue::default(),
+                None,
+                capture_plans(),
+            )
+        };
+        let direct = router()
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/products/pinakotheke/api/extension/v1/capture-plans")
+                    .header("content-type", "application/json")
+                    .body(request_body())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(direct.status(), StatusCode::UNAUTHORIZED);
+        let admitted = router()
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/products/pinakotheke/api/extension/v1/capture-plans")
+                    .header("content-type", "application/json")
+                    .header("x-monas-dispatch-token", token)
+                    .header("x-monas-host-context", MONAS_CONTEXT)
+                    .body(request_body())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
         assert_eq!(admitted.status(), StatusCode::OK);
     }
 

@@ -53,6 +53,9 @@ pub(crate) struct InstallArgs {
     /// Stable reviewed endpoint identity accepted by the read helper.
     #[arg(long, requires = "object_read_helper")]
     object_read_endpoint_id: Option<String>,
+    /// Absolute private Firefox capture pairing/site authority document.
+    #[arg(long)]
+    capture_authority_file: Option<PathBuf>,
     /// Replace existing Pinakotheke-managed plist definitions.
     #[arg(long)]
     replace: bool,
@@ -151,6 +154,9 @@ fn install(layout: &ServiceLayout, args: &InstallArgs) -> io::Result<()> {
     if let Some(endpoint_id) = &args.object_read_endpoint_id {
         validate_endpoint_id(endpoint_id)?;
     }
+    if let Some(path) = &args.capture_authority_file {
+        validate_private_file(path)?;
+    }
     if !args.replace && (layout.backend_plist.exists() || layout.monas_plist.exists()) {
         return Err(io::Error::new(
             io::ErrorKind::AlreadyExists,
@@ -173,6 +179,7 @@ fn install(layout: &ServiceLayout, args: &InstallArgs) -> io::Result<()> {
         &args.pinakotheke_binary,
         args.object_read_helper.as_deref(),
         args.object_read_endpoint_id.as_deref(),
+        args.capture_authority_file.as_deref(),
     );
     let monas = monas_plist(layout, &args.monas_binary);
     let previous_backend = std::fs::read(&layout.backend_plist).ok();
@@ -341,6 +348,7 @@ fn backend_plist(
     binary: &Path,
     helper: Option<&Path>,
     endpoint_id: Option<&str>,
+    capture_authority_file: Option<&Path>,
 ) -> String {
     let mut arguments = vec![
         "serve",
@@ -355,6 +363,9 @@ fn backend_plist(
     ];
     if let Some(helper) = helper {
         arguments.extend(["--object-read-helper", path_text_unchecked(helper)]);
+    }
+    if let Some(path) = capture_authority_file {
+        arguments.extend(["--capture-authority-file", path_text_unchecked(path)]);
     }
     let environment = endpoint_id
         .map(|endpoint_id| vec![("PINAKOTHEKE_OBJECT_READ_ENDPOINT_ID", endpoint_id)])
@@ -457,6 +468,22 @@ fn validate_endpoint_id(value: &str) -> io::Result<()> {
     Ok(())
 }
 
+fn validate_private_file(path: &Path) -> io::Result<()> {
+    let metadata = std::fs::symlink_metadata(path).ok();
+    if !path.is_absolute()
+        || metadata
+            .as_ref()
+            .is_none_or(|metadata| metadata.file_type().is_symlink() || !metadata.is_file())
+        || metadata.is_none_or(|metadata| metadata.permissions().mode() & 0o077 != 0)
+    {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "capture authority must be an absolute private regular file",
+        ));
+    }
+    Ok(())
+}
+
 fn domain() -> io::Result<String> {
     let output = Command::new("/usr/bin/id").arg("-u").output()?;
     if !output.status.success() {
@@ -541,6 +568,9 @@ mod tests {
             Path::new("/opt/bin/pinakotheke"),
             Some(Path::new("/opt/bin/das-reader")),
             Some("endpoint-local"),
+            Some(Path::new(
+                "/Users/synthetic & user/.x-img/config/capture.json",
+            )),
         );
         let monas = monas_plist(&layout, Path::new("/opt/bin/monas-server"));
         assert!(backend.contains("127.0.0.1</string><string>--port</string><string>8732"));
@@ -548,6 +578,8 @@ mod tests {
         assert!(backend.contains("/opt/bin/das-reader"));
         assert!(backend.contains("PINAKOTHEKE_OBJECT_READ_ENDPOINT_ID"));
         assert!(backend.contains("endpoint-local"));
+        assert!(backend.contains("--capture-authority-file"));
+        assert!(backend.contains("capture.json"));
         assert!(monas.contains("127.0.0.1:8731"));
         assert!(monas.contains("PROSOPIKON_ROOT"));
         assert!(monas.contains("synthetic &amp; user"));

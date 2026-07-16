@@ -25,9 +25,10 @@ endpoint.
 Host-authenticated endpoint
 ---------------------------
 
-The host mounts the endpoint at::
+The standalone test router uses ``/api/extension/v1/capture-plans``. The
+runnable Monas host mounts the endpoint at::
 
-   POST /api/extension/v1/capture-plans
+   POST /products/pinakotheke/api/extension/v1/capture-plans
 
 The endpoint accepts strict JSON with schema version
 ``x-img.capture-request.v1``. Its required metadata is an opaque pairing
@@ -65,6 +66,46 @@ must not be shown as a stored original or admitted to review.
 After a future acquisition has verified and committed an ObjectStore object,
 the metadata can enter the common review queue through
 :doc:`website-capture-review`. A capture plan never bypasses that boundary.
+
+Runnable monolith configuration
+-------------------------------
+
+The local monolith mounts capture planning at
+``/products/pinakotheke/api/extension/v1/capture-plans`` only when supplied a
+private metadata-only authority document. The endpoint remains behind Monas
+dispatch and requires the pairing actor to match the authenticated host
+context. The document contains opaque pairing references and explicit enabled
+site rules; it contains no browser cookies, site credentials, media bytes, or
+DASObjectStore secrets.
+
+.. code-block:: json
+
+   {
+     "schema_version": "pinakotheke.capture-authority.v1",
+     "pairings": [{
+       "pairing_id": "pair-firefox-1",
+       "actor_id": "local-user",
+       "expires_at": 4102444800,
+       "revoked": false
+     }],
+     "sites": [{
+       "site_id": "art-site",
+       "origin": "https://art.example",
+       "capture_enabled": true,
+       "adapter_kind": "experimental_generic",
+       "adapter_version": "1.0.0",
+       "allow_observed_thumbnails": true,
+       "allow_explicit_originals": true,
+       "max_candidates_per_page": 32
+     }]
+   }
+
+Save the reviewed document as a mode-``0600`` regular file and start with
+``--capture-authority-file /absolute/path/to/capture-authority.json``. The same
+option is accepted by ``pinakotheke service install``. Unknown fields, future
+schemas, duplicate pairings/origins, unsafe origins, excessive records, and
+non-private or symlinked files fail closed. The wire schema is
+``contracts/monas/pinakotheke-capture-authority.v1.schema.json``.
 
 Compatibility evidence
 ----------------------

@@ -285,7 +285,7 @@ async function runCacheForTab(tab) {
       : [];
     for (const observed of images) {
       if (rule.capture && adapter.capabilities.observed_thumbnail) {
-        const capture = await fetch(`${instanceUrl}/api/extension/v1/capture-plans`, {
+        const capture = await fetch(`${instanceUrl}/products/pinakotheke/api/extension/v1/capture-plans`, {
           method: "POST",
           credentials: "include",
           headers: { "content-type": "application/json" },

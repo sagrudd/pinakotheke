@@ -134,6 +134,11 @@ For a managed macOS service, the helper path and reviewed endpoint identity are
 an inseparable pair. The fixed identity is supplied to the helper as
 ``PINAKOTHEKE_OBJECT_READ_ENDPOINT_ID``; it is not copied from a browser
 request and is not an authentication credential.
+The runnable monolith also mounts its existing Firefox capture-plan contract
+behind Monas when given a strict private ``--capture-authority-file``. This file
+contains only opaque pairing/actor references and explicit per-origin policy;
+accepted plans remain metadata awaiting verified acquisition and are not
+misrepresented as stored media.
 
 The release hardening path now includes one deterministic fault/recovery
 command, ``scripts/faults/check.sh``. It covers critical authority, ingest,

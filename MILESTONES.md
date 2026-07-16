@@ -672,6 +672,9 @@ Exit criteria:
   identity in the backend service environment; path and identity are installed
   together and the identity is never treated as a credential or inferred from
   a browser request;
+- foreground and managed-service modes can mount the metadata-only Firefox
+  capture-plan endpoint behind Monas from a strict private pairing/site
+  authority document, without accepting payload bytes or browser credentials;
 - local authentication remains Monas/Prosopikon-owned; the monolith does not
   invent Pinakotheke passwords, cookies, or a parallel session issuer; and
 - unauthenticated navigation presents a polished Monas-owned, Mnemosyne-design-

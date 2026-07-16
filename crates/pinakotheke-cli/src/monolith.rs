@@ -8,7 +8,11 @@ use std::{
 };
 
 use clap::Args;
-use x_img_core::gallery_catalogue::GalleryCatalogueStore;
+use serde::Deserialize;
+use x_img_core::{
+    gallery_catalogue::GalleryCatalogueStore,
+    viewed_media::{AdapterKind, CapturePairing, CapturePlanService, SiteCapturePolicy},
+};
 
 const DEFAULT_PORT: u16 = 8731;
 
@@ -35,6 +39,42 @@ pub(crate) struct ServeArgs {
     /// Absolute executable implementing the scoped object-read helper v1 protocol.
     #[arg(long)]
     object_read_helper: Option<PathBuf>,
+    /// Private metadata-only Firefox pairing/site authority document.
+    #[arg(long)]
+    capture_authority_file: Option<PathBuf>,
+}
+
+const CAPTURE_AUTHORITY_SCHEMA: &str = "pinakotheke.capture-authority.v1";
+const CAPTURE_AUTHORITY_LIMIT: u64 = 256 * 1024;
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CaptureAuthorityDocument {
+    schema_version: String,
+    pairings: Vec<CapturePairingRecord>,
+    sites: Vec<SiteCapturePolicyRecord>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CapturePairingRecord {
+    pairing_id: String,
+    actor_id: String,
+    expires_at: u64,
+    revoked: bool,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct SiteCapturePolicyRecord {
+    site_id: String,
+    origin: String,
+    capture_enabled: bool,
+    adapter_kind: AdapterKind,
+    adapter_version: String,
+    allow_observed_thumbnails: bool,
+    allow_explicit_originals: bool,
+    max_candidates_per_page: u64,
 }
 
 #[derive(Debug)]
@@ -207,6 +247,11 @@ pub(crate) fn serve(arguments: ServeArgs) -> Result<(), Box<dyn std::error::Erro
         .as_deref()
         .map(crate::object_read_helper::backend)
         .transpose()?;
+    let capture_plans = arguments
+        .capture_authority_file
+        .as_deref()
+        .map(load_capture_authority)
+        .transpose()?;
     let monas_dispatch = arguments
         .monas_dispatch_token_file
         .as_deref()
@@ -245,20 +290,40 @@ pub(crate) fn serve(arguments: ServeArgs) -> Result<(), Box<dyn std::error::Erro
                 "Not configured"
             }
         );
+        println!(
+            "Firefox capture planning: {}",
+            if capture_plans.is_some() {
+                "Monas-authenticated"
+            } else {
+                "Not configured"
+            }
+        );
         println!("readiness: http://{address}/ready");
-        match object_read_backend {
-            Some(backend) => {
-                x_img_api::serve_monolith_with_gallery_web_and_delivery(
+        match (object_read_backend, capture_plans) {
+            (Some(backend), capture_plans) => {
+                x_img_api::serve_monolith_with_gallery_web_delivery_and_capture(
                     listener,
                     storage_ready,
                     monas_dispatch,
                     gallery,
                     web_root,
                     backend,
+                    capture_plans,
                 )
                 .await
             }
-            None => {
+            (None, Some(capture_plans)) => {
+                x_img_api::serve_monolith_with_gallery_web_and_capture(
+                    listener,
+                    storage_ready,
+                    monas_dispatch,
+                    gallery,
+                    web_root,
+                    capture_plans,
+                )
+                .await
+            }
+            (None, None) => {
                 x_img_api::serve_monolith_with_gallery_and_web(
                     listener,
                     storage_ready,
@@ -271,6 +336,120 @@ pub(crate) fn serve(arguments: ServeArgs) -> Result<(), Box<dyn std::error::Erro
         }
     })?;
     Ok(())
+}
+
+fn load_capture_authority(path: &Path) -> io::Result<CapturePlanService> {
+    let metadata = std::fs::symlink_metadata(path)?;
+    if !path.is_absolute()
+        || metadata.file_type().is_symlink()
+        || !metadata.is_file()
+        || metadata.len() > CAPTURE_AUTHORITY_LIMIT
+    {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "capture authority must be an absolute bounded regular file",
+        ));
+    }
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        if metadata.permissions().mode() & 0o077 != 0 {
+            return Err(io::Error::new(
+                io::ErrorKind::PermissionDenied,
+                "capture authority file must not be accessible by group or others",
+            ));
+        }
+    }
+    let bytes = std::fs::read(path)?;
+    let document: CaptureAuthorityDocument = serde_json::from_slice(&bytes)
+        .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?;
+    if document.schema_version != CAPTURE_AUTHORITY_SCHEMA
+        || document.pairings.len() > 128
+        || document.sites.len() > 256
+    {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            "capture authority schema or record count is invalid",
+        ));
+    }
+    let mut pairing_ids = std::collections::BTreeSet::new();
+    let pairings = document
+        .pairings
+        .into_iter()
+        .map(|record| {
+            if !safe_identifier(&record.pairing_id)
+                || !safe_identifier(&record.actor_id)
+                || record.expires_at == 0
+                || !pairing_ids.insert(record.pairing_id.clone())
+            {
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    "capture pairing record is invalid or duplicated",
+                ));
+            }
+            Ok(CapturePairing {
+                pairing_id: record.pairing_id,
+                actor_id: record.actor_id,
+                expires_at: record.expires_at,
+                revoked: record.revoked,
+            })
+        })
+        .collect::<io::Result<Vec<_>>>()?;
+    let mut origins = std::collections::BTreeSet::new();
+    let sites = document
+        .sites
+        .into_iter()
+        .map(|record| {
+            if !safe_identifier(&record.site_id)
+                || !safe_origin(&record.origin)
+                || !safe_semver(&record.adapter_version)
+                || record.max_candidates_per_page == 0
+                || record.max_candidates_per_page > 1_000
+                || !origins.insert(record.origin.clone())
+            {
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    "capture site policy is invalid or duplicated",
+                ));
+            }
+            Ok(SiteCapturePolicy {
+                site_id: record.site_id,
+                origin: record.origin,
+                capture_enabled: record.capture_enabled,
+                adapter_kind: record.adapter_kind,
+                adapter_version: record.adapter_version,
+                allow_observed_thumbnails: record.allow_observed_thumbnails,
+                allow_explicit_originals: record.allow_explicit_originals,
+                max_candidates_per_page: record.max_candidates_per_page,
+            })
+        })
+        .collect::<io::Result<Vec<_>>>()?;
+    Ok(CapturePlanService::new(pairings, sites))
+}
+
+fn safe_identifier(value: &str) -> bool {
+    !value.is_empty()
+        && value.len() <= 128
+        && value
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'.' | b'_' | b':' | b'-'))
+}
+
+fn safe_origin(value: &str) -> bool {
+    value
+        .strip_prefix("https://")
+        .is_some_and(|host| !host.is_empty() && !host.contains(['/', '?', '#', '@', '*']))
+        && value.len() <= 512
+}
+
+fn safe_semver(value: &str) -> bool {
+    let parts = value.split('.').collect::<Vec<_>>();
+    parts.len() == 3
+        && parts.iter().all(|part| {
+            !part.is_empty()
+                && part.bytes().all(|byte| byte.is_ascii_digit())
+                && (part == &"0" || !part.starts_with('0'))
+        })
 }
 
 fn read_dispatch_token(path: &Path) -> io::Result<String> {
@@ -341,6 +520,7 @@ mod tests {
             monas_dispatch_token_file: None,
             web_root: None,
             object_read_helper: None,
+            capture_authority_file: None,
         };
         assert_eq!(
             socket_address(&denied).unwrap_err().kind(),
@@ -380,6 +560,38 @@ mod tests {
                 io::ErrorKind::PermissionDenied
             );
         }
+        std::fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn capture_authority_is_private_strict_and_bounded() {
+        let root = temporary_root();
+        std::fs::create_dir_all(&root).unwrap();
+        let authority = root.join("capture-authority.json");
+        std::fs::write(
+            &authority,
+            r#"{
+              "schema_version":"pinakotheke.capture-authority.v1",
+              "pairings":[{"pairing_id":"pair-1","actor_id":"actor-1","expires_at":4102444800,"revoked":false}],
+              "sites":[{"site_id":"example","origin":"https://example.invalid","capture_enabled":true,"adapter_kind":"experimental_generic","adapter_version":"1.0.0","allow_observed_thumbnails":true,"allow_explicit_originals":true,"max_candidates_per_page":32}]
+            }"#,
+        )
+        .unwrap();
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            std::fs::set_permissions(&authority, std::fs::Permissions::from_mode(0o600)).unwrap();
+        }
+        assert!(load_capture_authority(&authority).is_ok());
+        std::fs::write(
+            &authority,
+            r#"{"schema_version":"future.v2","pairings":[],"sites":[]}"#,
+        )
+        .unwrap();
+        assert_eq!(
+            load_capture_authority(&authority).unwrap_err().kind(),
+            io::ErrorKind::InvalidData
+        );
         std::fs::remove_dir_all(root).unwrap();
     }
 

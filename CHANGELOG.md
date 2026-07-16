@@ -46,6 +46,11 @@ All notable changes to Pinakotheke will be documented in this file. The project 
 - Bind a managed macOS object-read helper to one explicit reviewed endpoint
   identity, reject half-configured installs, and pass the fixed non-secret scope
   through the backend agent environment instead of deriving it from requests.
+- Mount the Firefox capture-plan API in the runnable Monas-authenticated
+  monolith from a strict private metadata-only pairing/site authority document,
+  including per-user launchd composition and fail-closed validation.
+- Route Firefox capture planning and gallery navigation through the canonical
+  Monas Pinakotheke product mounts instead of obsolete standalone paths.
 - Carry an explicit positive immutable object version from verified acquisition
   and normalized-video evidence through persistent gallery records, authorized
   read grants, and host-helper requests, with legacy catalogue-v1 records
