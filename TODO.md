@@ -1036,11 +1036,20 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   accessible branded login DOM. Approved assets are served from the packaged
   Mnemosyne branding root (or an explicit development root), never redrawn.
   Pinakotheke never receives the password or cookie. XIMG-094 is now unblocked.
-- [ ] **XIMG-094 P0 — Prove clean-home monolith operation.** In an isolated
+- [x] **XIMG-094 P0 — Prove clean-home monolith operation.** In an isolated
   temporary home, start the service, complete Monas login, select the managed
   local ObjectStore, commit and read one synthetic object through scoped DAS
   contracts, restart and reconcile exactly once, then shut down cleanly. Record
   bounded local evidence and do not rely on GitHub Actions.
+  Completed in ``9e1688c`` against DASObjectStore
+  ``f195c4d5a30d1cc34ca61f31a6939edf54db782f``: an isolated macOS home proved
+  Monas login and exact return, direct-backend rejection, all-component
+  readiness, daemon-verified synthetic commit, checksum-identical scoped
+  read-back, restart reconciliation with session continuity, logout revocation,
+  and clean shutdown. The new explicit local-profile API port kept the proof
+  isolated from an existing default-port authority. All 175 workspace tests,
+  strict Clippy, repository quality checks, native warnings-denied Sphinx, and
+  both the pinned documentation-container build and run passed locally.
   Progress on 2026-07-16: the packaged binary now implements the production
   ``read-v1`` helper protocol using a strict mode-0600 endpoint/store-to-bucket
   configuration, host-owned scoped AWS credentials, verified DAS checksum
