@@ -59,6 +59,11 @@ All notable changes to Pinakotheke will be documented in this file. The project 
   exact verified DASObjectStore image evidence through acquisition,
   reconciliation, persistent review, and the live gallery, with restart-safe
   idempotent settled markers and no payload bytes.
+- Add a run-one capture acquisition command and strict executable protocol for
+  host-owned permitted retrieval, direct DASObjectStore streaming/verification,
+  and metadata-only settlement without shell execution or local payload files.
+  Foreground/service and offline workers share an exclusive local mutation
+  lease so long-running acquisition cannot overlap journal writes.
 - Carry an explicit positive immutable object version from verified acquisition
   and normalized-video evidence through persistent gallery records, authorized
   read grants, and host-helper requests, with legacy catalogue-v1 records

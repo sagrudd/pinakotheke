@@ -6,6 +6,7 @@ use std::{ffi::OsString, path::PathBuf};
 use clap::{Args, CommandFactory, FromArgMatches, Parser, Subcommand};
 use x_img_core::{ConfigStore, build_info};
 
+mod capture_worker_helper;
 mod launchd;
 mod local_objectstore;
 mod monolith;
@@ -89,6 +90,11 @@ enum Command {
         #[command(subcommand)]
         command: launchd::ServiceCommand,
     },
+    /// Run reviewed host-side capture acquisition work.
+    Capture {
+        #[command(subcommand)]
+        command: monolith::CaptureCommand,
+    },
 }
 
 #[derive(Debug, PartialEq, Eq, Subcommand)]
@@ -143,6 +149,7 @@ pub fn run(invocation: Invocation, cli: Cli) -> Result<(), Box<dyn std::error::E
         Some(Command::Serve(arguments)) => monolith::serve(arguments)?,
         Some(Command::Storage { command }) => local_objectstore::run(command)?,
         Some(Command::Service { command }) => launchd::run(command)?,
+        Some(Command::Capture { command }) => monolith::run_capture(command)?,
     }
     Ok(())
 }

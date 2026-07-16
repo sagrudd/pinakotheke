@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/sagrudd/pinakotheke/contracts/dasobjectstore/pinakotheke-capture-acquire-helper.v1.schema.json",
+  "title": "Pinakotheke capture acquisition helper exchange",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "plan_id", "site_id", "origin", "canonical_page_url", "canonical_media_url", "capture_kind", "width", "height", "adapter_version", "endpoint_id", "object_store_id"],
+      "properties": {
+        "schema_version": { "const": "pinakotheke.capture-acquire-helper.v1" },
+        "plan_id": { "$ref": "#/$defs/identifier" },
+        "site_id": { "$ref": "#/$defs/identifier" },
+        "origin": { "type": "string", "pattern": "^https://" },
+        "canonical_page_url": { "type": "string", "pattern": "^https://" },
+        "canonical_media_url": { "type": "string", "pattern": "^https://" },
+        "capture_kind": { "enum": ["observed_thumbnail", "explicit_original"] },
+        "width": { "type": "integer", "minimum": 1, "maximum": 32768 },
+        "height": { "type": "integer", "minimum": 1, "maximum": 32768 },
+        "adapter_version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+        "endpoint_id": { "$ref": "#/$defs/identifier" },
+        "object_store_id": { "$ref": "#/$defs/identifier" }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["outcome", "schema_version"],
+      "properties": {
+        "outcome": { "enum": ["policy_blocked", "unavailable", "rejected"] },
+        "schema_version": { "const": "pinakotheke.capture-acquire-helper.v1" }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["outcome", "schema_version", "catalogue_id", "title", "content_type", "content_length", "endpoint_id", "object_store_id", "object_key", "object_version", "checksum_sha256", "verified_at_epoch_seconds"],
+      "properties": {
+        "outcome": { "const": "committed" },
+        "schema_version": { "const": "pinakotheke.capture-acquire-helper.v1" },
+        "catalogue_id": { "$ref": "#/$defs/identifier" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "content_type": { "type": "string", "pattern": "^image/" },
+        "content_length": { "type": "integer", "minimum": 1 },
+        "endpoint_id": { "$ref": "#/$defs/identifier" },
+        "object_store_id": { "$ref": "#/$defs/identifier" },
+        "object_key": { "$ref": "#/$defs/identifier" },
+        "object_version": { "type": "integer", "minimum": 1 },
+        "checksum_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "verified_at_epoch_seconds": { "type": "integer", "minimum": 1 }
+      }
+    }
+  ],
+  "$defs": {
+    "identifier": { "type": "string", "pattern": "^[A-Za-z0-9._:-]{1,128}$" }
+  }
+}

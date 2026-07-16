@@ -494,6 +494,17 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   repository quality/privacy/version checks, and local Sphinx 8.2.3 with
   warnings denied passed. Docker Desktop still did not answer its local socket,
   so container replication remains an explicit host-service follow-up.
+  The first production-worker seam now exists as ``pinakotheke capture
+  acquire``: one reviewed executable receives only an approved plan plus fixed
+  destination, owns permitted retrieval and scoped DASObjectStore streaming,
+  and returns a strict verified metadata receipt with empty stdout. A synthetic
+  executable proves the protocol and destination enforcement. Continuous
+  scheduling and a concrete DASObjectStore-packaged helper remain, but pending
+  plans can now be driven end-to-end through the public adapter boundary.
+  Verification on 2026-07-16: 155 focused Rust tests, warnings-denied Clippy,
+  repository quality/privacy/version checks, and local warnings-denied Sphinx
+  8.2.3 passed. Docker Desktop still did not answer its local socket, leaving
+  container replication as the recorded host-service follow-up.
 
 ## 0.6.0 — Firefox capture
 

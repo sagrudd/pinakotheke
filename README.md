@@ -147,6 +147,11 @@ DASObjectStore image commit through the strict completion boundary. Successful
 completion updates the live gallery and persistent review card before retaining
 a restart-safe settled marker; Firefox cannot invoke this with its pairing or
 Monas session alone.
+``pinakotheke capture acquire`` runs one pending image through a reviewed host
+executable using a strict metadata-only protocol. The helper owns source
+retrieval and DASObjectStore authorization, streams bytes directly to the
+authority, and returns only a verified receipt; Pinakotheke rejects stdout
+payloads, changed destinations, malformed schemas, and non-zero exits.
 
 The release hardening path now includes one deterministic fault/recovery
 command, ``scripts/faults/check.sh``. It covers critical authority, ingest,

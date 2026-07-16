@@ -681,6 +681,9 @@ Exit criteria:
 - only a separately credentialled host worker may convert a pending plan and
   independently verified DASObjectStore image reference into the persistent
   review queue and live gallery; browser sessions cannot assert completion;
+- a run-one host worker can execute one pending image through a reviewed,
+  shell-free, metadata-only helper protocol whose implementation owns permitted
+  retrieval and direct DASObjectStore streaming and may not return payloads;
 - local authentication remains Monas/Prosopikon-owned; the monolith does not
   invent Pinakotheke passwords, cookies, or a parallel session issuer; and
 - unauthenticated navigation presents a polished Monas-owned, Mnemosyne-design-

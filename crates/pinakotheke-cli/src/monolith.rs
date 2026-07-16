@@ -7,7 +7,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use clap::Args;
+use clap::{Args, Subcommand};
 use serde::Deserialize;
 use x_img_core::{
     gallery_catalogue::GalleryCatalogueStore,
@@ -49,6 +49,31 @@ pub(crate) struct ServeArgs {
 
 const CAPTURE_AUTHORITY_SCHEMA: &str = "pinakotheke.capture-authority.v1";
 const CAPTURE_AUTHORITY_LIMIT: u64 = 256 * 1024;
+
+#[derive(Debug, Clone, PartialEq, Eq, Subcommand)]
+pub(crate) enum CaptureCommand {
+    /// Acquire and settle exactly one approved pending image plan.
+    Acquire(CaptureAcquireArgs),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Args)]
+pub(crate) struct CaptureAcquireArgs {
+    /// Product metadata root; defaults to $HOME/.x-img.
+    #[arg(long)]
+    root: Option<PathBuf>,
+    /// Private pairing/site/destination authority document.
+    #[arg(long)]
+    capture_authority_file: PathBuf,
+    /// Absolute reviewed executable implementing capture acquire helper v1.
+    #[arg(long)]
+    helper: PathBuf,
+    /// Authenticated actor identity owning the pending plan.
+    #[arg(long)]
+    actor_id: String,
+    /// Exact pending plan identity.
+    #[arg(long)]
+    plan_id: String,
+}
 
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -92,6 +117,35 @@ struct SiteCapturePolicyRecord {
 #[derive(Debug)]
 struct LocalRootLayout {
     root: PathBuf,
+}
+
+struct CaptureWorkerLease(PathBuf);
+
+impl CaptureWorkerLease {
+    fn acquire(root: &Path) -> io::Result<Self> {
+        let path = root.join("run/capture-worker.lock");
+        std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&path)
+            .map_err(|error| {
+                if error.kind() == io::ErrorKind::AlreadyExists {
+                    io::Error::new(
+                        io::ErrorKind::WouldBlock,
+                        "another capture worker owns the local lease",
+                    )
+                } else {
+                    error
+                }
+            })?;
+        Ok(Self(path))
+    }
+}
+
+impl Drop for CaptureWorkerLease {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_file(&self.0);
+    }
 }
 
 impl LocalRootLayout {
@@ -249,6 +303,7 @@ fn validate_web_tree(path: &Path, files: &mut usize, bytes: &mut u64) -> io::Res
 pub(crate) fn serve(arguments: ServeArgs) -> Result<(), Box<dyn std::error::Error>> {
     let address = socket_address(&arguments)?;
     let layout = LocalRootLayout::resolve(arguments.root)?;
+    let _lease = CaptureWorkerLease::acquire(&layout.root)?;
     let web_root = resolve_web_root(
         arguments.web_root,
         &layout.root,
@@ -379,6 +434,41 @@ pub(crate) fn serve(arguments: ServeArgs) -> Result<(), Box<dyn std::error::Erro
             }
         }
     })?;
+    Ok(())
+}
+
+pub(crate) fn run_capture(command: CaptureCommand) -> Result<(), Box<dyn std::error::Error>> {
+    let CaptureCommand::Acquire(arguments) = command;
+    if !safe_identifier(&arguments.actor_id) || !safe_identifier(&arguments.plan_id) {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "capture actor and plan identities are invalid",
+        )
+        .into());
+    }
+    let layout = LocalRootLayout::resolve(arguments.root)?;
+    let _lease = CaptureWorkerLease::acquire(&layout.root)?;
+    let mut authority = load_capture_authority(
+        &arguments.capture_authority_file,
+        layout.root.join("state/capture-plans.v1.json"),
+    )?;
+    let plan = authority
+        .plans
+        .pending(&arguments.actor_id, &arguments.plan_id)
+        .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "pending capture plan not found"))?;
+    let evidence = crate::capture_worker_helper::acquire(
+        &arguments.helper,
+        &plan,
+        &authority.endpoint_id,
+        &authority.object_store_id,
+    )?;
+    let outcome = x_img_core::capture_completion::complete_verified_image(
+        &mut authority.plans,
+        GalleryCatalogueStore::new(layout.root.join("state/gallery-catalogue.v1.json")),
+        &arguments.actor_id,
+        evidence,
+    )?;
+    println!("capture {} settled: {outcome:?}", arguments.plan_id);
     Ok(())
 }
 
@@ -652,6 +742,80 @@ mod tests {
                 .unwrap_err()
                 .kind(),
             io::ErrorKind::InvalidData
+        );
+        std::fs::remove_dir_all(root).unwrap();
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn run_one_capture_drives_helper_to_persistent_gallery_settlement() {
+        use std::os::unix::fs::PermissionsExt;
+        use x_img_core::viewed_media::{
+            AdapterKind, CAPTURE_REQUEST_SCHEMA_VERSION, CaptureKind, CapturePlanRequest,
+        };
+
+        let root = temporary_root();
+        LocalRootLayout::resolve(Some(root.clone())).unwrap();
+        let authority_path = root.join("config/capture-authority.json");
+        std::fs::write(
+            &authority_path,
+            r#"{
+              "schema_version":"pinakotheke.capture-authority.v1",
+              "endpoint_id":"endpoint-1",
+              "object_store_id":"store-1",
+              "pairings":[{"pairing_id":"pair-1","actor_id":"actor-1","expires_at":4102444800,"revoked":false}],
+              "sites":[{"site_id":"example","origin":"https://example.invalid","capture_enabled":true,"adapter_kind":"experimental_generic","adapter_version":"1.0.0","allow_observed_thumbnails":true,"allow_explicit_originals":true,"max_candidates_per_page":32}]
+            }"#,
+        )
+        .unwrap();
+        std::fs::set_permissions(&authority_path, std::fs::Permissions::from_mode(0o600)).unwrap();
+        let journal = root.join("state/capture-plans.v1.json");
+        let mut loaded = load_capture_authority(&authority_path, journal).unwrap();
+        let plan = loaded
+            .plans
+            .plan(
+                "actor-1",
+                1,
+                CapturePlanRequest {
+                    schema_version: CAPTURE_REQUEST_SCHEMA_VERSION.into(),
+                    pairing_id: "pair-1".into(),
+                    origin: "https://example.invalid".into(),
+                    page_url: "https://example.invalid/gallery".into(),
+                    adapter_kind: AdapterKind::ExperimentalGeneric,
+                    adapter_version: "1.0.0".into(),
+                    capture_kind: CaptureKind::ObservedThumbnail,
+                    media_url: "https://example.invalid/thumb.jpg".into(),
+                    width: 320,
+                    height: 200,
+                },
+            )
+            .unwrap();
+        drop(loaded);
+        let helper = root.join("helper.sh");
+        std::fs::write(
+            &helper,
+            r##"#!/bin/sh
+read request
+printf '%s\n' '{"outcome":"committed","schema_version":"pinakotheke.capture-acquire-helper.v1","catalogue_id":"card-1","title":"Synthetic image","content_type":"image/jpeg","content_length":42,"endpoint_id":"endpoint-1","object_store_id":"store-1","object_key":"object-1","object_version":2,"checksum_sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","verified_at_epoch_seconds":42}' >&2
+"##,
+        )
+        .unwrap();
+        std::fs::set_permissions(&helper, std::fs::Permissions::from_mode(0o700)).unwrap();
+        run_capture(CaptureCommand::Acquire(CaptureAcquireArgs {
+            root: Some(root.clone()),
+            capture_authority_file: authority_path,
+            helper,
+            actor_id: "actor-1".into(),
+            plan_id: plan.plan_id,
+        }))
+        .unwrap();
+        assert_eq!(
+            GalleryCatalogueStore::new(root.join("state/gallery-catalogue.v1.json"))
+                .load_or_empty()
+                .unwrap()
+                .items()
+                .len(),
+            1
         );
         std::fs::remove_dir_all(root).unwrap();
     }

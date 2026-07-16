@@ -164,6 +164,45 @@ out of the pending list. No payload bytes cross this endpoint. The request
 schema is
 ``contracts/monas/pinakotheke-capture-completion.v1.schema.json``.
 
+Run-one acquisition helper
+--------------------------
+
+The first production-worker boundary is an offline, run-one CLI operation. A
+reviewed host executable receives one approved canonical plan and the fixed
+endpoint/ObjectStore identity, performs any permitted public retrieval and the
+authorized DASObjectStore streaming ingest, verifies the committed object, and
+returns metadata only. Pinakotheke invokes it directly as
+``HELPER acquire-image-v1`` without a shell.
+
+Stop the foreground or launchd Pinakotheke backend before an offline run so two
+processes never mutate the private journals concurrently, then execute. The
+backend and run-one command contend for the same private capture-worker lease
+and refuse concurrent mutation:
+
+.. code-block:: console
+
+   pinakotheke capture acquire \
+     --root "$HOME/.x-img" \
+     --capture-authority-file "$HOME/.x-img/config/capture-authority.json" \
+     --helper /absolute/path/to/reviewed-acquire-helper \
+     --actor-id local-user \
+     --plan-id capture-plan-0
+
+The helper receives no site cookie, browser credential, Monas session,
+DASObjectStore secret, or local payload path. It must stream directly through
+its own scoped DASObjectStore authority and write one strict JSON receipt to
+standard error. Standard output must remain empty: returning payload bytes to
+Pinakotheke is rejected. The process must preserve the reviewed destination;
+non-zero exit, unknown fields/schema, oversized output, destination changes,
+and malformed receipts fail before settlement. ``policy_blocked``,
+``unavailable``, and ``rejected`` remain explicit retry/stop outcomes.
+
+The executable exchange is defined by
+``contracts/dasobjectstore/pinakotheke-capture-acquire-helper.v1.schema.json``.
+This run-one interface is testable now and is the adapter seam for a later
+continuously scheduled host worker; it is not permission to scrape, traverse,
+open hidden media, ingest DRM-protected material, or forward browser cookies.
+
 Compatibility evidence
 ----------------------
 
