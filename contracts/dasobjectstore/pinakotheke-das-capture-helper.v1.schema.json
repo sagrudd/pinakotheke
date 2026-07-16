@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/sagrudd/pinakotheke/contracts/dasobjectstore/pinakotheke-das-capture-helper.v1.schema.json",
+  "title": "Pinakotheke DASObjectStore capture helper configuration v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "endpoint_id", "curl_executable", "dasobjectstore_remote_executable", "dasobjectstore_remote_config", "daemon_socket"],
+  "properties": {
+    "schema_version": {"const": "pinakotheke.das-capture-helper.v1"},
+    "endpoint_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "curl_executable": {"type": "string", "pattern": "^/", "maxLength": 4096},
+    "dasobjectstore_remote_executable": {"type": "string", "pattern": "^/", "maxLength": 4096},
+    "dasobjectstore_remote_config": {"type": "string", "pattern": "^/", "maxLength": 4096},
+    "daemon_socket": {"type": "string", "pattern": "^/", "maxLength": 4096},
+    "max_image_bytes": {"type": "integer", "minimum": 1, "maximum": 1073741824}
+  }
+}

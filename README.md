@@ -158,8 +158,9 @@ a restart-safe settled marker; Firefox cannot invoke this with its pairing or
 Monas session alone.
 ``pinakotheke capture acquire`` runs one pending image through a reviewed host
 executable using a strict metadata-only protocol. The helper owns source
-retrieval and DASObjectStore authorization, streams bytes directly to the
-authority, and returns only a verified receipt; Pinakotheke rejects stdout
+retrieval and DASObjectStore authorization, uses only bounded isolated
+ephemeral scratch or bounded streaming to the authority, and returns only a
+verified receipt; Pinakotheke rejects stdout
 payloads, changed destinations, malformed schemas, and non-zero exits.
 The monolith can use that same adapter continuously with
 ``--capture-acquire-helper``. Admission returns promptly, identical concurrent
@@ -168,6 +169,14 @@ live gallery, and every failure remains pending without a false stored badge.
 On restart, eligible durable pending plans are revalidated and requeued without
 a browser retry. Expired/revoked pairings, disabled sites, changed adapters, and
 settled records are not executed.
+
+The packaged ``pinakotheke`` binary is now a concrete implementation of that
+image-acquisition helper seam. It performs bounded HTTPS retrieval into private
+ephemeral scratch, submits a checksum-keyed upload through the paired
+``dasobjectstore-remote`` daemon-completion path, requires verified ``Complete``
+evidence, emits metadata only, and removes scratch on every outcome. DAS
+credentials remain inside the DASObjectStore remote-client or site
+credential-helper boundary.
 
 The release hardening path now includes one deterministic fault/recovery
 command, ``scripts/faults/check.sh``. It covers critical authority, ingest,

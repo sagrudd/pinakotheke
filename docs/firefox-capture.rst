@@ -205,10 +205,11 @@ and refuse concurrent mutation:
      --plan-id capture-plan-0
 
 The helper receives no site cookie, browser credential, Monas session,
-DASObjectStore secret, or local payload path. It must stream directly through
-its own scoped DASObjectStore authority and write one strict JSON receipt to
-standard error. Standard output must remain empty: returning payload bytes to
-Pinakotheke is rejected. The process must preserve the reviewed destination;
+DASObjectStore secret, or caller-selected local payload path. It must use only
+bounded isolated ephemeral scratch or bounded streaming through its own scoped
+DASObjectStore authority and write one strict JSON receipt to standard error.
+Standard output must remain empty: returning payload bytes to Pinakotheke is
+rejected. The process must preserve the reviewed destination;
 non-zero exit, unknown fields/schema, oversized output, destination changes,
 and malformed receipts fail before settlement. ``policy_blocked``,
 ``unavailable``, and ``rejected`` remain explicit retry/stop outcomes.
@@ -243,6 +244,59 @@ the same one-helper-at-a-time path without waiting for Firefox to repeat the
 request. Withdrawn or expired authority leaves the record pending and performs
 no network or ObjectStore operation. Settled markers are never requeued.
 
+First-party DASObjectStore helper
+---------------------------------
+
+The packaged ``pinakotheke`` binary implements its own hidden
+``acquire-image-v1`` helper mode. Point ``--capture-acquire-helper`` at the
+absolute ``pinakotheke`` executable and provide a private helper configuration
+at ``$HOME/.x-img/config/das-capture-helper.json``. Alternatively set
+``PINAKOTHEKE_DAS_HELPER_CONFIG`` to an absolute private configuration path.
+The configuration is strict, limited to 16 KiB, and must be a mode-``0600``
+regular file rather than a symlink.
+
+.. code-block:: json
+
+   {
+     "schema_version": "pinakotheke.das-capture-helper.v1",
+     "endpoint_id": "local-docker-example",
+     "curl_executable": "/usr/bin/curl",
+     "dasobjectstore_remote_executable": "/usr/local/bin/dasobjectstore-remote",
+     "dasobjectstore_remote_config": "/Users/example/.config/dasobjectstore/remote.json",
+     "daemon_socket": "/Users/example/.x-img/dasobjectstore/run/dasobjectstored.sock",
+     "max_image_bytes": 67108864
+   }
+
+This document contains no DAS credential. The referenced DASObjectStore remote
+configuration or its site-owned credential helper remains the authority for a
+scoped, expiring ObjectStore session and must itself be mode ``0600``. Pair and
+select the exact ObjectStore with DASObjectStore before starting Pinakotheke;
+the helper cannot infer a first store, change the endpoint selected by the
+capture authority, or prompt for a password in the background.
+
+For each approved plan the helper permits only HTTPS retrieval and HTTPS
+redirects, caps redirects and bytes, writes to a fresh mode-``0700`` ephemeral
+directory, validates a non-empty ``image/*`` response, and computes SHA-256 by
+bounded streaming. It invokes ``dasobjectstore-remote upload`` with an exact
+checksum-derived key and ``--submit-to-daemon``. A zero process exit is not
+enough: the helper requires the daemon response to say both ``Complete`` and
+``remote_s3_transfer_complete`` before emitting a verified receipt. The daemon
+therefore owns provider verification and catalogue completion. Scratch is
+deleted on success and every error; no payload is written beneath the
+Pinakotheke product root.
+
+The page plus canonical media URL produces a stable gallery identity, so a page
+with several images retains several cards rather than collapsing them. An
+original with the same canonical URL enriches its observed card. Sites whose
+thumbnail and opened original use different URLs still require a future
+explicit browser correlation field; until then the original remains pending
+rather than being guessed onto another card. Object keys and positive immutable
+versions derive from the payload checksum, making exact retries idempotent.
+Standard output remains empty and all child diagnostics are suppressed; only
+the strict metadata receipt is written to standard error. The configuration
+schema is
+``contracts/dasobjectstore/pinakotheke-das-capture-helper.v1.schema.json``.
+
 Compatibility evidence
 ----------------------
 
@@ -251,8 +305,10 @@ revisions; they are compatibility pins, not dependencies of the public build:
 
 * Monas ``3d21b0bc7b83fa8408d01b93347a56f43f3a96b7`` for host-owned session
   admission and host-relative product APIs;
-* DASObjectStore ``b8e1fb9c6059497b981140fcd6e2818d23fc972f`` for scoped,
-  short-lived application authority and verified completion; and
+* DASObjectStore ``5769f27859a58101aedd9de0087fc278fd3e4b16`` for the
+  ``dasobjectstore-remote`` daemon-submitted upload, checksum metadata,
+  immutable object version, provider verification, and catalogue completion;
+  and
 * Mnemosyne design language ``5539df8f662a78ebdf7cf4c868d71831380c8cfd`` and
   Mnemosyne ``52810176bf95a170f93d74a6f5daa94da5c6640e`` for host-relative
   product/API and task-pane boundaries.

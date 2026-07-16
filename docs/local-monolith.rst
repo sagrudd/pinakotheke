@@ -177,6 +177,13 @@ preview, poster, and normalized-video range routes are composed together behind
 Monas dispatch. Without it, object delivery remains unmounted and the UI shows
 the explicit unavailable state rather than consulting an origin URL.
 
+For image acquisition, the packaged Pinakotheke binary can itself be the
+reviewed acquire helper. Configure the strict secret-free DAS adapter described
+in :doc:`firefox-capture`, then set ``--capture-acquire-helper`` to the absolute
+Pinakotheke binary path. DAS credentials and provider completion remain owned
+by ``dasobjectstore-remote`` and ``dasobjectstored``; Pinakotheke retains only
+the verified object reference and gallery metadata.
+
 ``make firefox-gallery-check`` independently exercises the compiled bundle in
 installed Firefox. It uses an ephemeral loopback catalogue and private Firefox
 profiles; it proves the browser component, not the local Monas and

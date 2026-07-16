@@ -7,6 +7,7 @@ use clap::{Args, CommandFactory, FromArgMatches, Parser, Subcommand};
 use x_img_core::{ConfigStore, build_info};
 
 mod capture_worker_helper;
+mod das_capture_helper;
 mod launchd;
 mod local_objectstore;
 mod monolith;
@@ -73,6 +74,9 @@ pub struct Cli {
 
 #[derive(Debug, PartialEq, Eq, Subcommand)]
 enum Command {
+    /// Internal DASObjectStore-backed capture helper protocol.
+    #[command(name = "acquire-image-v1", hide = true)]
+    AcquireImageV1,
     /// Strictly validate and inspect a local versioned configuration file.
     Config {
         #[command(subcommand)]
@@ -150,6 +154,7 @@ pub fn run(invocation: Invocation, cli: Cli) -> Result<(), Box<dyn std::error::E
         Some(Command::Storage { command }) => local_objectstore::run(command)?,
         Some(Command::Service { command }) => launchd::run(command)?,
         Some(Command::Capture { command }) => monolith::run_capture(command)?,
+        Some(Command::AcquireImageV1) => das_capture_helper::run()?,
     }
     Ok(())
 }
@@ -186,7 +191,9 @@ fn run_config(command: ConfigCommand) -> Result<(), Box<dyn std::error::Error>> 
 
 #[cfg(test)]
 mod tests {
-    use super::{CANONICAL_COMMAND, Invocation, LEGACY_COMMAND, LEGACY_NOTICE, parse_from};
+    use super::{
+        CANONICAL_COMMAND, Command, Invocation, LEGACY_COMMAND, LEGACY_NOTICE, parse_from,
+    };
 
     #[test]
     fn executable_identity_is_exact_and_notice_is_legacy_only() {
@@ -210,5 +217,12 @@ mod tests {
         let canonical = parse_from(Invocation::Canonical, arguments).expect("canonical arguments");
         let legacy = parse_from(Invocation::Legacy, arguments).expect("legacy arguments");
         assert_eq!(canonical, legacy);
+    }
+
+    #[test]
+    fn packaged_binary_accepts_the_capture_helper_protocol_command() {
+        let cli = parse_from(Invocation::Canonical, ["pinakotheke", "acquire-image-v1"])
+            .expect("helper protocol parses");
+        assert!(matches!(cli.command, Some(Command::AcquireImageV1)));
     }
 }

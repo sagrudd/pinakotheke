@@ -76,6 +76,9 @@ All notable changes to Pinakotheke will be documented in this file. The project 
 - Persist the trusted explicit-original observer as a Firefox dynamic content
   script scoped to enabled image origins, restoring it on startup/update and
   unregistering it immediately when capture is paused or permission removed.
+- Add a first-party packaged capture helper that bounds HTTPS image retrieval,
+  uses private ephemeral scratch, submits checksum-addressed uploads through
+  DASObjectStore's daemon completion path, and emits verified metadata only.
 - Carry an explicit positive immutable object version from verified acquisition
   and normalized-video evidence through persistent gallery records, authorized
   read grants, and host-helper requests, with legacy catalogue-v1 records

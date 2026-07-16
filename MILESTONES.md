@@ -696,6 +696,9 @@ Exit criteria:
 - exact-origin explicit-original observation remains active after Firefox
   restart without a repeated toolbar action and is removed immediately when
   capture is paused or the site permission is withdrawn;
+- the packaged capture worker performs bounded HTTPS image acquisition through
+  a scoped DASObjectStore remote-client session, accepts only daemon-verified
+  completion, and leaves no durable Pinakotheke-local payload;
 - local authentication remains Monas/Prosopikon-owned; the monolith does not
   invent Pinakotheke passwords, cookies, or a parallel session issuer; and
 - unauthenticated navigation presents a polished Monas-owned, Mnemosyne-design-

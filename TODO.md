@@ -553,6 +553,27 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   Monas checkout is newer than the intentionally pinned compatibility revision;
   this Firefox-only change consumes no Monas contract. Docker Desktop again did
   not answer within the bounded 20-second container-build attempt.
+  The packaged Pinakotheke binary now implements the concrete
+  ``acquire-image-v1`` worker protocol. A strict private secret-free config pins
+  the endpoint, reviewed executables, DAS remote-client configuration, daemon
+  socket, and byte cap. The helper permits HTTPS-only bounded retrieval into
+  mode-``0700`` ephemeral scratch, validates image type/length, streams SHA-256,
+  derives idempotent object identity/version, and invokes
+  ``dasobjectstore-remote --submit-to-daemon`` for the selected store. It emits
+  a receipt only after the DAS daemon reports verified completion and deletes
+  scratch on every outcome; child output is bounded and diagnostics suppressed.
+  This was inspected against DASObjectStore commit
+  ``5769f27859a58101aedd9de0087fc278fd3e4b16``. Live paired-authority and real
+  Firefox acceptance remain before XIMG-096 can close.
+  Gallery identity hashes both page and canonical media URL, preventing
+  multi-image pages from collapsing. Exact thumbnail/original aliases join;
+  distinct thumbnail and opened-original URLs remain pending until the Firefox
+  plan carries an explicit non-guessing correlation identity.
+  Verification on 2026-07-16: all 166 workspace tests, strict CLI Clippy,
+  repository quality/privacy/version checks, release security/license audits,
+  strict JSON contracts, and warnings-denied Sphinx 8.2.3 passed. Docker
+  Desktop again did not answer within the bounded 20-second documentation
+  container-build attempt; the local Sphinx authority passed independently.
 
 ## 0.6.0 — Firefox capture
 
