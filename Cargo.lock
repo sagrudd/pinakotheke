@@ -836,7 +836,11 @@ dependencies = [
 name = "pinakotheke-web"
 version = "1.1.0"
 dependencies = [
+ "gloo-net",
+ "pinakotheke-core",
+ "serde",
  "wasm-bindgen",
+ "wasm-bindgen-futures",
  "web-sys",
  "yew",
 ]

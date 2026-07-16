@@ -1,89 +1,79 @@
 // SPDX-License-Identifier: MPL-2.0
 //! Mnemosyne-compatible, host-integrable Yew application shell.
 
+use gloo_net::http::Request;
+use serde::Deserialize;
 use wasm_bindgen::JsCast;
+use wasm_bindgen_futures::spawn_local;
 use web_sys::{HtmlElement, HtmlInputElement, KeyboardEvent};
+use x_img_core::gallery_catalogue::{
+    GALLERY_CATALOGUE_SCHEMA, GalleryItem, GalleryMediaKind, GalleryObjectAvailability,
+    GalleryRepresentation, GalleryReviewState, GallerySourceKind,
+};
 use yew::prelude::*;
 
-#[derive(Clone, Copy)]
-struct MediaCard {
-    title: &'static str,
-    source: &'static str,
-    media_type: &'static str,
-    alt_text: &'static str,
-    object_state: &'static str,
-    source_fragment: &'static str,
-    playback_id: Option<&'static str>,
+const GALLERY_API: &str = "/products/pinakotheke/api/gallery/v1/catalogue?limit=200";
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct GalleryPageResponse {
+    schema_version: String,
+    items: Vec<GalleryItem>,
+    next_offset: Option<usize>,
 }
 
-impl MediaCard {
-    fn range_playable(self) -> bool {
-        self.playback_id.is_some() && self.object_state == "Stored in ObjectStore"
-    }
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum GalleryLoadState {
+    Loading,
+    Ready(Vec<GalleryItem>),
+    PermissionDenied,
+    TransportError,
+    InvalidResponse,
+}
 
-    fn playback_url(self) -> Option<String> {
-        self.playback_id
-            .filter(|_| self.range_playable())
-            .map(|playback_id| format!("/api/playback/v1/{playback_id}"))
+fn media_label(item: &GalleryItem) -> &'static str {
+    match item.media_kind {
+        GalleryMediaKind::Image => "Image",
+        GalleryMediaKind::NormalizedVideo => "Video · normalized",
     }
 }
 
-const CARDS: [MediaCard; 6] = [
-    MediaCard {
-        title: "Aurora study",
-        source: "X / SelectedArtist",
-        media_type: "Image · PNG",
-        alt_text: "Abstract aurora-coloured study in a square composition.",
-        object_state: "Stored in ObjectStore",
-        source_fragment: "source-record-aurora",
-        playback_id: None,
-    },
-    MediaCard {
-        title: "Tidal form",
-        source: "Website / Example gallery",
-        media_type: "Image · JPEG",
-        alt_text: "Observed thumbnail of a tidal sculpture against a pale background.",
-        object_state: "Previously observed",
-        source_fragment: "source-record-tidal",
-        playback_id: None,
-    },
-    MediaCard {
-        title: "Glass archive",
-        source: "X / SelectedArtist",
-        media_type: "Image · WebP",
-        alt_text: "Layered glass-like geometric forms.",
-        object_state: "Object unavailable",
-        source_fragment: "source-record-glass",
-        playback_id: None,
-    },
-    MediaCard {
-        title: "Night garden",
-        source: "Website / Example gallery",
-        media_type: "Image · JPEG",
-        alt_text: "Dark garden study with a bright central bloom.",
-        object_state: "Stored in ObjectStore",
-        source_fragment: "source-record-garden",
-        playback_id: None,
-    },
-    MediaCard {
-        title: "Field record",
-        source: "Website / Example gallery",
-        media_type: "Video · normalized MP4",
-        alt_text: "Short field recording with a muted abstract poster frame.",
-        object_state: "Stored in ObjectStore",
-        source_fragment: "source-record-field-record",
-        playback_id: Some("normalized-video-1"),
-    },
-    MediaCard {
-        title: "Open geometry",
-        source: "X / SelectedArtist",
-        media_type: "Image · PNG",
-        alt_text: "Open geometric line work in a square composition.",
-        object_state: "Stored in ObjectStore",
-        source_fragment: "source-record-geometry",
-        playback_id: None,
-    },
-];
+fn review_label(item: &GalleryItem) -> &'static str {
+    match item.review_state {
+        GalleryReviewState::New => "New",
+        GalleryReviewState::Reviewed => "Reviewed",
+        GalleryReviewState::Hidden => "Hidden",
+        GalleryReviewState::Removed => "Removed",
+    }
+}
+
+fn object_label(item: &GalleryItem) -> &'static str {
+    if item.thumbnail.availability == GalleryObjectAvailability::Unavailable {
+        "Object unavailable"
+    } else if item
+        .preview
+        .as_ref()
+        .is_some_and(|preview| preview.availability == GalleryObjectAvailability::Ready)
+    {
+        "Stored in ObjectStore"
+    } else {
+        "Previously observed"
+    }
+}
+
+fn ready_path(representation: &GalleryRepresentation) -> Option<&str> {
+    (representation.availability == GalleryObjectAvailability::Ready)
+        .then_some(representation.delivery_path.as_deref())
+        .flatten()
+}
+
+fn source_matches(selected: &str, item: &GalleryItem) -> bool {
+    match selected {
+        "x" => item.source_kind == GallerySourceKind::XAccount,
+        "websites" => item.source_kind == GallerySourceKind::Website,
+        _ => true,
+    }
+}
 
 fn focus_by_id(id: &str) {
     let Some(document) = web_sys::window().and_then(|window| window.document()) else {
@@ -127,11 +117,54 @@ pub fn app() -> Html {
     let review_notice = use_state(|| "3 items need review".to_owned());
     let object_view = use_state(|| true);
     let filter = use_state(String::new);
+    let gallery = use_state(|| GalleryLoadState::Loading);
+
+    {
+        let gallery = gallery.clone();
+        use_effect_with((), move |()| {
+            spawn_local(async move {
+                let state = match Request::get(GALLERY_API).send().await {
+                    Ok(response) if matches!(response.status(), 401 | 403) => {
+                        GalleryLoadState::PermissionDenied
+                    }
+                    Ok(response) if response.ok() => {
+                        match response.json::<GalleryPageResponse>().await {
+                            Ok(page) if page.schema_version == GALLERY_CATALOGUE_SCHEMA => {
+                                GalleryLoadState::Ready(page.items)
+                            }
+                            _ => GalleryLoadState::InvalidResponse,
+                        }
+                    }
+                    Ok(_) | Err(_) => GalleryLoadState::TransportError,
+                };
+                gallery.set(state);
+            });
+            || ()
+        });
+    }
+
+    let items = match &*gallery {
+        GalleryLoadState::Ready(items) => items.as_slice(),
+        _ => &[],
+    };
     let sources = [
-        ("all", "All sources", "6"),
-        ("x", "X accounts", "2"),
-        ("instagram", "Instagram accounts", "3"),
-        ("websites", "Websites", "1"),
+        ("all", "All sources", items.len()),
+        (
+            "x",
+            "X accounts",
+            items
+                .iter()
+                .filter(|item| item.source_kind == GallerySourceKind::XAccount)
+                .count(),
+        ),
+        (
+            "websites",
+            "Websites",
+            items
+                .iter()
+                .filter(|item| item.source_kind == GallerySourceKind::Website)
+                .count(),
+        ),
     ];
 
     {
@@ -144,7 +177,7 @@ pub fn app() -> Html {
         });
     }
 
-    let selected_card = CARDS.get(*active_card).copied().unwrap_or(CARDS[0]);
+    let selected_card = items.get(*active_card).cloned();
     let filter_text = (*filter).to_ascii_lowercase();
     html! {
         <div class="mn-app-shell ximg-shell">
@@ -253,11 +286,6 @@ pub fn app() -> Html {
                     </ul>
                 </section>
 
-                <section class="ximg-shell__empty" aria-labelledby="library-state">
-                    <h2 id="library-state">{ "No committed media in this context" }</h2>
-                    <p>{ "Counts describe configured sources; committed media appears here after verified admission." }</p>
-                </section>
-
                 <section class="ximg-gallery" aria-labelledby="gallery-title">
                     <div class="ximg-gallery__toolbar">
                         <h2 id="gallery-title">{ "Thumbnail browser" }</h2>
@@ -266,39 +294,80 @@ pub fn app() -> Html {
                             Callback::from(move |_| density.set(if *density == "compact" { "comfortable".to_owned() } else { "compact".to_owned() }))
                         }}>{ format!("Density: {}", *density) }</button>
                     </div>
-                    <p>{ "Synthetic metadata records; image pixels are never retained by the x-img Web client." }</p>
-                    <div class={classes!("ximg-gallery__grid", format!("is-{}", *density))}>
-                        { for CARDS.iter().enumerate().filter(|(_, card)| {
-                            card.title.to_ascii_lowercase().contains(&filter_text)
-                                || card.source.to_ascii_lowercase().contains(&filter_text)
-                                || card.media_type.to_ascii_lowercase().contains(&filter_text)
-                        }).map(|(index, card)| {
-                            let active_card = active_card.clone();
-                            let preview_open = preview_open.clone();
-                            let preview_mode = preview_mode.clone();
-                            let is_selected = index == *active_card;
-                            html! {
-                                <button
-                                    id={format!("preview-trigger-{index}")}
-                                    class={classes!("ximg-gallery__card", is_selected.then_some("is-selected"))}
-                                    aria-haspopup="dialog"
-                                    aria-pressed={is_selected.to_string()}
-                                    onclick={Callback::from(move |_| {
-                                        active_card.set(index);
-                                        preview_mode.set("Fit to pane".to_owned());
-                                        preview_open.set(true)
-                                    })}
-                                >
-                                    <span class="ximg-gallery__placeholder" aria-hidden="true"></span>
-                                    <span>{ card.title }</span>
-                                    <small>{ format!("{} · {}", card.media_type, card.object_state) }</small>
-                                </button>
-                            }
-                        }) }
-                    </div>
+                    <p>{ "Verified media references are loaded through the Monas-authenticated Pinakotheke catalogue." }</p>
+                    { match &*gallery {
+                        GalleryLoadState::Loading => html! {
+                            <div class="ximg-gallery__state" role="status" aria-live="polite">
+                                <h3>{ "Loading media library" }</h3>
+                                <p>{ "Waiting for the authenticated catalogue." }</p>
+                            </div>
+                        },
+                        GalleryLoadState::PermissionDenied => html! {
+                            <div class="ximg-gallery__state" role="alert">
+                                <h3>{ "Permission required" }</h3>
+                                <p>{ "Monas did not authorize catalogue access. Sign in again from the Monas host." }</p>
+                            </div>
+                        },
+                        GalleryLoadState::TransportError => html! {
+                            <div class="ximg-gallery__state" role="alert">
+                                <h3>{ "Catalogue unavailable" }</h3>
+                                <p>{ "Pinakotheke could not load the catalogue. No source website was contacted." }</p>
+                            </div>
+                        },
+                        GalleryLoadState::InvalidResponse => html! {
+                            <div class="ximg-gallery__state" role="alert">
+                                <h3>{ "Catalogue response unsupported" }</h3>
+                                <p>{ "The response schema was not accepted. Update the host and Pinakotheke together." }</p>
+                            </div>
+                        },
+                        GalleryLoadState::Ready(records) if records.is_empty() => html! {
+                            <div class="ximg-gallery__state" role="status">
+                                <h3>{ "No committed media" }</h3>
+                                <p>{ "Media appears after Firefox capture and verified DASObjectStore admission." }</p>
+                            </div>
+                        },
+                        GalleryLoadState::Ready(records) => html! {
+                            <div class={classes!("ximg-gallery__grid", format!("is-{}", *density))}>
+                                { for records.iter().enumerate().filter(|(_, item)| {
+                                    source_matches(&selected, item)
+                                        && (item.title.to_ascii_lowercase().contains(&filter_text)
+                                            || item.source_label.to_ascii_lowercase().contains(&filter_text)
+                                            || media_label(item).to_ascii_lowercase().contains(&filter_text))
+                                }).map(|(index, item)| {
+                                    let active_card = active_card.clone();
+                                    let preview_open = preview_open.clone();
+                                    let preview_mode = preview_mode.clone();
+                                    let is_selected = index == *active_card;
+                                    let thumbnail_path = ready_path(&item.thumbnail).map(ToOwned::to_owned);
+                                    html! {
+                                        <button
+                                            id={format!("preview-trigger-{index}")}
+                                            class={classes!("ximg-gallery__card", is_selected.then_some("is-selected"))}
+                                            aria-haspopup="dialog"
+                                            aria-pressed={is_selected.to_string()}
+                                            onclick={Callback::from(move |_| {
+                                                active_card.set(index);
+                                                preview_mode.set("Fit to pane".to_owned());
+                                                preview_open.set(true)
+                                            })}
+                                        >
+                                            { if let Some(path) = thumbnail_path {
+                                                html! { <img class="ximg-gallery__thumbnail" src={path} alt="" loading="lazy" /> }
+                                            } else {
+                                                html! { <span class="ximg-gallery__placeholder" aria-hidden="true">{ "Unavailable" }</span> }
+                                            }}
+                                            <span>{ item.title.clone() }</span>
+                                            <small>{ format!("{} · {} · {}", media_label(item), object_label(item), review_label(item)) }</small>
+                                        </button>
+                                    }
+                                }) }
+                            </div>
+                        },
+                    }}
                 </section>
 
-                { if *preview_open {
+                { if *preview_open && selected_card.is_some() {
+                    let selected_card = selected_card.expect("checked selected card");
                     let close_preview_state = preview_open.clone();
                     let close_preview_card = active_card.clone();
                     let close_preview = Callback::from(move |_| {
@@ -341,50 +410,52 @@ pub fn app() -> Html {
                         >
                             <div class="ximg-preview__pane">
                                 <div class="ximg-preview__heading">
-                                    <div><p class="ximg-shell__eyebrow">{ "Selected record" }</p><h2 id="preview-title">{ selected_card.title }</h2></div>
+                                    <div><p class="ximg-shell__eyebrow">{ "Selected record" }</p><h2 id="preview-title">{ selected_card.title.clone() }</h2></div>
                                     <button id="preview-close" autofocus=true onclick={close_preview}>{ "Close preview" }</button>
                                 </div>
-                                <p id="preview-summary">{ format!("{} · {}", selected_card.media_type, selected_card.object_state) }</p>
+                                <p id="preview-summary">{ format!("{} · {} · {}", media_label(&selected_card), object_label(&selected_card), review_label(&selected_card)) }</p>
                                 <div class="ximg-preview__layout">
                                     <section class={classes!("ximg-preview__visual", (view_mode == "Original size").then_some("is-original"))} aria-label="Media visual">
-                                        <div role="img" aria-label={selected_card.alt_text} class="ximg-preview__visual-proxy">
-                                            <span>{ "Synthetic visual proxy" }</span>
-                                            <small>{ selected_card.alt_text }</small>
-                                        </div>
+                                        { if selected_card.media_kind == GalleryMediaKind::Image {
+                                            if let Some(path) = selected_card.preview.as_ref().and_then(ready_path) {
+                                                html! { <img class="ximg-preview__image" src={path.to_owned()} alt={selected_card.title.clone()} /> }
+                                            } else {
+                                                html! { <div class="ximg-preview__unavailable" role="status"><strong>{ "Original image unavailable" }</strong><p>{ "Pinakotheke does not fall back to the source website." }</p></div> }
+                                            }
+                                        } else if let Some(path) = selected_card.preview.as_ref().and_then(ready_path) {
+                                            html! {
+                                                <video controls=true preload="metadata" src={path.to_owned()} aria-label={format!("Play {}", selected_card.title)}>
+                                                    { "Your browser cannot play the verified normalized video." }
+                                                </video>
+                                            }
+                                        } else {
+                                            html! { <div class="ximg-preview__unavailable" role="status"><strong>{ "Normalized video unavailable" }</strong><p>{ "Pinakotheke does not fall back to the source website." }</p></div> }
+                                        }}
                                         <button id="preview-view-mode" aria-pressed={(view_mode == "Original size").to_string()} onclick={toggle_view}>
                                             { if view_mode == "Fit to pane" { "View original size" } else { "Fit to pane" } }
                                         </button>
                                     </section>
                                     <aside class="ximg-preview__details" aria-label="Selected media details">
                                         <dl>
-                                            <div><dt>{ "Source" }</dt><dd>{ selected_card.source }</dd></div>
-                                            <div><dt>{ "Media type" }</dt><dd>{ selected_card.media_type }</dd></div>
-                                            <div><dt>{ "Object state" }</dt><dd>{ selected_card.object_state }</dd></div>
-                                            <div><dt>{ "Alt text" }</dt><dd>{ selected_card.alt_text }</dd></div>
+                                            <div><dt>{ "Source" }</dt><dd>{ selected_card.source_label.clone() }</dd></div>
+                                            <div><dt>{ "Media type" }</dt><dd>{ media_label(&selected_card) }</dd></div>
+                                            <div><dt>{ "Object state" }</dt><dd>{ object_label(&selected_card) }</dd></div>
+                                            <div><dt>{ "Dimensions" }</dt><dd>{ format!("{} × {}", selected_card.width, selected_card.height) }</dd></div>
+                                            <div><dt>{ "Endpoint / ObjectStore" }</dt><dd>{ format!("{} / {}", selected_card.thumbnail.endpoint_id, selected_card.thumbnail.object_store_id) }</dd></div>
                                         </dl>
-                                        <a id="preview-source-link" href={format!("#{}", selected_card.source_fragment)}>{ "View source metadata" }</a>
-                                        { if let Some(playback_url) = selected_card.playback_url() {
-                                            html! {
-                                                <section class="ximg-preview__playback" aria-labelledby="playback-title">
-                                                    <h3 id="playback-title">{ "Normalized video playback" }</h3>
-                                                    <p>{ "Ready · authorized ObjectStore range delivery" }</p>
-                                                    <video controls=true preload="metadata" src={playback_url} aria-label={format!("Play {}", selected_card.title)}>
-                                                        { "Your browser cannot play the verified normalized video." }
-                                                    </video>
-                                                </section>
-                                            }
-                                        } else if selected_card.object_state == "Object unavailable" {
+                                        <a id="preview-source-link" href={format!("#catalogue-{}", selected_card.catalogue_id)}>{ "View catalogue metadata" }</a>
+                                        { if object_label(&selected_card) == "Object unavailable" {
                                             html! {
                                                 <section class="ximg-preview__unavailable" role="status" aria-live="polite">
                                                     <h3>{ "Object unavailable" }</h3>
-                                                    <p>{ "The committed object cannot be read. Playback and original media are unavailable; x-img does not fall back to the source URL." }</p>
+                                                    <p>{ "The committed object cannot be read. Pinakotheke does not fall back to the source URL." }</p>
                                                 </section>
                                             }
                                         } else {
                                             html! {
-                                                <section class="ximg-preview__unavailable" role="status">
-                                                    <h3>{ "No video playback for this record" }</h3>
-                                                    <p>{ "This image record remains available through its authorized ObjectStore object state." }</p>
+                                                <section class="ximg-preview__playback" role="status">
+                                                    <h3>{ "Authorized ObjectStore delivery" }</h3>
+                                                    <p>{ "The displayed media uses the verified host-local delivery path above." }</p>
                                                 </section>
                                             }
                                         }}
@@ -408,22 +479,57 @@ pub fn app() -> Html {
 
 #[cfg(test)]
 mod tests {
-    use super::CARDS;
+    use super::*;
+
+    fn representation(
+        availability: GalleryObjectAvailability,
+        path: Option<&str>,
+    ) -> GalleryRepresentation {
+        GalleryRepresentation {
+            kind: x_img_core::gallery_catalogue::GalleryRepresentationKind::Thumbnail,
+            availability,
+            endpoint_id: "endpoint-1".into(),
+            object_store_id: "store-1".into(),
+            object_key: "objects/media-1".into(),
+            checksum: "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                .into(),
+            content_type: "image/jpeg".into(),
+            content_length: 12,
+            delivery_path: path.map(Into::into),
+        }
+    }
+
+    fn item() -> GalleryItem {
+        GalleryItem {
+            catalogue_id: "media-1".into(),
+            title: "Synthetic redistributable image".into(),
+            source_label: "Example website".into(),
+            source_kind: GallerySourceKind::Website,
+            media_kind: GalleryMediaKind::Image,
+            review_state: GalleryReviewState::New,
+            discovered_at_epoch_seconds: 1,
+            width: 320,
+            height: 200,
+            thumbnail: representation(
+                GalleryObjectAvailability::Ready,
+                Some("/products/pinakotheke/api/gallery/v1/objects/thumbnail-1"),
+            ),
+            preview: None,
+        }
+    }
 
     #[test]
-    fn only_a_ready_normalized_object_receives_a_range_playback_url() {
-        let video = CARDS
-            .iter()
-            .find(|card| card.playback_id.is_some())
-            .unwrap();
-        let unavailable = CARDS
-            .iter()
-            .find(|card| card.object_state == "Object unavailable")
-            .unwrap();
+    fn gallery_helpers_never_make_an_unavailable_object_renderable() {
+        let mut media = item();
+        assert_eq!(object_label(&media), "Previously observed");
         assert_eq!(
-            video.playback_url().as_deref(),
-            Some("/api/playback/v1/normalized-video-1")
+            ready_path(&media.thumbnail),
+            Some("/products/pinakotheke/api/gallery/v1/objects/thumbnail-1")
         );
-        assert_eq!(unavailable.playback_url(), None);
+        media.thumbnail = representation(GalleryObjectAvailability::Unavailable, None);
+        assert_eq!(object_label(&media), "Object unavailable");
+        assert_eq!(ready_path(&media.thumbnail), None);
+        assert!(source_matches("websites", &media));
+        assert!(!source_matches("x", &media));
     }
 }

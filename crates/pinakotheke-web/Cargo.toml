@@ -13,6 +13,10 @@ publish = false
 workspace = true
 
 [dependencies]
+gloo-net.workspace = true
+serde.workspace = true
 yew.workspace = true
 wasm-bindgen = "=0.2.126"
+wasm-bindgen-futures.workspace = true
+x-img-core = { package = "pinakotheke-core", path = "../pinakotheke-core" }
 web-sys = { version = "0.3.77", features = ["Document", "Element", "HtmlElement", "HtmlInputElement", "KeyboardEvent", "Window"] }

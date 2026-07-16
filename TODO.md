@@ -376,7 +376,16 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   DASObjectStore references, explicit availability, and only host-local
   authorized delivery paths. Core and Axum tests reject origin URLs,
   inconsistent availability, unbounded pages, and unauthenticated access. The
-  Yew/API replacement, persistent wiring, and real-Firefox restart proof remain.
+  Yew/API replacement now removes the synthetic card array and preview proxies:
+  the browser consumes the canonical Monas-forwarded catalogue path, renders
+  ready ObjectStore thumbnails, original images, posters, and normalized video,
+  and fails closed with accessible loading/empty/permission/transport/schema/
+  unavailable states. Source counts and filtering use returned account/website
+  classifications; Instagram remains a website. Persistent catalogue
+  population, authorized image/video object delivery composition, and the
+  real-Firefox restart proof remain. The authenticated monolith now composes the
+  canonical gallery route and returns an honest empty catalogue until a host
+  supplies the persistent projection.
 
 ## 0.6.0 — Firefox capture
 

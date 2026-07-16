@@ -28,7 +28,31 @@ an observed thumbnail or a normalized-video poster. A preview is either an
 explicitly opened original image or a verified normalized-video rendition.
 The schema rejects mismatched media and representation types.
 
-This boundary does not yet claim the full vertical. The next slices replace the
-Yew synthetic catalogue with this response, connect its paths to authorized
-image and video delivery, persist capture and review admission, and run the
-real-Firefox restart acceptance proof described by XIMG-096.
+This boundary alone does not claim the full vertical. The web integration below
+consumes it; persistent capture/review population, monolith delivery
+composition, and the real-Firefox restart proof remain.
+
+Web gallery integration
+-----------------------
+
+The Yew gallery requests the same endpoint through Monas at
+``/products/pinakotheke/api/gallery/v1/catalogue``. It does not contain a
+synthetic fallback catalogue or proxy artwork. Ready thumbnail and poster paths
+render directly in dense cards; ready original-image and normalized-video paths
+render in the keyboard-accessible preview pane. The web client derives source
+counts and filters from the returned X-account or website classification.
+Instagram capture remains part of the normal website class.
+
+Loading, empty, permission-denied, transport-error, unsupported-schema, and
+object-unavailable states are expressed in words. In all failure states the web
+client leaves media absent and never contacts a source website. This slice was
+checked against ``mnemosyne_design_language`` commit
+``5539df8f662a78ebdf7cf4c868d71831380c8cfd``, Monas commit
+``a0fabe2d250f2d217765ee59a95cc2a04610bedc``, and DASObjectStore commit
+``cd6617cdbfc0d8587b3b51b9925a378b3aacaab9``. These are compatibility evidence,
+not unpublished path dependencies.
+
+Persistent population of this endpoint and the real-Firefox restart proof
+remain the next XIMG-096 slice. The authenticated monolith already composes the
+canonical route and returns an honest empty catalogue when no persistent
+projection has been supplied.

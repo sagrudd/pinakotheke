@@ -19,6 +19,13 @@ pub enum GalleryMediaKind {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
+pub enum GallerySourceKind {
+    XAccount,
+    Website,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum GalleryReviewState {
     New,
     Reviewed,
@@ -63,6 +70,7 @@ pub struct GalleryItem {
     pub catalogue_id: String,
     pub title: String,
     pub source_label: String,
+    pub source_kind: GallerySourceKind,
     pub media_kind: GalleryMediaKind,
     pub review_state: GalleryReviewState,
     pub discovered_at_epoch_seconds: u64,
@@ -217,6 +225,7 @@ mod tests {
             catalogue_id: id.into(),
             title: "Synthetic redistributable image".into(),
             source_label: "Example website".into(),
+            source_kind: GallerySourceKind::Website,
             media_kind: GalleryMediaKind::Image,
             review_state: GalleryReviewState::New,
             discovered_at_epoch_seconds: discovered,

@@ -232,9 +232,27 @@ pub fn monolith_router_with_authorities(
     dasobjectstore_ready: bool,
     monas_dispatch: Option<MonasDispatchVerifier>,
 ) -> Router {
+    monolith_router_with_gallery_authority(
+        dasobjectstore_ready,
+        monas_dispatch,
+        GalleryCatalogue::default(),
+    )
+}
+
+/// Returns the Monas-admitted monolith with a host-supplied gallery projection.
+pub fn monolith_router_with_gallery_authority(
+    dasobjectstore_ready: bool,
+    monas_dispatch: Option<MonasDispatchVerifier>,
+    gallery: GalleryCatalogue,
+) -> Router {
     let authentication_ready = monas_dispatch.is_some();
     let protected = Router::new()
         .route("/products/pinakotheke/api/context", get(context))
+        .route(
+            "/products/pinakotheke/api/gallery/v1/catalogue",
+            get(gallery_catalogue),
+        )
+        .layer(Extension(Arc::new(gallery)))
         .layer(middleware::from_fn_with_state(
             monas_dispatch,
             admit_monas_dispatch,
@@ -393,6 +411,10 @@ pub fn router_with_gallery_catalogue(catalogue: GalleryCatalogue) -> Router {
     Router::new()
         .route("/health", get(health))
         .route("/api/gallery/v1/catalogue", get(gallery_catalogue))
+        .route(
+            "/products/pinakotheke/api/gallery/v1/catalogue",
+            get(gallery_catalogue),
+        )
         .layer(Extension(Arc::new(catalogue)))
 }
 
@@ -981,6 +1003,7 @@ mod tests {
         gallery_catalogue::{
             GalleryCatalogue, GalleryItem, GalleryMediaKind, GalleryObjectAvailability,
             GalleryRepresentation, GalleryRepresentationKind, GalleryReviewState,
+            GallerySourceKind,
         },
         host_context::{HostContextAdapter, MonasHostContextAdapter},
         object_read::{
@@ -1002,10 +1025,11 @@ mod tests {
 
     use super::{
         HostObjectReadBackend, MonasDispatchVerifier, monolith_router,
-        monolith_router_with_authorities, monolith_router_with_storage, router,
-        router_with_cache_aliases, router_with_cache_substitution, router_with_capture_plans,
-        router_with_direct_playback, router_with_gallery_catalogue, router_with_image_substitution,
-        router_with_operations, router_with_synoptikon_catalogue,
+        monolith_router_with_authorities, monolith_router_with_gallery_authority,
+        monolith_router_with_storage, router, router_with_cache_aliases,
+        router_with_cache_substitution, router_with_capture_plans, router_with_direct_playback,
+        router_with_gallery_catalogue, router_with_image_substitution, router_with_operations,
+        router_with_synoptikon_catalogue,
     };
 
     const CHECKSUM: &str =
@@ -1031,6 +1055,7 @@ mod tests {
             catalogue_id: "media-1".into(),
             title: "Synthetic redistributable image".into(),
             source_label: "Example website".into(),
+            source_kind: GallerySourceKind::Website,
             media_kind: GalleryMediaKind::Image,
             review_state: GalleryReviewState::New,
             discovered_at_epoch_seconds: 1,
@@ -1269,7 +1294,7 @@ mod tests {
             .layer(Extension(context))
             .oneshot(
                 Request::builder()
-                    .uri("/api/gallery/v1/catalogue?limit=100")
+                    .uri("/products/pinakotheke/api/gallery/v1/catalogue?limit=100")
                     .body(Body::empty())
                     .unwrap(),
             )
@@ -1390,6 +1415,30 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(admitted.status(), StatusCode::NO_CONTENT);
+    }
+
+    #[tokio::test]
+    async fn monolith_composes_the_authenticated_gallery_on_the_monas_mount() {
+        let token = "synthetic-monas-dispatch-token-0001";
+        let response = monolith_router_with_gallery_authority(
+            true,
+            Some(MonasDispatchVerifier::new(token.into()).unwrap()),
+            gallery_catalogue(),
+        )
+        .oneshot(
+            Request::builder()
+                .uri("/products/pinakotheke/api/gallery/v1/catalogue")
+                .header("x-monas-dispatch-token", token)
+                .header("x-monas-host-context", MONAS_CONTEXT)
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = to_bytes(response.into_body(), 8192).await.unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        assert_eq!(json["items"][0]["catalogue_id"], "media-1");
     }
 
     #[tokio::test]
