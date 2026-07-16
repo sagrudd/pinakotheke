@@ -371,8 +371,8 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   API and authorized image/video routes; (3) persistent capture/review wiring
   and the restart/Firefox acceptance harness. Update the ThumbsPlus-style user
   documentation and record the local container-built Sphinx evidence.
-  The production normalization seam is now implemented: ``pinakotheke video
-  normalize`` consumes one private confirmed plan, runs the structured
+  The production normalization seam is implemented in ``1a15c10``:
+  ``pinakotheke video normalize`` consumes one private confirmed plan, runs the structured
   digest-pinned network-isolated Docker adapter, and streams the normalized
   video, poster, and manifest directly to a reviewed helper that owns
   DASObjectStore authentication. Exact authority receipts are mandatory;

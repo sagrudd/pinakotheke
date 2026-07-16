@@ -313,8 +313,8 @@ exact-origin policy/provenance while using Firefox's required port-independent
 host match pattern. Live paired DASObjectStore commit and restart evidence is
 still required to close XIMG-096.
 
-The packaged CLI now exposes the former in-process-only video normalizer as a
-reviewed host command. A strict private confirmed plan drives the immutable
+Commit ``1a15c10`` exposes the former in-process-only video normalizer as a
+packaged reviewed host command. A strict private confirmed plan drives the immutable
 container, profile, and resource contract, while normalized video, poster, and
 manifest bytes stream to a helper-owned DASObjectStore authority over stdin;
 exact receipts are required and scratch is always removed. This closes the
