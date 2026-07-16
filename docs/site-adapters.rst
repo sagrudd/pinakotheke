@@ -11,7 +11,9 @@ The experimental generic adapter may match an arbitrary HTTPS origin only
 after that exact origin is enabled in the site policy UI and granted as an
 optional Firefox permission. This is not a wildcard site policy: excluded
 paths, media classes, and capability gates still apply. Its explicit-original
-capability accepts only a trusted image-link or image-document click.
+capability accepts only a trusted image-link or image-document click. Enabling
+image capture installs a persistent top-frame observer for only that exact
+origin; pausing capture or removing the site unregisters it.
 
 Segmented HLS/DASH capability is not a boolean shortcut.  It requires the
 versioned evidence contract in :doc:`segmented-video-gate`; the generic adapter

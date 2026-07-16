@@ -693,6 +693,9 @@ Exit criteria:
 - the Firefox generic adapter works for explicitly opted-in HTTPS origins and
   records an original only from a trusted image-link or image-document click,
   never from synthetic events, unlinked thumbnails, or automatic navigation;
+- exact-origin explicit-original observation remains active after Firefox
+  restart without a repeated toolbar action and is removed immediately when
+  capture is paused or the site permission is withdrawn;
 - local authentication remains Monas/Prosopikon-owned; the monolith does not
   invent Pinakotheke passwords, cookies, or a parallel session issuer; and
 - unauthenticated navigation presents a polished Monas-owned, Mnemosyne-design-

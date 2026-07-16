@@ -22,6 +22,8 @@ assert.deepEqual(candidate.optional_host_permissions, current.optional_host_perm
 assert.deepEqual(candidate.content_security_policy, current.content_security_policy);
 
 let installed;
+let startup;
+let registeredScripts = [];
 const storage = {
   instanceUrl: "https://pinakotheke.example.invalid",
   instanceId: "instance-stable",
@@ -38,6 +40,7 @@ const storage = {
 const browser = {
   runtime: {
     onInstalled: { addListener(callback) { installed = callback; } },
+    onStartup: { addListener(callback) { startup = callback; } },
     onMessage: { addListener() {} },
     getURL(path) { return `moz-extension://fixture/${path}`; },
   },
@@ -50,12 +53,30 @@ const browser = {
     },
   },
   tabs: { async query() { return []; } },
-  scripting: { async executeScript() { return []; } },
+  scripting: {
+    async executeScript() { return []; },
+    async getRegisteredContentScripts() { return registeredScripts; },
+    async unregisterContentScripts() { registeredScripts = []; },
+    async registerContentScripts(scripts) { registeredScripts = scripts; },
+  },
 };
 vm.runInNewContext(fs.readFileSync("firefox-extension/background.js", "utf8"), {
-  browser, fetch, URL, AbortController, Blob, setTimeout, clearTimeout,
+  browser,
+  fetch: async () => ({
+    async json() {
+      return { adapters: [{
+        kind: "experimental_generic",
+        version: "1.0.0",
+        origins: [],
+        exclude_paths: ["/login", "/settings"],
+        capabilities: { explicit_original: true },
+      }] };
+    },
+  }),
+  URL, AbortController, Blob, setTimeout, clearTimeout,
 });
 assert.equal(typeof installed, "function");
+assert.equal(typeof startup, "function");
 
 const before = structuredClone(storage);
 await installed({ reason: "update", previousVersion: "0.9.0" });

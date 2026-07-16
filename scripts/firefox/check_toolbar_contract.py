@@ -19,6 +19,7 @@ def main() -> int:
     assert forbidden.isdisjoint(manifest["permissions"])
     popup = (EXTENSION / "popup.html").read_text()
     popup_script = (EXTENSION / "popup.js").read_text()
+    options_script = (EXTENSION / "options.js").read_text()
     background = (EXTENSION / "background.js").read_text()
     for phrase in (
         "Previously observed",
@@ -35,6 +36,7 @@ def main() -> int:
         assert forbidden_field not in diagnostic_block
     assert "siteDiagnostics" in diagnostic_block
     assert "some(site => site.origin === origin)" in diagnostic_block
+    assert options_script.index("sync-capture-observers") < options_script.index("permissions.remove")
     subprocess.run(["node", "scripts/firefox/check_identity_upgrade.mjs"], cwd=ROOT, check=True)
     subprocess.run(["node", "scripts/firefox/check_explicit_original.mjs"], cwd=ROOT, check=True)
     print("Firefox toolbar contract passed: popup, controls, labels, bounded redacted diagnostics")

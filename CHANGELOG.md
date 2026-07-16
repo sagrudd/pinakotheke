@@ -73,6 +73,9 @@ All notable changes to Pinakotheke will be documented in this file. The project 
 - Enable the experimental generic Firefox adapter for explicitly opted-in HTTPS
   origins and admit originals only from trusted image-link/image-document
   clicks, using sender-tab provenance and no automatic opening or traversal.
+- Persist the trusted explicit-original observer as a Firefox dynamic content
+  script scoped to enabled image origins, restoring it on startup/update and
+  unregistering it immediately when capture is paused or permission removed.
 - Carry an explicit positive immutable object version from verified acquisition
   and normalized-video evidence through persistent gallery records, authorized
   read grants, and host-helper requests, with legacy catalogue-v1 records

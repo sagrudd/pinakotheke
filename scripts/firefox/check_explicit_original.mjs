@@ -7,7 +7,9 @@ import fs from "node:fs";
 import vm from "node:vm";
 
 let messageListener;
+let startupListener;
 const captures = [];
+let registeredScripts = [];
 const storage = {
   instanceUrl: "https://pinakotheke.example.invalid",
   pairId: "pair-1",
@@ -36,6 +38,7 @@ const registry = {
 const browser = {
   runtime: {
     onInstalled: { addListener() {} },
+    onStartup: { addListener(callback) { startupListener = callback; } },
     onMessage: { addListener(callback) { messageListener = callback; } },
     getURL(path) { return `moz-extension://fixture/${path}`; },
   },
@@ -48,7 +51,12 @@ const browser = {
     },
   },
   tabs: { async query() { return []; } },
-  scripting: { async executeScript() { return []; } },
+  scripting: {
+    async executeScript() { return []; },
+    async getRegisteredContentScripts() { return registeredScripts; },
+    async unregisterContentScripts() { registeredScripts = []; },
+    async registerContentScripts(scripts) { registeredScripts = scripts; },
+  },
 };
 const fetchFixture = async (url, options) => {
   if (String(url).startsWith("moz-extension://")) {
@@ -58,10 +66,6 @@ const fetchFixture = async (url, options) => {
   return { ok: true };
 };
 const source = fs.readFileSync("firefox-extension/background.js", "utf8");
-assert.match(source, /event\.isTrusted/);
-assert.match(source, /event\.button !== 0/);
-assert.match(source, /closest\("img"\)/);
-assert.match(source, /document\.contentType\?\.startsWith\("image\/"\)/);
 vm.runInNewContext(source, {
   browser,
   fetch: fetchFixture,
@@ -72,6 +76,53 @@ vm.runInNewContext(source, {
   clearTimeout,
 });
 assert.equal(typeof messageListener, "function");
+assert.equal(typeof startupListener, "function");
+
+const sync = await messageListener({ command: "sync-capture-observers" }, {});
+assert.equal(sync.registered, 1);
+assert.equal(registeredScripts.length, 1);
+assert.deepEqual(Array.from(registeredScripts[0].matches), ["https://art.example.invalid/*"]);
+assert.deepEqual(Array.from(registeredScripts[0].excludeMatches), [
+  "https://art.example.invalid/login*",
+  "https://art.example.invalid/settings*",
+]);
+assert.equal(registeredScripts[0].persistAcrossSessions, true);
+assert.equal(registeredScripts[0].allFrames, false);
+
+let clickListener;
+const contentMessages = [];
+class FixtureElement {
+  closest(selector) {
+    if (selector === "img") return this;
+    if (selector === "a[href]") return { href: "https://media.example.invalid/open.jpg?signed=drop" };
+    return null;
+  }
+}
+const openedImage = new FixtureElement();
+openedImage.currentSrc = "https://media.example.invalid/thumb.jpg";
+openedImage.naturalWidth = 2048;
+openedImage.naturalHeight = 1365;
+const contentSource = fs.readFileSync("firefox-extension/content-explicit-open.js", "utf8");
+vm.runInNewContext(contentSource, {
+  browser: { runtime: { sendMessage(message) { contentMessages.push(message); } } },
+  document: {
+    contentType: "text/html",
+    addEventListener(kind, callback, capture) {
+      assert.equal(kind, "click");
+      assert.equal(capture, true);
+      clickListener = callback;
+    },
+  },
+  Element: FixtureElement,
+  URL,
+});
+assert.equal(typeof clickListener, "function");
+clickListener({ isTrusted: false, button: 0, target: openedImage });
+assert.equal(contentMessages.length, 0, "synthetic clicks must be ignored");
+clickListener({ isTrusted: true, button: 0, target: openedImage });
+assert.equal(contentMessages.length, 1);
+assert.equal(contentMessages[0].command, "explicit-original-opened");
+assert.equal(contentMessages[0].width, 2048);
 
 const sender = { tab: { id: 7, url: "https://art.example.invalid/gallery?private=drop" } };
 const result = await messageListener({
@@ -102,5 +153,7 @@ await messageListener({
   height: 10,
 }, sender);
 assert.equal(captures.length, 1, "paused site policy must block explicit capture");
+await messageListener({ command: "sync-capture-observers" }, {});
+assert.equal(registeredScripts.length, 0, "pausing capture removes the persistent observer");
 
-console.log("Firefox explicit-original contract passed: trusted click, opt-in, generic adapter, canonical request");
+console.log("Firefox explicit-original contract passed: persistent exact-origin observer, trusted click, canonical request");

@@ -96,6 +96,10 @@ document) can submit the explicitly opened original through the same capture
 plan. Synthetic clicks and unlinked thumbnail clicks are rejected, and the
 generic adapter applies to arbitrary HTTPS origins only after explicit site
 permission and opt-in.
+That exact-origin observer persists across ordinary Firefox restarts, is
+restored after extension updates, and is removed when capture is paused or the
+site is removed. No repeated per-page toolbar action or broad tab/history
+permission is required.
 Those paths now resolve only through the persisted catalogue and a
 Monas-authenticated, host-supplied DASObjectStore streaming-read backend.
 Pinakotheke validates MIME type, length, checksum, and ETag and streams without

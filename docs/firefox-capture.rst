@@ -16,13 +16,21 @@ intersect the current viewport. It submits each eligible item separately to
 the paired instance. It does not open an image, inspect off-screen images,
 traverse hidden DOM content, crawl a page, or simulate browsing.
 
-After a site is explicitly enabled and the user runs its cache control, the
-extension installs one idempotent click observer in that tab. It submits an
-``explicit_original`` only for a trusted primary-button click on an image link,
-or an image already displayed as the document itself. Unlinked thumbnail
-clicks, synthetic events, hidden traversal, and automatic opening are not
-eligible. Page provenance comes from Firefox's sender tab rather than message
-data. Video acquisition is not implemented by this endpoint.
+After a site is explicitly enabled for image capture, Firefox dynamically
+registers one persistent, top-frame content script for that exact origin. The
+registration is restored after extension updates and browser startup, and is
+removed before capture is paused or the origin permission is revoked. It does
+not require the user to press the toolbar cache control on every page and it
+does not add tab, history, cookie, or ``webRequest`` permission.
+
+The content script submits an ``explicit_original`` only for a trusted
+primary-button click on an image link, or an image already displayed as the
+document itself. Unlinked thumbnail clicks, synthetic events, hidden traversal,
+subframes, and automatic opening are not eligible. Login and settings paths are
+excluded from registration. The background process revalidates current site
+policy, adapter capability, and sender-tab provenance for every message, so a
+stale page script cannot bypass a newly paused policy. Video acquisition is not
+implemented by this endpoint.
 
 The experimental generic adapter is available for any exact HTTPS origin only
 after that origin has been added through the site policy UI and Firefox has
@@ -248,6 +256,12 @@ revisions; they are compatibility pins, not dependencies of the public build:
 * Mnemosyne design language ``5539df8f662a78ebdf7cf4c868d71831380c8cfd`` and
   Mnemosyne ``52810176bf95a170f93d74a6f5daa94da5c6640e`` for host-relative
   product/API and task-pane boundaries.
+
+The persistent observer uses Firefox Manifest V3
+``scripting.registerContentScripts`` with the already granted exact-origin
+permission. Firefox 101 or newer supports this API; the extension requires
+Firefox 128 or newer. Dynamic registrations are explicitly reconstructed on
+extension update as required by Firefox's registration lifecycle.
 
 Verification
 ------------

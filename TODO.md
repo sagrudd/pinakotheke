@@ -537,6 +537,22 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   The required Docker documentation build was attempted for 20 seconds but the
   local Docker Desktop daemon did not respond; this host replication gap does
   not invalidate the successful local documentation or feature checks.
+  Explicit-original observation is now a persistent Firefox MV3 dynamic
+  content script registered only for exact opted-in image origins. It is
+  restored on browser startup and extension update, excludes adapter-blocked
+  paths and subframes, and is unregistered before capture pause/removal revokes
+  permission. The background still revalidates live policy, adapter, and
+  sender-tab provenance for every trusted click. This removes the repeated
+  per-page toolbar prerequisite without adding tabs, history, cookies, or
+  ``webRequest`` authority. Real installed-Firefox capture through a concrete
+  DASObjectStore helper remains the critical acceptance gap.
+  Verification on 2026-07-16: JavaScript syntax, observer/toolbar/identity
+  contracts, deterministic XPI packaging, repository quality/privacy/version
+  checks, release audits, x-img-owned public contracts, and warnings-denied
+  Sphinx 8.2.3 passed. The aggregate sibling check reported only that the local
+  Monas checkout is newer than the intentionally pinned compatibility revision;
+  this Firefox-only change consumes no Monas contract. Docker Desktop again did
+  not answer within the bounded 20-second container-build attempt.
 
 ## 0.6.0 — Firefox capture
 

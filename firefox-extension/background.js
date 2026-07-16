@@ -1,16 +1,21 @@
 // SPDX-License-Identifier: MPL-2.0
 // No page cookies, webRequest interception, credentials, or automatic navigation.
 async function initializeStorage(details) {
-  if (details.reason !== "install") return;
-  const existing = await browser.storage.local.get(["instanceUrl", "instanceId", "pairId", "sites"]);
-  const defaults = { instanceUrl: "", instanceId: "", pairId: "", sites: [] };
-  const missing = Object.fromEntries(
-    Object.entries(defaults).filter(([key]) => existing[key] === undefined),
-  );
-  if (Object.keys(missing).length) await browser.storage.local.set(missing);
+  if (details.reason === "install") {
+    const existing = await browser.storage.local.get(["instanceUrl", "instanceId", "pairId", "sites"]);
+    const defaults = { instanceUrl: "", instanceId: "", pairId: "", sites: [] };
+    const missing = Object.fromEntries(
+      Object.entries(defaults).filter(([key]) => existing[key] === undefined),
+    );
+    if (Object.keys(missing).length) await browser.storage.local.set(missing);
+  }
+  await syncExplicitOpenObservers();
 }
 
 browser.runtime.onInstalled.addListener(initializeStorage);
+browser.runtime.onStartup.addListener(syncExplicitOpenObservers);
+
+const EXPLICIT_OPEN_SCRIPT_ID = "pinakotheke-explicit-open-v1";
 
 async function matchingAdapter(url) {
   const registry = await fetch(browser.runtime.getURL("adapters.json")).then(response => response.json());
@@ -25,27 +30,32 @@ async function matchingAdapter(url) {
   ) || null;
 }
 
-function installExplicitOpenObserver() {
-  if (globalThis.__pinakothekeExplicitOpenObserver) return { installed: false };
-  globalThis.__pinakothekeExplicitOpenObserver = true;
-  document.addEventListener("click", event => {
-    if (!event.isTrusted || event.button !== 0) return;
-    const image = event.target instanceof Element ? event.target.closest("img") : null;
-    if (!image || !image.currentSrc || image.naturalWidth < 1 || image.naturalHeight < 1) return;
-    const link = image.closest("a[href]");
-    if (!link && !document.contentType?.startsWith("image/")) return;
-    const mediaUrl = link?.href || image.currentSrc;
-    try {
-      if (new URL(mediaUrl).protocol !== "https:") return;
-    } catch (_) { return; }
-    void browser.runtime.sendMessage({
-      command: "explicit-original-opened",
-      mediaUrl,
-      width: image.naturalWidth,
-      height: image.naturalHeight,
-    });
-  }, true);
-  return { installed: true };
+async function syncExplicitOpenObservers() {
+  const registered = await browser.scripting.getRegisteredContentScripts({
+    ids: [EXPLICIT_OPEN_SCRIPT_ID],
+  });
+  if (registered.length) {
+    await browser.scripting.unregisterContentScripts({ ids: [EXPLICIT_OPEN_SCRIPT_ID] });
+  }
+  const { sites = [] } = await browser.storage.local.get(["sites"]);
+  const eligible = [];
+  for (const site of sites) {
+    if (!site.capture || !site.media?.includes("images")) continue;
+    const adapter = await matchingAdapter(site.origin);
+    if (adapter?.capabilities.explicit_original) eligible.push({ site, adapter });
+  }
+  if (!eligible.length) return { registered: 0 };
+  await browser.scripting.registerContentScripts([{
+    id: EXPLICIT_OPEN_SCRIPT_ID,
+    js: ["content-explicit-open.js"],
+    matches: eligible.map(({ site }) => `${site.origin}/*`),
+    excludeMatches: eligible.flatMap(({ site, adapter }) =>
+      adapter.exclude_paths.map(path => `${site.origin}${path}*`)),
+    allFrames: false,
+    persistAcrossSessions: true,
+    runAt: "document_idle",
+  }]);
+  return { registered: eligible.length };
 }
 
 async function submitCapture(instanceUrl, pairId, origin, pageUrl, adapter, captureKind, media) {
@@ -327,11 +337,6 @@ async function runCacheForTab(tab) {
     const images = rule.media.includes("images")
       ? (await browser.scripting.executeScript({ target: { tabId: tab.id }, func: displayedImages }))[0].result || []
       : [];
-    if (rule.capture && rule.media.includes("images") && adapter.capabilities.explicit_original) {
-      await browser.scripting.executeScript({
-        target: { tabId: tab.id }, func: installExplicitOpenObserver,
-      });
-    }
     for (const observed of images) {
       if (rule.capture && adapter.capabilities.observed_thumbnail) {
         const capture = await submitCapture(
@@ -436,6 +441,9 @@ async function runCacheForTab(tab) {
 }
 
 browser.runtime.onMessage.addListener(async (message, sender) => {
+  if (message?.command === "sync-capture-observers") {
+    return syncExplicitOpenObservers();
+  }
   if (message?.command === "run-cache") {
     const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
     await runCacheForTab(tab);
