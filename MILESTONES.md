@@ -332,6 +332,11 @@ end-to-end gate for this intent.
   file and verifies response metadata, length, process status, and full-read
   checksum; host/DAS authentication remains outside Pinakotheke. A production
   DAS helper plus the live capture/commit/restart proof remain.
+  Object identity now includes the explicit positive immutable version required
+  by DASObjectStore provider streams. It survives verified acquisition,
+  normalized-video evidence, catalogue restart, authorized read resolution, and
+  helper dispatch; historic catalogue-v1 records migrate as version 1 without
+  rewriting. The production helper no longer needs an unsafe version guess.
 - XIMG-055 implements visible refresh progress (commit `a48fc13`) with a single
   action, per-account state, partial failure, retry, and new-item summary.
 - XIMG-054 implements word-first review states and reversible batch actions

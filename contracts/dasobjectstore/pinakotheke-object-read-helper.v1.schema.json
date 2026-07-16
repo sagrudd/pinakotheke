@@ -24,12 +24,13 @@
     "request": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["schema_version", "endpoint_id", "object_store_id", "object_key", "checksum", "range", "if_none_match_etag"],
+      "required": ["schema_version", "endpoint_id", "object_store_id", "object_key", "object_version", "checksum", "range", "if_none_match_etag"],
       "properties": {
         "schema_version": {"const": "pinakotheke.object-read-helper.v1"},
         "endpoint_id": {"$ref": "#/$defs/identifier"},
         "object_store_id": {"$ref": "#/$defs/identifier"},
         "object_key": {"type": "string", "minLength": 1, "maxLength": 512},
+        "object_version": {"type": "integer", "minimum": 1},
         "checksum": {"$ref": "#/$defs/checksum"},
         "range": {"oneOf": [{"$ref": "#/$defs/range"}, {"type": "null"}]},
         "if_none_match_etag": {"type": ["string", "null"], "maxLength": 80}

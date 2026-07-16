@@ -71,11 +71,17 @@ pub struct GalleryRepresentation {
     pub endpoint_id: String,
     pub object_store_id: String,
     pub object_key: String,
+    #[serde(default = "default_object_version")]
+    pub object_version: u64,
     pub checksum: String,
     pub content_type: String,
     pub content_length: u64,
     /// Host-local authorized route. Never an origin or source URL.
     pub delivery_path: Option<String>,
+}
+
+const fn default_object_version() -> u64 {
+    1
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -439,6 +445,7 @@ impl GalleryCatalogue {
                 endpoint_id: representation.endpoint_id.clone(),
                 object_store_id: representation.object_store_id.clone(),
                 object_key: representation.object_key.clone(),
+                object_version: representation.object_version,
                 checksum: representation.checksum.clone(),
             },
             content_type: representation.content_type.clone(),
@@ -479,6 +486,7 @@ impl GalleryCatalogue {
                 endpoint_id: representation.endpoint_id.clone(),
                 object_store_id: representation.object_store_id.clone(),
                 object_key: representation.object_key.clone(),
+                object_version: representation.object_version,
                 checksum: representation.checksum.clone(),
             },
             content_type: representation.content_type.clone(),
@@ -552,6 +560,7 @@ fn validate_representation(
     if representation.endpoint_id.is_empty()
         || representation.object_store_id.is_empty()
         || representation.object_key.is_empty()
+        || representation.object_version == 0
         || !representation.checksum.starts_with("sha256:")
         || representation.content_type.is_empty()
         || representation.content_length == 0
@@ -595,6 +604,7 @@ mod tests {
             endpoint_id: "endpoint-1".into(),
             object_store_id: "store-1".into(),
             object_key: "objects/thumbnail-1".into(),
+            object_version: 1,
             checksum: "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
                 .into(),
             content_type: "image/jpeg".into(),
@@ -633,6 +643,28 @@ mod tests {
         assert_eq!(page.next_offset, Some(1));
         assert_eq!(page.matched_items, 2);
         assert_eq!(page.total_items, 2);
+    }
+
+    #[test]
+    fn object_version_survives_resolution_and_legacy_records_default_to_one() {
+        let context = MonasHostContextAdapter
+            .authenticate(include_bytes!(
+                "../../../fixtures/host-context/v1/monas-valid.json"
+            ))
+            .unwrap();
+        let mut versioned = item("versioned", 1);
+        versioned.thumbnail.object_version = 7;
+        let catalogue = GalleryCatalogue::new(vec![versioned]).unwrap();
+        let grant = catalogue
+            .resolve_image(&context, "versioned", GalleryImageRole::Thumbnail)
+            .unwrap();
+        assert_eq!(grant.object.object_version, 7);
+
+        let legacy: GalleryRepresentation = serde_json::from_str(
+            r#"{"kind":"thumbnail","availability":"ready","endpoint_id":"endpoint-1","object_store_id":"store-1","object_key":"objects/legacy","checksum":"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","content_type":"image/jpeg","content_length":12,"delivery_path":"/legacy"}"#,
+        )
+        .unwrap();
+        assert_eq!(legacy.object_version, 1);
     }
 
     #[test]
@@ -704,6 +736,13 @@ mod tests {
         invalid.thumbnail.delivery_path = Some("https://example.invalid/image.jpg".into());
         assert!(matches!(
             GalleryCatalogue::new(vec![invalid]),
+            Err(GalleryCatalogueError::InvalidItem(_))
+        ));
+
+        let mut unversioned = item("unversioned", 1);
+        unversioned.thumbnail.object_version = 0;
+        assert!(matches!(
+            GalleryCatalogue::new(vec![unversioned]),
             Err(GalleryCatalogueError::InvalidItem(_))
         ));
 

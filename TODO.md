@@ -448,6 +448,13 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   production DASObjectStore helper implementation, live Monas session evidence,
   capture/commit/restart reconciliation, and normalized gallery playback
   remain.
+  The helper prerequisite now maps DASObjectStore identity exactly: verified
+  acquisitions and managed video objects carry a positive immutable object
+  version; catalogue persistence, image/video grants, and helper requests
+  preserve it. Legacy catalogue-v1 records default non-destructively to version
+  1, while zero and missing new evidence fail closed. A helper can therefore
+  construct the authority's ``BackendObjectKey`` without guessing. The
+  production helper implementation remains the next slice.
 
 ## 0.6.0 — Firefox capture
 

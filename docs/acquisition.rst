@@ -18,7 +18,9 @@ The only normal settlement sequence is:
 ``claimed`` requires one stable lease identifier. ``stored`` means an external
 authority has accepted an object, but it is not yet catalogue-ready.
 ``verified`` requires bounded metadata for the stable endpoint, logical
-ObjectStore, object-reference ID, and immutable lowercase SHA-256 checksum.
+ObjectStore, object-reference ID, positive immutable object version, and
+lowercase SHA-256 checksum. The compatibility constructor uses version 1;
+authority adapters use the explicit versioned constructor.
 Only ``committed`` may become visible in the catalogue.
 
 Review and explicit outcomes

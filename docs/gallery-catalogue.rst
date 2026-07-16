@@ -72,7 +72,7 @@ Object authority and availability
 ---------------------------------
 
 Every card representation carries the stable endpoint ID, ObjectStore ID,
-object key, SHA-256 checksum, media type, and length of its verified
+object ID, positive immutable object version, SHA-256 checksum, media type, and length of its verified
 DASObjectStore object. A ready representation also carries a host-local
 authorized delivery path beginning with ``/``. Source and origin URLs are not
 part of this response and can never be used as a media fallback.
@@ -132,6 +132,12 @@ record through a new store instance and preserve its catalogue ID,
 endpoint/ObjectStore identity, checksum, review state, and availability without
 retaining payload bytes.
 
+Historic ``x-img.gallery-catalogue.v1`` records written before object versions
+were explicit are read as version ``1``. Every newly written record includes
+``object_version``; zero is invalid. The migration is non-destructive and makes
+the DASObjectStore ``BackendObjectKey`` mapping exact instead of guessing a
+version from an object string or checksum.
+
 The verified image admission boundary below now populates this store. Live
 worker composition, authorized image/video delivery, and the real-Firefox
 restart proof remain the next XIMG-096 slices.
@@ -146,7 +152,8 @@ an ObjectStore reference or delivery path and cannot mark a record committed.
 
 An observed thumbnail creates a ``New`` image card only when the acquisition is
 already ``Committed`` with verified endpoint, ObjectStore, object-reference,
-and checksum evidence and the capture plan passes website review admission.
+positive object version, and checksum evidence and the capture plan passes
+website review admission.
 The server derives the source classification and a host-local thumbnail route.
 Replaying the same immutable object is idempotent; changing the object for the
 same card is an explicit conflict.
@@ -169,7 +176,7 @@ catalogue. The resolver requires a Monas standalone actor with Pinakotheke
 access, an image card, the exact requested representation role, and ``Ready``
 availability. Unknown records and non-image roles return not found; a known but
 unavailable representation returns gone. Request parameters can never supply
-an endpoint, ObjectStore, object key, checksum, MIME type, or source URL.
+an endpoint, ObjectStore, object ID, object version, checksum, MIME type, or source URL.
 
 The authenticated monolith composition passes the resolved immutable reference
 to its host-supplied DASObjectStore streaming-read backend. Pinakotheke validates

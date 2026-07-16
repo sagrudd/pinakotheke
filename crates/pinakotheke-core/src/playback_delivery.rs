@@ -216,6 +216,7 @@ mod tests {
                 endpoint_id: "endpoint".into(),
                 object_store_id: "store".into(),
                 object_key: "video/normalized.mp4".into(),
+                object_version: 1,
                 checksum: CHECKSUM.into(),
             },
             total_length: 10,

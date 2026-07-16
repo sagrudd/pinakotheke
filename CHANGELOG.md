@@ -43,6 +43,10 @@ All notable changes to Pinakotheke will be documented in this file. The project 
 - Compose a strict process-isolated host object-reader into the packaged
   monolith, with bounded streaming, exact metadata/length/full-read checksum
   verification, range support, and no local payload or credential handling.
+- Carry an explicit positive immutable object version from verified acquisition
+  and normalized-video evidence through persistent gallery records, authorized
+  read grants, and host-helper requests, with legacy catalogue-v1 records
+  defaulting non-destructively to version 1.
 - Add the XIMG-200 Synoptikon product manifest, strict tenant/account/project
   host scope, and bounded authenticated catalogue projection over immutable
   DASObjectStore references.

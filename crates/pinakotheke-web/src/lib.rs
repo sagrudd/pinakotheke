@@ -661,6 +661,7 @@ pub fn app() -> Html {
                                             <div><dt>{ "Object state" }</dt><dd>{ object_label(&selected_card) }</dd></div>
                                             <div><dt>{ "Dimensions" }</dt><dd>{ format!("{} × {}", selected_card.width, selected_card.height) }</dd></div>
                                             <div><dt>{ "Endpoint / ObjectStore" }</dt><dd>{ format!("{} / {}", selected_card.thumbnail.endpoint_id, selected_card.thumbnail.object_store_id) }</dd></div>
+                                            <div><dt>{ "Object version" }</dt><dd>{ selected_card.thumbnail.object_version }</dd></div>
                                         </dl>
                                         <a id="preview-source-link" href={format!("#catalogue-{}", selected_card.catalogue_id)}>{ "View catalogue metadata" }</a>
                                         { if object_label(&selected_card) == "Object unavailable" {
@@ -710,6 +711,7 @@ mod tests {
             endpoint_id: "endpoint-1".into(),
             object_store_id: "store-1".into(),
             object_key: "objects/media-1".into(),
+            object_version: 1,
             checksum: "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
                 .into(),
             content_type: "image/jpeg".into(),

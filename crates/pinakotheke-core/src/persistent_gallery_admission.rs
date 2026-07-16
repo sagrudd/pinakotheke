@@ -95,6 +95,7 @@ impl PersistentWebsiteGalleryAdmission {
             endpoint_id: object.endpoint_id.clone(),
             object_store_id: object.object_store_id.clone(),
             object_key: object.object_reference_id.clone(),
+            object_version: object.object_version,
             checksum: format!("sha256:{}", object.checksum_sha256),
             content_type: presentation.content_type.clone(),
             content_length: presentation.content_length,
@@ -255,7 +256,7 @@ mod tests {
         acquisition.start_transfer().unwrap();
         acquisition.record_stored().unwrap();
         acquisition
-            .verify(VerifiedObject::new(endpoint, store, object, CHECKSUM).unwrap())
+            .verify(VerifiedObject::new_versioned(endpoint, store, object, 7, CHECKSUM).unwrap())
             .unwrap();
         acquisition.commit().unwrap();
         acquisition
@@ -310,7 +311,9 @@ mod tests {
         assert_eq!(item.review_state, GalleryReviewState::New);
         assert_eq!(item.width, 1920);
         assert_eq!(item.thumbnail.object_key, "thumbnail-object");
+        assert_eq!(item.thumbnail.object_version, 7);
         assert_eq!(item.preview.as_ref().unwrap().object_key, "original-object");
+        assert_eq!(item.preview.as_ref().unwrap().object_version, 7);
         assert_eq!(
             item.preview.as_ref().unwrap().availability,
             GalleryObjectAvailability::Ready

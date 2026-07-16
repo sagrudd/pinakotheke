@@ -135,6 +135,7 @@ pub struct ManagedVideoObject {
     pub endpoint_id: String,
     pub object_store_id: String,
     pub object_key: String,
+    pub object_version: u64,
     pub checksum: String,
     pub object_type: String,
     pub content_type: String,
@@ -376,6 +377,7 @@ fn validate_object(
     if object.endpoint_id != destination.endpoint_id
         || object.object_store_id != destination.object_store_id
         || !safe_object_key(&object.object_key)
+        || object.object_version == 0
         || !sha256(&object.checksum)
         || object.object_type.is_empty()
         || object.content_type.is_empty()
@@ -436,6 +438,7 @@ mod tests {
             endpoint_id: "endpoint".into(),
             object_store_id: "store".into(),
             object_key: format!("video/{object_type}"),
+            object_version: 1,
             checksum: CHECKSUM.into(),
             object_type: object_type.into(),
             content_type: content_type.into(),

@@ -127,6 +127,9 @@ object identity and bounded response metadata; payload bytes stream directly
 to the authenticated Axum route with length/full-response checksum
 verification and no local payload file. Authentication and secret resolution
 remain entirely inside the host-supplied helper.
+Object identity includes the authority's explicit positive immutable version;
+legacy catalogue-v1 records default to version 1, while new records persist and
+forward the exact version required by DASObjectStore provider streams.
 
 The release hardening path now includes one deterministic fault/recovery
 command, ``scripts/faults/check.sh``. It covers critical authority, ingest,

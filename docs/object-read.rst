@@ -10,8 +10,8 @@ host adapter and must remain transparent and fail-open.
 Request and response contract
 -----------------------------
 
-A read request identifies the stable endpoint, ObjectStore, logical object key,
-and SHA-256 object checksum established at verified commit. It may request one
+A read request identifies the stable endpoint, ObjectStore, logical object ID,
+positive immutable object version, and SHA-256 checksum established at verified commit. It may request one
 inclusive byte range and an ``If-None-Match`` ETag. The ETag is the quoted
 SHA-256 checksum, so a conditional request cannot accidentally validate a
 different object.
@@ -45,7 +45,7 @@ from standard error, and streams standard output as the payload. The JSON never
 contains payload bytes, credentials, cookies, bearer tokens, backend paths, or
 origin URLs.
 
-The host helper resolves the supplied stable endpoint/ObjectStore/object/checksum
+The host helper resolves the supplied stable endpoint/ObjectStore/object/version/checksum
 through its own DASObjectStore authentication. Pinakotheke bounds streaming with
 a four-chunk queue and 64 KiB chunks, checks the process result and exact byte
 length, and verifies SHA-256 cumulatively for full responses. Range responses

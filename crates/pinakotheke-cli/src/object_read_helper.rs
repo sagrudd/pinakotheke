@@ -32,6 +32,7 @@ struct HelperRequest<'a> {
     endpoint_id: &'a str,
     object_store_id: &'a str,
     object_key: &'a str,
+    object_version: u64,
     checksum: &'a str,
     range: Option<HelperRange>,
     if_none_match_etag: Option<&'a str>,
@@ -125,6 +126,7 @@ fn open(
         endpoint_id: &request.object.endpoint_id,
         object_store_id: &request.object.object_store_id,
         object_key: &request.object.object_key,
+        object_version: request.object.object_version,
         checksum: &request.object.checksum,
         range: request.range.map(|range| HelperRange {
             start: range.start,
@@ -410,6 +412,7 @@ mod tests {
 test "$1" = read-v1
 request=$(cat)
 case "$request" in *'"object_key":"media/example.txt"'*) ;; *) exit 9 ;; esac
+case "$request" in *'"object_version":7'*) ;; *) exit 10 ;; esac
 printf '%s\n' '{"outcome":"content","schema_version":"pinakotheke.object-read-helper.v1","content_type":"application/octet-stream","content_length":3,"total_length":3,"checksum":"sha256:ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad","etag":"\"sha256:ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad\"","content_range":null}' >&2
 printf abc
 "###,
@@ -421,6 +424,7 @@ printf abc
                 endpoint_id: "endpoint-1".into(),
                 object_store_id: "store-1".into(),
                 object_key: "media/example.txt".into(),
+                object_version: 7,
                 checksum: "sha256:ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
                     .into(),
             },

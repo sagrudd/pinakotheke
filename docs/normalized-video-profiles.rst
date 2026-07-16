@@ -59,7 +59,7 @@ authority, source-retention decision, and separately typed DASObjectStore
 objects.  Those objects are the normalized video, poster, optional subtitles,
 optional storyboard, and provenance manifest.
 
-``Ready`` requires a checksummed normalized video, poster, provenance manifest,
+``Ready`` requires a checksummed, explicitly versioned normalized video, poster, provenance manifest,
 matching profile evidence, and a Firefox-playback evidence reference.  A
 source-only object cannot be marked ready.  The actual containerized conversion
 is XIMG-068; its real Firefox range/playback proof is XIMG-069.  Until those

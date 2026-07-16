@@ -57,6 +57,8 @@ pub struct VerifiedObject {
     pub object_store_id: String,
     /// Stable catalogue object-reference identifier.
     pub object_reference_id: String,
+    /// Immutable authority object version.
+    pub object_version: u64,
     /// Immutable lowercase SHA-256 checksum.
     pub checksum_sha256: String,
 }
@@ -73,13 +75,38 @@ impl VerifiedObject {
             endpoint_id: endpoint_id.into(),
             object_store_id: object_store_id.into(),
             object_reference_id: object_reference_id.into(),
+            object_version: 1,
             checksum_sha256: checksum_sha256.into(),
         };
         object.validate()?;
         Ok(object)
     }
 
+    /// Creates verified metadata for an explicit immutable object version.
+    pub fn new_versioned(
+        endpoint_id: impl Into<String>,
+        object_store_id: impl Into<String>,
+        object_reference_id: impl Into<String>,
+        object_version: u64,
+        checksum_sha256: impl Into<String>,
+    ) -> Result<Self, AcquisitionError> {
+        let mut object = Self::new(
+            endpoint_id,
+            object_store_id,
+            object_reference_id,
+            checksum_sha256,
+        )?;
+        object.object_version = object_version;
+        object.validate()?;
+        Ok(object)
+    }
+
     fn validate(&self) -> Result<(), AcquisitionError> {
+        if self.object_version == 0 {
+            return Err(AcquisitionError::InvalidEvidence {
+                field: "object_version",
+            });
+        }
         for (field, value) in [
             ("endpoint_id", self.endpoint_id.as_str()),
             ("object_store_id", self.object_store_id.as_str()),
@@ -434,6 +461,28 @@ mod tests {
 
     #[test]
     fn rejects_malformed_verified_evidence() {
+        assert!(
+            VerifiedObject::new_versioned(
+                "fixture-endpoint",
+                "fixture-store",
+                "fixture-object",
+                0,
+                "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            )
+            .is_err()
+        );
+        assert_eq!(
+            VerifiedObject::new_versioned(
+                "fixture-endpoint",
+                "fixture-store",
+                "fixture-object",
+                7,
+                "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            )
+            .unwrap()
+            .object_version,
+            7
+        );
         assert!(
             VerifiedObject::new(
                 "fixture-endpoint",

@@ -602,6 +602,7 @@ mod tests {
                 endpoint_id: "endpoint-1".into(),
                 object_store_id: "store-1".into(),
                 object_key: format!("images/{index}.jpg"),
+                object_version: 1,
                 checksum: CHECKSUM.into(),
             },
             content_type: "image/jpeg".into(),

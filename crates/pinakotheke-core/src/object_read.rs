@@ -11,6 +11,7 @@ pub struct AuthorizedObjectReference {
     pub endpoint_id: String,
     pub object_store_id: String,
     pub object_key: String,
+    pub object_version: u64,
     pub checksum: String,
 }
 
@@ -178,6 +179,11 @@ fn validate_request(request: &ObjectReadRequest) -> Result<(), ObjectReadError> 
             "`object_key` must be safe".to_owned(),
         ));
     }
+    if request.object.object_version == 0 {
+        return Err(ObjectReadError::InvalidRequest(
+            "`object_version` must be positive".to_owned(),
+        ));
+    }
     if !is_sha256_checksum(&request.object.checksum) {
         return Err(ObjectReadError::InvalidRequest(
             "`checksum` must be a SHA-256 digest".to_owned(),
@@ -310,6 +316,7 @@ mod tests {
             endpoint_id: "endpoint-1".to_owned(),
             object_store_id: "store-1".to_owned(),
             object_key: "x-img/fixture.jpg".to_owned(),
+            object_version: 1,
             checksum: "sha256:ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
                 .to_owned(),
         }

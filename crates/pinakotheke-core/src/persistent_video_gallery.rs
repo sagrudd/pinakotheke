@@ -130,6 +130,7 @@ fn representation(
         endpoint_id: object.endpoint_id.clone(),
         object_store_id: object.object_store_id.clone(),
         object_key: object.object_key.clone(),
+        object_version: object.object_version,
         checksum: object.checksum.clone(),
         content_type: object.content_type.clone(),
         content_length,
@@ -199,6 +200,7 @@ mod tests {
             endpoint_id: "endpoint".into(),
             object_store_id: "store".into(),
             object_key: format!("video/{object_type}"),
+            object_version: 7,
             checksum: CHECKSUM.into(),
             object_type: object_type.into(),
             content_type: content_type.into(),
@@ -287,10 +289,12 @@ mod tests {
         let item = &restarted.items()[0];
         assert_eq!(item.media_kind, GalleryMediaKind::NormalizedVideo);
         assert_eq!(item.thumbnail.kind, GalleryRepresentationKind::VideoPoster);
+        assert_eq!(item.thumbnail.object_version, 7);
         assert_eq!(
             item.preview.as_ref().unwrap().kind,
             GalleryRepresentationKind::NormalizedVideo
         );
+        assert_eq!(item.preview.as_ref().unwrap().object_version, 7);
         assert_eq!(item.review_state, GalleryReviewState::New);
         assert_eq!(
             admit_ready_normalized_video(
