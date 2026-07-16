@@ -9,6 +9,7 @@ use x_img_core::{ConfigStore, build_info};
 mod launchd;
 mod local_objectstore;
 mod monolith;
+mod object_read_helper;
 
 /// Canonical command name used by the v1 entry point.
 pub const CANONICAL_COMMAND: &str = "pinakotheke";

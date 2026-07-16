@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/sagrudd/pinakotheke/contracts/dasobjectstore/pinakotheke-object-read-helper.v1.schema.json",
+  "title": "Pinakotheke scoped object read helper v1",
+  "description": "Metadata line exchanged with a host-owned executable; payload bytes use stdout and are never represented in JSON.",
+  "oneOf": [
+    {"$ref": "#/$defs/request"},
+    {"$ref": "#/$defs/content"},
+    {"$ref": "#/$defs/not_modified"},
+    {"$ref": "#/$defs/unavailable"}
+  ],
+  "$defs": {
+    "identifier": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9._:-]+$"},
+    "checksum": {"type": "string", "pattern": "^sha256:[0-9a-fA-F]{64}$"},
+    "range": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["start", "end_inclusive"],
+      "properties": {
+        "start": {"type": "integer", "minimum": 0},
+        "end_inclusive": {"type": "integer", "minimum": 0}
+      }
+    },
+    "request": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "endpoint_id", "object_store_id", "object_key", "checksum", "range", "if_none_match_etag"],
+      "properties": {
+        "schema_version": {"const": "pinakotheke.object-read-helper.v1"},
+        "endpoint_id": {"$ref": "#/$defs/identifier"},
+        "object_store_id": {"$ref": "#/$defs/identifier"},
+        "object_key": {"type": "string", "minLength": 1, "maxLength": 512},
+        "checksum": {"$ref": "#/$defs/checksum"},
+        "range": {"oneOf": [{"$ref": "#/$defs/range"}, {"type": "null"}]},
+        "if_none_match_etag": {"type": ["string", "null"], "maxLength": 80}
+      }
+    },
+    "content": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["outcome", "schema_version", "content_type", "content_length", "total_length", "checksum", "etag", "content_range"],
+      "properties": {
+        "outcome": {"const": "content"},
+        "schema_version": {"const": "pinakotheke.object-read-helper.v1"},
+        "content_type": {"type": "string", "minLength": 1, "maxLength": 128},
+        "content_length": {"type": "integer", "minimum": 1},
+        "total_length": {"type": "integer", "minimum": 1},
+        "checksum": {"$ref": "#/$defs/checksum"},
+        "etag": {"type": "string", "minLength": 1, "maxLength": 80},
+        "content_range": {"oneOf": [{"$ref": "#/$defs/range"}, {"type": "null"}]}
+      }
+    },
+    "not_modified": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["outcome", "schema_version", "etag"],
+      "properties": {
+        "outcome": {"const": "not_modified"},
+        "schema_version": {"const": "pinakotheke.object-read-helper.v1"},
+        "etag": {"type": "string", "minLength": 1, "maxLength": 80}
+      }
+    },
+    "unavailable": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["outcome", "schema_version"],
+      "properties": {
+        "outcome": {"enum": ["not_found", "access_denied", "unavailable", "rejected"]},
+        "schema_version": {"const": "pinakotheke.object-read-helper.v1"}
+      }
+    }
+  }
+}

@@ -438,7 +438,14 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   builds and installs the real hashed Yew/WASM bundle, and embeds its matching
   platform path in the monolith. Explicit ``--web-root`` and private
   ``ROOT/web`` development overrides remain bounded, symlink-free, and higher
-  priority. Live Monas session, DASObjectStore transport,
+  priority. The packaged monolith now accepts one absolute reviewed
+  ``pinakotheke.object-read-helper.v1`` executable and composes the app,
+  catalogue, image/poster routes, and normalized-video range route behind the
+  same Monas dispatch. Requests contain immutable object identity only;
+  responses use bounded metadata plus a four-chunk streaming queue, with exact
+  length, process status, and full-response SHA-256 verification and no local
+  payload file. DASObjectStore/host authentication remains helper-owned. A
+  production DASObjectStore helper implementation, live Monas session evidence,
   capture/commit/restart reconciliation, and normalized gallery playback
   remain.
 

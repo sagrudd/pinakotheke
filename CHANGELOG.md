@@ -40,6 +40,9 @@ All notable changes to Pinakotheke will be documented in this file. The project 
 - Install the compiled Yew/WASM gallery in Linux and macOS native packages and
   embed its platform path in the monolith, retaining validated per-user and
   explicit development overrides.
+- Compose a strict process-isolated host object-reader into the packaged
+  monolith, with bounded streaming, exact metadata/length/full-read checksum
+  verification, range support, and no local payload or credential handling.
 - Add the XIMG-200 Synoptikon product manifest, strict tenant/account/project
   host scope, and bounded authenticated catalogue projection over immutable
   DASObjectStore references.

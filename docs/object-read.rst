@@ -32,7 +32,34 @@ as explicit authority outcomes. It does not turn any of them into an empty
 payload or a stale local substitution. A Firefox/site cache adapter must fail
 open to the origin when it cannot obtain a valid authority response.
 
-The contract was reviewed against ``../DASObjectStore`` commit
-``76f6411eab1e2c486c0bc1b4695b71f09307d9df`` and its provider-stream range and
-checksum model. No sibling path dependency, bearer credential, backend path,
-or live authority call is added by this task.
+Host helper adapter
+-------------------
+
+The local monolith can now compose a host-owned scoped reader with
+``--object-read-helper /absolute/path/to/helper``. The executable must be a
+regular, non-symlinked executable and implement
+``pinakotheke.object-read-helper.v1``. Pinakotheke invokes it directly with the
+single argument ``read-v1`` (never through a shell), writes one strict JSON
+request line to standard input, reads one response JSON line of at most 8 KiB
+from standard error, and streams standard output as the payload. The JSON never
+contains payload bytes, credentials, cookies, bearer tokens, backend paths, or
+origin URLs.
+
+The host helper resolves the supplied stable endpoint/ObjectStore/object/checksum
+through its own DASObjectStore authentication. Pinakotheke bounds streaming with
+a four-chunk queue and 64 KiB chunks, checks the process result and exact byte
+length, and verifies SHA-256 cumulatively for full responses. Range responses
+retain the authority's full-object checksum and are length/range validated.
+Unknown fields, future schemas, malformed metadata, a non-zero helper exit, or
+a truncated/mismatched stream fail closed. No payload file is created beneath
+the product root.
+
+The checked-in JSON Schema is
+``contracts/dasobjectstore/pinakotheke-object-read-helper.v1.schema.json``.
+This is a narrow host adapter, not a new authentication system: DASObjectStore
+or the composing host must supply the helper and retain all secret material.
+
+The adapter was reviewed against ``../DASObjectStore`` commit
+``78513c8615a204b7f0f4a065ba6795bd09425f1f`` and its application-auth plus
+provider-stream range/checksum model. No sibling path dependency, browser
+credential, or backend path enters the public build.

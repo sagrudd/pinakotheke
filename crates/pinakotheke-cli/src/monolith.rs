@@ -32,6 +32,9 @@ pub(crate) struct ServeArgs {
     /// Built Trunk output; defaults to ROOT/web, then packaged assets.
     #[arg(long)]
     web_root: Option<PathBuf>,
+    /// Absolute executable implementing the scoped object-read helper v1 protocol.
+    #[arg(long)]
+    object_read_helper: Option<PathBuf>,
 }
 
 #[derive(Debug)]
@@ -199,6 +202,11 @@ pub(crate) fn serve(arguments: ServeArgs) -> Result<(), Box<dyn std::error::Erro
         &layout.root,
         option_env!("PINAKOTHEKE_DEFAULT_WEB_ROOT"),
     )?;
+    let object_read_backend = arguments
+        .object_read_helper
+        .as_deref()
+        .map(crate::object_read_helper::backend)
+        .transpose()?;
     let monas_dispatch = arguments
         .monas_dispatch_token_file
         .as_deref()
@@ -229,15 +237,38 @@ pub(crate) fn serve(arguments: ServeArgs) -> Result<(), Box<dyn std::error::Erro
                 .as_deref()
                 .map_or("Not installed".into(), |path| path.display().to_string())
         );
+        println!(
+            "object delivery: {}",
+            if object_read_backend.is_some() {
+                "Host helper configured"
+            } else {
+                "Not configured"
+            }
+        );
         println!("readiness: http://{address}/ready");
-        x_img_api::serve_monolith_with_gallery_and_web(
-            listener,
-            storage_ready,
-            monas_dispatch,
-            gallery,
-            web_root,
-        )
-        .await
+        match object_read_backend {
+            Some(backend) => {
+                x_img_api::serve_monolith_with_gallery_web_and_delivery(
+                    listener,
+                    storage_ready,
+                    monas_dispatch,
+                    gallery,
+                    web_root,
+                    backend,
+                )
+                .await
+            }
+            None => {
+                x_img_api::serve_monolith_with_gallery_and_web(
+                    listener,
+                    storage_ready,
+                    monas_dispatch,
+                    gallery,
+                    web_root,
+                )
+                .await
+            }
+        }
     })?;
     Ok(())
 }
@@ -309,6 +340,7 @@ mod tests {
             allow_non_loopback_without_authentication: false,
             monas_dispatch_token_file: None,
             web_root: None,
+            object_read_helper: None,
         };
         assert_eq!(
             socket_address(&denied).unwrap_err().kind(),

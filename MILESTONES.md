@@ -326,7 +326,12 @@ end-to-end gate for this intent.
   DEB/RPM/PKG targets now install that compiled application and embed their
   platform asset location in the monolith, eliminating a manual
   ``--web-root`` for package users while preserving validated development
-  overrides. The live Monas/DAS capture vertical remains.
+  overrides. The monolith now also composes a strict host-owned object-reader
+  executable with the authenticated web, catalogue, image/poster, and video
+  range routes. Its bounded process protocol streams without a local payload
+  file and verifies response metadata, length, process status, and full-read
+  checksum; host/DAS authentication remains outside Pinakotheke. A production
+  DAS helper plus the live capture/commit/restart proof remain.
 - XIMG-055 implements visible refresh progress (commit `a48fc13`) with a single
   action, per-account state, partial failure, retry, and new-item summary.
 - XIMG-054 implements word-first review states and reversible batch actions

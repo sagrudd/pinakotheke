@@ -121,6 +121,13 @@ Firefox with 1,000 ephemeral mixed records, bounded windowing, keyboard focus,
 server filtering, unavailable/no-origin behavior, and desktop/narrow reflow.
 It is browser-component evidence and does not replace live authority proof.
 
+The monolith can compose a reviewed DASObjectStore/host reader with
+``--object-read-helper``. The versioned process protocol carries only immutable
+object identity and bounded response metadata; payload bytes stream directly
+to the authenticated Axum route with length/full-response checksum
+verification and no local payload file. Authentication and secret resolution
+remain entirely inside the host-supplied helper.
+
 The release hardening path now includes one deterministic fault/recovery
 command, ``scripts/faults/check.sh``. It covers critical authority, ingest,
 scheduler, normalizer, and Firefox fail-open boundaries using synthetic data;

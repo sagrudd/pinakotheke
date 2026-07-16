@@ -25,9 +25,16 @@ name = "pinakotheke"
 path = "src/bin/pinakotheke.rs"
 
 [dependencies]
+axum.workspace = true
+bytes.workspace = true
 clap.workspace = true
+futures-core.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+sha2.workspace = true
 tokio.workspace = true
 x-img-api = { package = "pinakotheke-api", path = "../pinakotheke-api" }
 x-img-core = { package = "pinakotheke-core", path = "../pinakotheke-core" }
+
+[dev-dependencies]
+http-body-util = "=0.1.4"

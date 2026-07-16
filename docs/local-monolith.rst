@@ -150,8 +150,29 @@ The entire app mount is protected by Monas dispatch. A direct request to the
 backend app path returns ``401``; after Monas authenticates the user, the same
 path serves the Yew document and its hashed assets. Catalogue and object routes
 retain their independent host-context checks. Native tests prove both direct
-denial and admitted static delivery. Packaging still needs to install the web
-build automatically.
+denial and admitted static delivery. Native packages install this web build at
+the platform path embedded in the monolith.
+
+Compose ObjectStore delivery
+----------------------------
+
+Supply a reviewed host/DASObjectStore adapter to make persisted gallery objects
+readable through the same authenticated monolith:
+
+.. code-block:: console
+
+   pinakotheke serve --port 8732 \
+     --object-read-helper /absolute/path/to/reviewed-helper \
+     --monas-dispatch-token-file "$HOME/.x-img/run/monas-dispatch.token"
+
+The helper uses the strict ``pinakotheke.object-read-helper.v1`` protocol
+documented in :doc:`object-read`. It receives object identity metadata only and
+streams bytes directly from DASObjectStore. It must own scoped authentication;
+do not wrap an arbitrary download command or expose credentials through its
+arguments. With the helper configured, the compiled Yew app, catalogue, image
+preview, poster, and normalized-video range routes are composed together behind
+Monas dispatch. Without it, object delivery remains unmounted and the UI shows
+the explicit unavailable state rather than consulting an origin URL.
 
 ``make firefox-gallery-check`` independently exercises the compiled bundle in
 installed Firefox. It uses an ephemeral loopback catalogue and private Firefox
@@ -171,11 +192,14 @@ Review and install the two coordinated user agents:
    pinakotheke service plan
    pinakotheke service install \
      --pinakotheke-binary /absolute/path/to/pinakotheke \
-     --monas-binary /absolute/path/to/monas-server
+     --monas-binary /absolute/path/to/monas-server \
+     --object-read-helper /absolute/path/to/reviewed-helper
 
 Installation requires absolute executable regular files, generates a private
 dispatch credential, keeps the backend on port 8732, and exposes Monas on port
-8731. Prosopikon remains under ``~/.config/monas/prosopikon``; Pinakotheke
+8731. The helper is optional until a reviewed DASObjectStore implementation is
+installed; when supplied, its exact absolute path is retained in the backend
+agent definition. Prosopikon remains under ``~/.config/monas/prosopikon``; Pinakotheke
 metadata and logs remain under ``~/.x-img``; DASObjectStore retains its own
 authority roots.
 
@@ -205,5 +229,6 @@ authentication. Do not expose this first slice to an untrusted network.
 Next slices
 -----------
 
-XIMG-094 proves a
-clean-home authenticated ingest/read/restart flow end to end.
+XIMG-094 still proves a clean-home authenticated ingest/read/restart flow end
+to end. The host read adapter is now available; a matching DASObjectStore helper
+implementation and live commit/reconciliation path remain.

@@ -47,6 +47,9 @@ pub(crate) struct InstallArgs {
     /// Absolute path to the Monas server executable.
     #[arg(long)]
     monas_binary: PathBuf,
+    /// Optional absolute scoped ObjectStore read-helper executable.
+    #[arg(long)]
+    object_read_helper: Option<PathBuf>,
     /// Replace existing Pinakotheke-managed plist definitions.
     #[arg(long)]
     replace: bool,
@@ -133,6 +136,9 @@ fn install(layout: &ServiceLayout, args: &InstallArgs) -> io::Result<()> {
     require_macos()?;
     validate_binary(&args.pinakotheke_binary)?;
     validate_binary(&args.monas_binary)?;
+    if let Some(helper) = &args.object_read_helper {
+        validate_binary(helper)?;
+    }
     if !args.replace && (layout.backend_plist.exists() || layout.monas_plist.exists()) {
         return Err(io::Error::new(
             io::ErrorKind::AlreadyExists,
@@ -150,7 +156,11 @@ fn install(layout: &ServiceLayout, args: &InstallArgs) -> io::Result<()> {
         std::fs::set_permissions(directory, std::fs::Permissions::from_mode(0o700))?;
     }
     ensure_token(&layout.token)?;
-    let backend = backend_plist(layout, &args.pinakotheke_binary);
+    let backend = backend_plist(
+        layout,
+        &args.pinakotheke_binary,
+        args.object_read_helper.as_deref(),
+    );
     let monas = monas_plist(layout, &args.monas_binary);
     let previous_backend = std::fs::read(&layout.backend_plist).ok();
     let previous_monas = std::fs::read(&layout.monas_plist).ok();
@@ -313,21 +323,25 @@ fn install_plist(path: &Path, contents: &str, replace: bool) -> io::Result<()> {
     std::fs::rename(temporary, path)
 }
 
-fn backend_plist(layout: &ServiceLayout, binary: &Path) -> String {
+fn backend_plist(layout: &ServiceLayout, binary: &Path, helper: Option<&Path>) -> String {
+    let mut arguments = vec![
+        "serve",
+        "--root",
+        path_text_unchecked(&layout.root),
+        "--bind",
+        "127.0.0.1",
+        "--port",
+        "8732",
+        "--monas-dispatch-token-file",
+        path_text_unchecked(&layout.token),
+    ];
+    if let Some(helper) = helper {
+        arguments.extend(["--object-read-helper", path_text_unchecked(helper)]);
+    }
     plist(
         BACKEND_LABEL,
         binary,
-        &[
-            "serve",
-            "--root",
-            path_text_unchecked(&layout.root),
-            "--bind",
-            "127.0.0.1",
-            "--port",
-            "8732",
-            "--monas-dispatch-token-file",
-            path_text_unchecked(&layout.token),
-        ],
+        &arguments,
         &[],
         layout,
         "pinakotheke",
@@ -486,9 +500,15 @@ mod tests {
             prosopikon_root: home.join(".config/monas/prosopikon"),
             logs: home.join(".x-img/logs"),
         };
-        let backend = backend_plist(&layout, Path::new("/opt/bin/pinakotheke"));
+        let backend = backend_plist(
+            &layout,
+            Path::new("/opt/bin/pinakotheke"),
+            Some(Path::new("/opt/bin/das-reader")),
+        );
         let monas = monas_plist(&layout, Path::new("/opt/bin/monas-server"));
         assert!(backend.contains("127.0.0.1</string><string>--port</string><string>8732"));
+        assert!(backend.contains("--object-read-helper"));
+        assert!(backend.contains("/opt/bin/das-reader"));
         assert!(monas.contains("127.0.0.1:8731"));
         assert!(monas.contains("PROSOPIKON_ROOT"));
         assert!(monas.contains("synthetic &amp; user"));
