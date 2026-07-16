@@ -596,6 +596,15 @@ Pinakotheke backend and Monas host agents. Private credential creation,
 transactional guarded replacement, status/restart/log access, and
 data-preserving uninstall were exercised in an isolated home.
 
+The current Monas authentication implementation is not yet a complete user
+experience: its Prosopikon APIs, cookie authority, Pinakotheke forwarding, and
+host-context injection exist, but the Monas Yew shell has no sign-in/session
+screen. XIMG-095 is therefore a P0 prerequisite to the clean-home proof. It
+will add a Monas-owned login experience informed by the DASObjectStore WebUI
+shell inspected at commit ``a93f0f872152d3790746292de1f3aec5d1a7bdd3`` while
+preserving the different authority boundary: Monas, not Pinakotheke, owns all
+password and session interaction.
+
 Exit criteria:
 
 - ``pinakotheke serve`` starts a coherent Axum/Yew service as the invoking user,
@@ -614,6 +623,10 @@ Exit criteria:
   with status, log, upgrade, rollback, and non-destructive uninstall behavior;
 - local authentication remains Monas/Prosopikon-owned; the monolith does not
   invent Pinakotheke passwords, cookies, or a parallel session issuer; and
+- unauthenticated navigation presents a polished Monas-owned, Mnemosyne-design-
+  compliant login/session screen with safe deep-link return, explicit
+  loading/error/expiry/logout states, responsive keyboard-accessible behavior,
+  approved brand assets, and no credential exposure to Pinakotheke; and
 - a clean-home end-to-end test proves first start, login, ObjectStore selection,
   one synthetic ingest/read/restart reconciliation, and clean shutdown without
   root privileges or hosted CI.

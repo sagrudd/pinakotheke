@@ -763,6 +763,30 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   isolated-home lifecycle proved install, status, health, direct-route
   rejection, restart, log discovery, private files, agent removal, stopped
   listeners, and retained state.
+- [ ] **XIMG-095 P0 — Deliver the Monas-owned login and session screen.** The
+  current Monas Yew surface is a placeholder even though XIMG-092 completed the
+  authentication APIs, Prosopikon authority, session cookie, product mount,
+  forwarding, and host-context injection. Add a user-facing sign-in experience
+  to ``../monas`` modelled on the calm two-part DASObjectStore WebUI login shell
+  inspected at DASObjectStore commit
+  ``a93f0f872152d3790746292de1f3aec5d1a7bdd3`` without copying its product-owned
+  authentication boundary. Monas must own username/password submission,
+  registration-token onboarding where enabled, session check, expiry,
+  logout, and safe same-origin return to the requested Pinakotheke route;
+  Pinakotheke must never receive or render the password, Prosopikon token, or
+  ``monas_session`` cookie. Use the approved Mnemosyne wordmark, semantic
+  tokens, normative footer assets, and one decorative partial mark—never the
+  current text/Unicode approximation. Design explicit ``Checking session``,
+  ``Signing in``, invalid credentials, expired session, host unavailable,
+  signed out, and retry states; use accessible labels/autocomplete, disabled
+  busy submission, error alerts, keyboard/focus behavior, responsive layout,
+  WCAG 2.2 AA contrast, and no password persistence. Prove in real Firefox that
+  an unauthenticated Pinakotheke deep link reaches login, successful login
+  returns to that exact allow-listed route, refresh preserves the host session,
+  logout and expiry revoke access, direct backend requests still fail, and no
+  secret appears in Pinakotheke state, browser local storage, URL, or logs.
+  Record the exact Monas, Prosopikon, DASObjectStore design reference, and
+  Mnemosyne design-language commits. XIMG-094 depends on this item.
 - [ ] **XIMG-094 P0 — Prove clean-home monolith operation.** In an isolated
   temporary home, start the service, complete Monas login, select the managed
   local ObjectStore, commit and read one synthetic object through scoped DAS
