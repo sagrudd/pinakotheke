@@ -59,7 +59,24 @@ The checked-in JSON Schema is
 This is a narrow host adapter, not a new authentication system: DASObjectStore
 or the composing host must supply the helper and retain all secret material.
 
+Service endpoint binding
+------------------------
+
+A per-user macOS service requires the helper and its reviewed endpoint identity
+as a pair. ``pinakotheke service install`` rejects either value on its own and
+rejects path-like or unbounded endpoint identities. The backend agent exposes
+the fixed value to the helper as
+``PINAKOTHEKE_OBJECT_READ_ENDPOINT_ID``. A production helper must compare each
+request's ``endpoint_id`` with that fixed value before contacting its own
+authenticated DASObjectStore boundary. The value is authority scope, not a
+password or token; secrets still belong to DASObjectStore or the host.
+
+Foreground operators must configure the equivalent fixed endpoint scope in the
+reviewed helper's execution environment. Pinakotheke deliberately does not set
+it from request data, silently select the first endpoint, or fall back to an
+origin URL.
+
 The adapter was reviewed against ``../DASObjectStore`` commit
-``78513c8615a204b7f0f4a065ba6795bd09425f1f`` and its application-auth plus
+``8b6d94a284bca636525f4b3d56ad2bfc4fe864a1`` and its application-auth plus
 provider-stream range/checksum model. No sibling path dependency, browser
 credential, or backend path enters the public build.

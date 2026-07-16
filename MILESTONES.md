@@ -668,6 +668,10 @@ Exit criteria:
   authority domains;
 - macOS supports foreground use and an optional per-user ``launchd`` service
   with status, log, upgrade, rollback, and non-destructive uninstall behavior;
+- a managed object-read helper is bound to one reviewed stable endpoint
+  identity in the backend service environment; path and identity are installed
+  together and the identity is never treated as a credential or inferred from
+  a browser request;
 - local authentication remains Monas/Prosopikon-owned; the monolith does not
   invent Pinakotheke passwords, cookies, or a parallel session issuer; and
 - unauthenticated navigation presents a polished Monas-owned, Mnemosyne-design-

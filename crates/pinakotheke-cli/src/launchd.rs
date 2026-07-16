@@ -50,6 +50,9 @@ pub(crate) struct InstallArgs {
     /// Optional absolute scoped ObjectStore read-helper executable.
     #[arg(long)]
     object_read_helper: Option<PathBuf>,
+    /// Stable reviewed endpoint identity accepted by the read helper.
+    #[arg(long, requires = "object_read_helper")]
+    object_read_endpoint_id: Option<String>,
     /// Replace existing Pinakotheke-managed plist definitions.
     #[arg(long)]
     replace: bool,
@@ -139,6 +142,15 @@ fn install(layout: &ServiceLayout, args: &InstallArgs) -> io::Result<()> {
     if let Some(helper) = &args.object_read_helper {
         validate_binary(helper)?;
     }
+    if args.object_read_helper.is_some() != args.object_read_endpoint_id.is_some() {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "--object-read-helper and --object-read-endpoint-id must be configured together",
+        ));
+    }
+    if let Some(endpoint_id) = &args.object_read_endpoint_id {
+        validate_endpoint_id(endpoint_id)?;
+    }
     if !args.replace && (layout.backend_plist.exists() || layout.monas_plist.exists()) {
         return Err(io::Error::new(
             io::ErrorKind::AlreadyExists,
@@ -160,6 +172,7 @@ fn install(layout: &ServiceLayout, args: &InstallArgs) -> io::Result<()> {
         layout,
         &args.pinakotheke_binary,
         args.object_read_helper.as_deref(),
+        args.object_read_endpoint_id.as_deref(),
     );
     let monas = monas_plist(layout, &args.monas_binary);
     let previous_backend = std::fs::read(&layout.backend_plist).ok();
@@ -323,7 +336,12 @@ fn install_plist(path: &Path, contents: &str, replace: bool) -> io::Result<()> {
     std::fs::rename(temporary, path)
 }
 
-fn backend_plist(layout: &ServiceLayout, binary: &Path, helper: Option<&Path>) -> String {
+fn backend_plist(
+    layout: &ServiceLayout,
+    binary: &Path,
+    helper: Option<&Path>,
+    endpoint_id: Option<&str>,
+) -> String {
     let mut arguments = vec![
         "serve",
         "--root",
@@ -338,11 +356,14 @@ fn backend_plist(layout: &ServiceLayout, binary: &Path, helper: Option<&Path>) -
     if let Some(helper) = helper {
         arguments.extend(["--object-read-helper", path_text_unchecked(helper)]);
     }
+    let environment = endpoint_id
+        .map(|endpoint_id| vec![("PINAKOTHEKE_OBJECT_READ_ENDPOINT_ID", endpoint_id)])
+        .unwrap_or_default();
     plist(
         BACKEND_LABEL,
         binary,
         &arguments,
-        &[],
+        &environment,
         layout,
         "pinakotheke",
     )
@@ -416,6 +437,21 @@ fn validate_binary(path: &Path) -> io::Result<()> {
         return Err(io::Error::new(
             io::ErrorKind::InvalidInput,
             "service binaries must be absolute executable regular files",
+        ));
+    }
+    Ok(())
+}
+
+fn validate_endpoint_id(value: &str) -> io::Result<()> {
+    if value.is_empty()
+        || value.len() > 128
+        || !value
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'.' | b'_' | b':' | b'-'))
+    {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "object-read endpoint identity must be 1-128 ASCII identifier characters",
         ));
     }
     Ok(())
@@ -504,14 +540,24 @@ mod tests {
             &layout,
             Path::new("/opt/bin/pinakotheke"),
             Some(Path::new("/opt/bin/das-reader")),
+            Some("endpoint-local"),
         );
         let monas = monas_plist(&layout, Path::new("/opt/bin/monas-server"));
         assert!(backend.contains("127.0.0.1</string><string>--port</string><string>8732"));
         assert!(backend.contains("--object-read-helper"));
         assert!(backend.contains("/opt/bin/das-reader"));
+        assert!(backend.contains("PINAKOTHEKE_OBJECT_READ_ENDPOINT_ID"));
+        assert!(backend.contains("endpoint-local"));
         assert!(monas.contains("127.0.0.1:8731"));
         assert!(monas.contains("PROSOPIKON_ROOT"));
         assert!(monas.contains("synthetic &amp; user"));
         assert!(!monas.contains("monas_session"));
+    }
+
+    #[test]
+    fn endpoint_identity_is_strict_and_not_a_path() {
+        assert!(validate_endpoint_id("endpoint.local:1").is_ok());
+        assert!(validate_endpoint_id("../endpoint").is_err());
+        assert!(validate_endpoint_id("").is_err());
     }
 }

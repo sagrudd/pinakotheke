@@ -43,6 +43,9 @@ All notable changes to Pinakotheke will be documented in this file. The project 
 - Compose a strict process-isolated host object-reader into the packaged
   monolith, with bounded streaming, exact metadata/length/full-read checksum
   verification, range support, and no local payload or credential handling.
+- Bind a managed macOS object-read helper to one explicit reviewed endpoint
+  identity, reject half-configured installs, and pass the fixed non-secret scope
+  through the backend agent environment instead of deriving it from requests.
 - Carry an explicit positive immutable object version from verified acquisition
   and normalized-video evidence through persistent gallery records, authorized
   read grants, and host-helper requests, with legacy catalogue-v1 records

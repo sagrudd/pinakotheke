@@ -193,13 +193,17 @@ Review and install the two coordinated user agents:
    pinakotheke service install \
      --pinakotheke-binary /absolute/path/to/pinakotheke \
      --monas-binary /absolute/path/to/monas-server \
-     --object-read-helper /absolute/path/to/reviewed-helper
+     --object-read-helper /absolute/path/to/reviewed-helper \
+     --object-read-endpoint-id endpoint-local
 
 Installation requires absolute executable regular files, generates a private
 dispatch credential, keeps the backend on port 8732, and exposes Monas on port
 8731. The helper is optional until a reviewed DASObjectStore implementation is
-installed; when supplied, its exact absolute path is retained in the backend
-agent definition. Prosopikon remains under ``~/.config/monas/prosopikon``; Pinakotheke
+installed. Its path and stable reviewed endpoint identity must be supplied
+together; the backend agent retains both and exposes the identity to the helper
+as ``PINAKOTHEKE_OBJECT_READ_ENDPOINT_ID``. The identity is scope, not a
+credential, and the helper must authenticate independently. Prosopikon remains
+under ``~/.config/monas/prosopikon``; Pinakotheke
 metadata and logs remain under ``~/.x-img``; DASObjectStore retains its own
 authority roots.
 

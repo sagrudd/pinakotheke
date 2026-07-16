@@ -455,6 +455,16 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   1, while zero and missing new evidence fail closed. A helper can therefore
   construct the authority's ``BackendObjectKey`` without guessing. The
   production helper implementation remains the next slice.
+  Managed macOS composition now requires the reviewed helper path and endpoint
+  identity together, validates the stable identity, and pins it in the backend
+  agent environment as non-secret authority scope. This prevents a helper from
+  silently following a request-selected endpoint. The DASObjectStore helper
+  binary and live authority proof still remain.
+  Verification on 2026-07-16: focused CLI tests, the repository quality gate,
+  and local Sphinx 8.2.3 warnings-as-errors dummy build passed. The required
+  container build could not start because Docker Desktop's local socket did not
+  answer its health probe; rerun the documented build when that host service is
+  available.
 
 ## 0.6.0 — Firefox capture
 

@@ -130,6 +130,10 @@ remain entirely inside the host-supplied helper.
 Object identity includes the authority's explicit positive immutable version;
 legacy catalogue-v1 records default to version 1, while new records persist and
 forward the exact version required by DASObjectStore provider streams.
+For a managed macOS service, the helper path and reviewed endpoint identity are
+an inseparable pair. The fixed identity is supplied to the helper as
+``PINAKOTHEKE_OBJECT_READ_ENDPOINT_ID``; it is not copied from a browser
+request and is not an authentication credential.
 
 The release hardening path now includes one deterministic fault/recovery
 command, ``scripts/faults/check.sh``. It covers critical authority, ingest,
