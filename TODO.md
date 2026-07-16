@@ -1098,6 +1098,16 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   ``--content-type`` contract in DASObjectStore commit ``7a3d5578``. The next
   live run must prove provider head/readback returns that exact type rather
   than ``application/octet-stream`` before XIMG-096 gallery admission.
+  A fresh isolated rerun on 2026-07-16 restored Docker, provisioned the exact
+  ``pinakotheke-clean`` authority at DASObjectStore commit ``26227ca2``, and
+  exposed an obsolete ``upload --store`` invocation in the canonical remote
+  completion smoke test. DASObjectStore commit ``03f88237`` fixes that Clap
+  contract drift. The required exact-revision rebuild then stopped honestly on
+  a Docker BuildKit ``metadata_v2.db`` input/output error while copying the
+  pinned AWS CLI layer. The isolated containers, networks, and temporary home
+  were removed after a hard backend restart. Next execution starts with Docker
+  VM storage repair/reset, rebuilds commit ``03f88237`` or later, and resumes
+  completion smoke before Monas composition; no direct-S3 substitute is valid.
   Verification: all 175 workspace tests, strict workspace Clippy, repository
   quality/privacy/version checks, release security/license audits, and
   warnings-denied Sphinx 8.2.3 pass locally. The isolated containers and HOME

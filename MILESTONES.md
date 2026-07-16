@@ -354,6 +354,14 @@ the validated DASObjectStore remote-client contract introduced at sibling
 commit ``7a3d5578``. Live same-home readback still must prove that provider
 metadata and authorized delivery return that exact type.
 
+The next isolated composition run also removed a real acceptance-harness
+blocker: DASObjectStore's local completion smoke still used the retired
+``upload --store`` spelling. Sibling commit ``03f88237`` now uses the positional
+Clap store argument. An exact-revision rebuild remains required because Docker
+BuildKit subsequently reported an internal metadata database I/O error; that
+infrastructure failure is not accepted as release evidence or bypassed with a
+direct provider write.
+
 - XIMG-050 implements the Mnemosyne-compatible Monas shell (commit `9e9cabb`):
   semantic-token CSS, compact header, responsive accessible empty state, and
   one mandatory footer provenance mark; host authentication remains Monas-owned.

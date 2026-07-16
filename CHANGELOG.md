@@ -19,6 +19,9 @@ All notable changes to Pinakotheke will be documented in this file. The project 
 - Preserve the capture helper's verified image MIME type through native and
   container uploads using DASObjectStore's validated single-object content-type
   contract at sibling commit ``7a3d5578``.
+- Resume the isolated XIMG-094 authority proof, fix DASObjectStore's obsolete
+  completion-smoke upload syntax at sibling commit ``03f88237``, and retain the
+  exact-revision rerun gate after Docker BuildKit reported a metadata I/O fault.
 
 - Record and validate the DASObjectStore container-side remote-completion
   prerequisite that removes Docker Desktop bind-mounted Unix sockets from the

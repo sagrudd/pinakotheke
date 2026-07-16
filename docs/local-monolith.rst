@@ -289,3 +289,11 @@ matches the complete SHA-256 digest, and restart preserves that single version.
 The remaining clean-home release check is to compose those operations with
 Monas login and the running monolith in the same temporary home, then shut the
 whole stack down cleanly.
+
+The canonical completion smoke command requires DASObjectStore commit
+``03f88237`` or later. Earlier revisions passed the ObjectStore name using the
+retired ``upload --store`` spelling and fail before transfer. A local Docker
+BuildKit metadata-database I/O error is an infrastructure failure: repair or
+reset the Docker VM storage, rebuild an image whose revision exactly matches
+the inspected DASObjectStore source, and rerun completion smoke. Do not replace
+daemon-owned completion with a direct S3 write.
