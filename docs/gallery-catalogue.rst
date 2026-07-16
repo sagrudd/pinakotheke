@@ -48,8 +48,25 @@ Home and End reach the first and last currently loaded record. Moving to an
 off-screen record updates the scroll position, renders the new window, and
 then restores focus to the selected card. If pointer scrolling moves the
 selected record outside the window, the first visible card remains a keyboard
-entry point. The real large-catalogue Firefox performance, focus, and
-responsive-layout acceptance run remains part of XIMG-096.
+entry point. Exercise the compiled application in installed Firefox with:
+
+.. code-block:: console
+
+   make firefox-gallery-check
+
+The check builds the actual release Yew/WASM bundle, launches Firefox with a
+private temporary profile, and presents 1,000 synthetic mixed image/video
+records through a loopback surface representing an already-authenticated Monas
+forward. It loads five 100-record pages, verifies that no more than 120 cards
+enter the DOM, reaches records above index 400 by scrolling, moves focus to
+record 499 with End, applies a server metadata filter, opens an unavailable
+object, and proves that no resource request leaves the loopback origin. A
+second pass constrains the real app to a 390-pixel content viewport and proves
+two-column reflow. Browser profiles and fixture bytes are deleted afterwards.
+
+This is browser-component evidence, not a substitute for a genuine Monas
+session or DASObjectStore transport. The full capture/commit/restart vertical
+remains required by XIMG-096.
 
 Object authority and availability
 ---------------------------------

@@ -34,6 +34,9 @@ All notable changes to Pinakotheke will be documented in this file. The project 
 - Add the runnable Trunk/WebAssembly gallery build and serve its bounded,
   symlink-free output from the canonical application mount only through private
   Monas dispatch admission.
+- Add installed-Firefox acceptance for the compiled Yew gallery with 1,000
+  mixed records, bounded windowing, off-screen keyboard focus, server filters,
+  unavailable/no-origin behavior, and desktop/narrow responsive reflow.
 - Add the XIMG-200 Synoptikon product manifest, strict tenant/account/project
   host scope, and bounded authenticated catalogue projection over immutable
   DASObjectStore references.

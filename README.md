@@ -114,6 +114,10 @@ across loaded records that begin off-screen.
 The local monolith can mount a reviewed build with ``--web-root`` (or discover
 ``~/.x-img/web``) and serves it only through the Monas-authenticated canonical
 application path; direct backend requests are denied.
+``make firefox-gallery-check`` exercises that compiled bundle in installed
+Firefox with 1,000 ephemeral mixed records, bounded windowing, keyboard focus,
+server filtering, unavailable/no-origin behavior, and desktop/narrow reflow.
+It is browser-component evidence and does not replace live authority proof.
 
 The release hardening path now includes one deterministic fault/recovery
 command, ``scripts/faults/check.sh``. It covers critical authority, ingest,

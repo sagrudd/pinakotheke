@@ -429,9 +429,14 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   slice. The gallery now has a real WebAssembly start entry and reproducible
   ``make web`` Trunk build. A bounded, symlink-free web root is served from the
   canonical app path only behind private Monas dispatch; direct backend access
-  is denied. Native tests prove admitted index delivery. Automatic package
-  installation plus real-Firefox scale, focus, and responsive-layout evidence
-  remain.
+  is denied. Native tests prove admitted index delivery. Installed Firefox now
+  exercises the actual release Yew/WASM bundle against 1,000 mixed synthetic
+  records: five pages, a bounded <=120-card DOM, scrolling beyond record 400,
+  End-key focus on record 499, server filtering, unavailable preview with no
+  non-loopback request, and desktop/390px reflow all pass in private temporary
+  profiles. This is browser-component evidence; automatic package installation,
+  live Monas session, DASObjectStore transport, capture/commit/restart
+  reconciliation, and normalized gallery playback remain.
 
 ## 0.6.0 — Firefox capture
 

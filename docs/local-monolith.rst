@@ -151,7 +151,12 @@ backend app path returns ``401``; after Monas authenticates the user, the same
 path serves the Yew document and its hashed assets. Catalogue and object routes
 retain their independent host-context checks. Native tests prove both direct
 denial and admitted static delivery. Packaging still needs to install the web
-build automatically, and real-Firefox catalogue acceptance remains XIMG-096.
+build automatically.
+
+``make firefox-gallery-check`` independently exercises the compiled bundle in
+installed Firefox. It uses an ephemeral loopback catalogue and private Firefox
+profiles; it proves the browser component, not the local Monas and
+DASObjectStore authorities.
 
 Stop the foreground process with ``Control-C``. Axum stops accepting new work
 and completes graceful shutdown.
