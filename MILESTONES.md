@@ -322,6 +322,13 @@ container-created bind-mounted Unix socket, so a supported host-reachable
 daemon transport (or container-packaged remote client) remains before the
 commit/read/restart gate can close; a direct S3 write is not substitute proof.
 
+DASObjectStore commit ``01a8c385`` supplies the container-packaged option: its
+local authority image now contains the version-matched remote completion client
+and digest-pinned AWS CLI beside the native daemon socket. The remaining
+Pinakotheke work is a narrow host adapter that maps only DAS-managed scratch
+into that container execution context and supplies scoped authority credentials
+without exposing Docker, paths, or secrets to browser requests.
+
 - XIMG-050 implements the Mnemosyne-compatible Monas shell (commit `9e9cabb`):
   semantic-token CSS, compact header, responsive accessible empty state, and
   one mandatory footer provenance mark; host authentication remains Monas-owned.

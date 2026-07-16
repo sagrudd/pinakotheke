@@ -267,3 +267,10 @@ connections. DASObjectStore must provide a supported host-reachable daemon
 transport or package ``dasobjectstore-remote`` inside the authority container;
 direct S3 writes are not accepted as verified completion. See :doc:`object-read`
 for the private helper configuration.
+
+DASObjectStore commit ``01a8c385`` now packages that version-matched remote
+client together with a digest-pinned AWS CLI in the local authority image. The
+next Pinakotheke adapter must invoke it only through a reviewed fixed container
+identity, translate sources only from DAS-managed scratch, and keep scoped
+credentials in the authority context. A capture request will never be allowed
+to provide a Docker name, host path, socket path, or credential.

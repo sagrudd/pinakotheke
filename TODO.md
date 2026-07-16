@@ -1064,6 +1064,14 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   completion needs a supported host-reachable daemon transport or a packaged
   container-side remote client. Direct S3 smoke/write results are explicitly
   insufficient to close XIMG-094.
+  DASObjectStore commit ``01a8c385`` now packages its version-matched
+  ``dasobjectstore-remote`` client and digest-pinned AWS CLI beside the daemon
+  socket in the local authority image. A real arm64 image build proves Docker
+  Compose, AWS CLI 2.27.49, and remote client 0.110.0 are executable together.
+  This removes the unsupported host-socket dependency. The next Pinakotheke
+  slice must add a narrow container execution adapter with managed-root-only
+  source translation and scoped credential handoff; browser/product requests
+  must never select a container, host path, or provider credential.
   Verification: all 173 workspace tests, strict workspace Clippy, repository
   quality/privacy/version checks, release security/license audits, and
   warnings-denied Sphinx 8.2.3 pass locally. The isolated containers and HOME

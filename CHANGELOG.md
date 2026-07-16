@@ -7,6 +7,10 @@ All notable changes to Pinakotheke will be documented in this file. The project 
 
 ### Added
 
+- Record and validate the DASObjectStore container-side remote-completion
+  prerequisite that removes Docker Desktop bind-mounted Unix sockets from the
+  clean-home authority path.
+
 - Add the packaged first-party DASObjectStore read helper with explicit
   endpoint/ObjectStore-to-bucket authority, host-owned AWS credentials,
   completion-metadata verification, conditional and ranged reads, and bounded
