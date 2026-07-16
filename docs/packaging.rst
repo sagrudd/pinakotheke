@@ -2,10 +2,10 @@ Native packages and Firefox bundles
 ====================================
 
 The repository ``Makefile`` builds local release artifacts under ``dist/``.
-The current native packages honestly contain the ``x-img`` metadata CLI, the
-versioned Monas product-bootstrap contract, and MPL-2.0 license. They do not
-claim to install a standalone API daemon, Monas, DASObjectStore, user media, or
-credentials; those runtime/package boundaries remain separate work.
+The native packages contain the Pinakotheke monolith/CLI, the compiled Yew/WASM
+application, the versioned Monas product-bootstrap contract, and MPL-2.0
+license. They do not install Monas, DASObjectStore, user media, or credentials;
+those authority and payload boundaries remain separate.
 
 The packaging contract was checked against sibling Monas commit
 ``3d21b0bc7b83fa8408d01b93347a56f43f3a96b7``. Public builds consume only the
@@ -30,6 +30,17 @@ produce ``x86_64-unknown-linux-gnu`` and ``aarch64-unknown-linux-gnu`` binaries,
 avoiding unreliable QEMU execution of ``rustc``. Each architecture yields one
 DEB and one RPM. Docker Desktop or an equivalent BuildKit daemon must be healthy
 and have enough local image space.
+
+Every native package target depends on ``make web``. Linux BuildKit receives
+``dist/web`` as a named, read-only build context and installs it under
+``/usr/share/<product>/web``. The macOS builder installs the same output under
+``/usr/local/share/<product>/web``. The corresponding absolute location is
+compiled into the packaged monolith, so an installed ``pinakotheke serve`` does
+not require ``--web-root``. At runtime a valid ``ROOT/web`` directory takes
+precedence, and an explicit ``--web-root`` takes precedence over both. All
+three paths receive the same file-count, byte-size, regular-file, index, and
+no-symlink validation. A missing packaged tree is reported as ``Not installed``
+rather than falling back to an origin website.
 
 ``make macos-pkg`` requires macOS, Rustup, and Apple's ``pkgbuild`` from the
 Xcode command-line tools. It produces x86_64 and arm64 PKGs. These development

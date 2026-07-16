@@ -322,8 +322,11 @@ end-to-end gate for this intent.
   application served from the canonical app mount only after private Monas
   dispatch admission. Installed Firefox now passes a 1,000-record compiled-WASM
   component run covering bounded windowing, off-screen keyboard focus, server
-  filtering, unavailable/no-origin behavior, and desktop/390px reflow. Package
-  installation and the live Monas/DAS capture vertical remain.
+  filtering, unavailable/no-origin behavior, and desktop/390px reflow. Native
+  DEB/RPM/PKG targets now install that compiled application and embed their
+  platform asset location in the monolith, eliminating a manual
+  ``--web-root`` for package users while preserving validated development
+  overrides. The live Monas/DAS capture vertical remains.
 - XIMG-055 implements visible refresh progress (commit `a48fc13`) with a single
   action, per-account state, partial failure, retry, and new-item summary.
 - XIMG-054 implements word-first review states and reversible batch actions

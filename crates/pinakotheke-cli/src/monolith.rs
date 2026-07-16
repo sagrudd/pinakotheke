@@ -29,7 +29,7 @@ pub(crate) struct ServeArgs {
     /// Private file containing the process-local Monas dispatch token.
     #[arg(long)]
     monas_dispatch_token_file: Option<PathBuf>,
-    /// Built Trunk output; defaults to ROOT/web when that directory exists.
+    /// Built Trunk output; defaults to ROOT/web, then packaged assets.
     #[arg(long)]
     web_root: Option<PathBuf>,
 }
@@ -108,6 +108,7 @@ fn socket_address(arguments: &ServeArgs) -> io::Result<SocketAddr> {
 fn resolve_web_root(
     requested: Option<PathBuf>,
     product_root: &Path,
+    installed: Option<&str>,
 ) -> io::Result<Option<PathBuf>> {
     let candidate = match requested {
         Some(candidate) => candidate,
@@ -115,7 +116,19 @@ fn resolve_web_root(
             let candidate = product_root.join("web");
             match std::fs::symlink_metadata(&candidate) {
                 Ok(_) => candidate,
-                Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(None),
+                Err(error) if error.kind() == io::ErrorKind::NotFound => match installed {
+                    Some(installed) => {
+                        let installed = PathBuf::from(installed);
+                        match std::fs::symlink_metadata(&installed) {
+                            Ok(_) => installed,
+                            Err(error) if error.kind() == io::ErrorKind::NotFound => {
+                                return Ok(None);
+                            }
+                            Err(error) => return Err(error),
+                        }
+                    }
+                    None => return Ok(None),
+                },
                 Err(error) => return Err(error),
             }
         }
@@ -124,6 +137,13 @@ fn resolve_web_root(
         return Err(io::Error::new(
             io::ErrorKind::InvalidInput,
             "web root must be absolute",
+        ));
+    }
+    let root_metadata = std::fs::symlink_metadata(&candidate)?;
+    if root_metadata.file_type().is_symlink() || !root_metadata.is_dir() {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "web root must be a real directory",
         ));
     }
     let mut files = 0;
@@ -174,7 +194,11 @@ fn validate_web_tree(path: &Path, files: &mut usize, bytes: &mut u64) -> io::Res
 pub(crate) fn serve(arguments: ServeArgs) -> Result<(), Box<dyn std::error::Error>> {
     let address = socket_address(&arguments)?;
     let layout = LocalRootLayout::resolve(arguments.root)?;
-    let web_root = resolve_web_root(arguments.web_root, &layout.root)?;
+    let web_root = resolve_web_root(
+        arguments.web_root,
+        &layout.root,
+        option_env!("PINAKOTHEKE_DEFAULT_WEB_ROOT"),
+    )?;
     let monas_dispatch = arguments
         .monas_dispatch_token_file
         .as_deref()
@@ -334,18 +358,44 @@ mod tests {
         std::fs::create_dir_all(&web).unwrap();
         std::fs::write(web.join("index.html"), "<!doctype html>").unwrap();
         std::fs::write(web.join("pinakotheke.js"), "export {};").unwrap();
-        assert_eq!(resolve_web_root(None, &root).unwrap(), Some(web.clone()));
+        assert_eq!(
+            resolve_web_root(None, &root, Some("/not/used")).unwrap(),
+            Some(web.clone())
+        );
 
         #[cfg(unix)]
         {
             std::os::unix::fs::symlink(web.join("pinakotheke.js"), web.join("linked.js")).unwrap();
             assert_eq!(
-                resolve_web_root(Some(web.clone()), &root)
+                resolve_web_root(Some(web.clone()), &root, None)
                     .unwrap_err()
                     .kind(),
                 io::ErrorKind::InvalidInput
             );
         }
         std::fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn installed_web_root_is_a_validated_fallback() {
+        let root = temporary_root();
+        let installed = temporary_root().join("installed-web");
+        std::fs::create_dir_all(&root).unwrap();
+        std::fs::create_dir_all(&installed).unwrap();
+        std::fs::write(installed.join("index.html"), "<!doctype html>").unwrap();
+        assert_eq!(
+            resolve_web_root(None, &root, installed.to_str()).unwrap(),
+            Some(installed.clone())
+        );
+
+        std::fs::write(root.join("web"), "not a directory").unwrap();
+        assert_eq!(
+            resolve_web_root(None, &root, installed.to_str())
+                .unwrap_err()
+                .kind(),
+            io::ErrorKind::InvalidInput
+        );
+        std::fs::remove_dir_all(root).unwrap();
+        std::fs::remove_dir_all(installed.parent().unwrap()).unwrap();
     }
 }

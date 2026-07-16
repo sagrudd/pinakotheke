@@ -48,25 +48,27 @@ linux-rpm: linux-rpm-x86_64 linux-rpm-arm64
 linux-deb-x86_64 linux-rpm-x86_64: linux-x86_64
 linux-deb-arm64 linux-rpm-arm64: linux-arm64
 
-linux-x86_64:
+linux-x86_64: web
 	@mkdir -p "$(DIST)/linux/x86_64"
 	docker buildx build --build-arg VERSION=$(VERSION) \
+		--build-context web-assets="$(DIST)/web" \
 		--build-arg PRODUCT_NAME=$(PRODUCT) \
 		--build-arg RUST_TARGET=x86_64-unknown-linux-gnu --build-arg DEB_ARCH=amd64 --build-arg RPM_ARCH=x86_64 \
 		-f packaging/Dockerfile.linux --output type=local,dest="$(DIST)/linux/x86_64" .
 
-linux-arm64:
+linux-arm64: web
 	@mkdir -p "$(DIST)/linux/arm64"
 	docker buildx build --build-arg VERSION=$(VERSION) \
+		--build-context web-assets="$(DIST)/web" \
 		--build-arg PRODUCT_NAME=$(PRODUCT) \
 		--build-arg RUST_TARGET=aarch64-unknown-linux-gnu --build-arg DEB_ARCH=arm64 --build-arg RPM_ARCH=aarch64 \
 		-f packaging/Dockerfile.linux --output type=local,dest="$(DIST)/linux/arm64" .
 
 macos-pkg: macos-pkg-x86_64 macos-pkg-arm64
-macos-pkg-x86_64:
+macos-pkg-x86_64: web
 	packaging/build-macos-pkg.sh x86_64 $(VERSION) "$(DIST)" $(PRODUCT)
 
-macos-pkg-arm64:
+macos-pkg-arm64: web
 	packaging/build-macos-pkg.sh arm64 $(VERSION) "$(DIST)" $(PRODUCT)
 
 firefox: firefox-macos-x86_64 firefox-macos-arm64 firefox-windows-x86_64 \

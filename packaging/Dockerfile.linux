@@ -16,25 +16,28 @@ COPY contracts ./contracts
 COPY examples ./examples
 COPY fixtures ./fixtures
 COPY packaging/x-img.spec ./packaging/x-img.spec
+COPY --from=web-assets . /workspace/web-assets
 RUN test "$(cargo metadata --format-version 1 --no-deps | python3 -c 'import json,sys; print(json.load(sys.stdin)["packages"][0]["version"])')" = "$VERSION"
 RUN rustup target add "$RUST_TARGET" && \
     CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc \
     CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc \
+    PINAKOTHEKE_DEFAULT_WEB_ROOT="/usr/share/$PRODUCT_NAME/web" \
     cargo build --locked --release -p pinakotheke-cli --target "$RUST_TARGET"
 RUN set -eu; \
     test "$PRODUCT_NAME" = x-img || test "$PRODUCT_NAME" = pinakotheke; \
     bootstrap=contracts/monas/x-img-product-bootstrap.v1.json; binary=x-img; \
     if [ "$PRODUCT_NAME" = pinakotheke ]; then bootstrap=contracts/monas/x-img-product-bootstrap.v1.json; binary=pinakotheke; fi; \
-    mkdir -p /tmp/deb/DEBIAN /tmp/deb/usr/bin "/tmp/deb/usr/share/$PRODUCT_NAME/monas" "/tmp/deb/usr/share/doc/$PRODUCT_NAME" /out; \
+    mkdir -p /tmp/deb/DEBIAN /tmp/deb/usr/bin "/tmp/deb/usr/share/$PRODUCT_NAME/monas" "/tmp/deb/usr/share/$PRODUCT_NAME/web" "/tmp/deb/usr/share/doc/$PRODUCT_NAME" /out; \
     install -m 0755 "target/$RUST_TARGET/release/$binary" "/tmp/deb/usr/bin/$PRODUCT_NAME"; \
     if [ "$PRODUCT_NAME" = pinakotheke ]; then install -m 0755 "target/$RUST_TARGET/release/x-img" /tmp/deb/usr/bin/x-img; fi; \
     install -m 0644 "$bootstrap" "/tmp/deb/usr/share/$PRODUCT_NAME/monas/product-bootstrap.json"; \
+    cp -a web-assets/. "/tmp/deb/usr/share/$PRODUCT_NAME/web/"; \
     install -m 0644 LICENSE "/tmp/deb/usr/share/doc/$PRODUCT_NAME/LICENSE"; \
     printf 'Package: %s\nVersion: %s\nSection: utils\nPriority: optional\nArchitecture: %s\nMaintainer: Pinakotheke maintainers\nDescription: %s metadata CLI and Monas product contract\n' "$PRODUCT_NAME" "$VERSION" "$DEB_ARCH" "$PRODUCT_NAME" > /tmp/deb/DEBIAN/control; \
     if [ "$PRODUCT_NAME" = pinakotheke ]; then printf 'Provides: x-img\nConflicts: x-img\nReplaces: x-img\n' >> /tmp/deb/DEBIAN/control; fi; \
     dpkg-deb --root-owner-group --build /tmp/deb "/out/${PRODUCT_NAME}-${VERSION}-linux-${DEB_ARCH}.deb"; \
     mkdir -p /tmp/rpmbuild/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}; \
-    rpmbuild -bb --target "$RPM_ARCH" --define "_topdir /tmp/rpmbuild" --define "ximg_version $VERSION" --define "product_name $PRODUCT_NAME" --define "product_binary /workspace/target/$RUST_TARGET/release/$binary" --define "legacy_binary /workspace/target/$RUST_TARGET/release/x-img" --define "product_bootstrap /workspace/$bootstrap" packaging/x-img.spec; \
+    rpmbuild -bb --target "$RPM_ARCH" --define "_topdir /tmp/rpmbuild" --define "ximg_version $VERSION" --define "product_name $PRODUCT_NAME" --define "product_binary /workspace/target/$RUST_TARGET/release/$binary" --define "legacy_binary /workspace/target/$RUST_TARGET/release/x-img" --define "product_bootstrap /workspace/$bootstrap" --define "product_web /workspace/web-assets" packaging/x-img.spec; \
     find /tmp/rpmbuild/RPMS -name '*.rpm' -exec cp {} "/out/${PRODUCT_NAME}-${VERSION}-linux-${RPM_ARCH}.rpm" \;
 
 FROM scratch AS export

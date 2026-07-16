@@ -37,6 +37,9 @@ All notable changes to Pinakotheke will be documented in this file. The project 
 - Add installed-Firefox acceptance for the compiled Yew gallery with 1,000
   mixed records, bounded windowing, off-screen keyboard focus, server filters,
   unavailable/no-origin behavior, and desktop/narrow responsive reflow.
+- Install the compiled Yew/WASM gallery in Linux and macOS native packages and
+  embed its platform path in the monolith, retaining validated per-user and
+  explicit development overrides.
 - Add the XIMG-200 Synoptikon product manifest, strict tenant/account/project
   host scope, and bounded authenticated catalogue projection over immutable
   DASObjectStore references.

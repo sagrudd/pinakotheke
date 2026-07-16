@@ -111,9 +111,11 @@ former silent 200-card truncation. A responsive overscanned viewport keeps the
 number of rendered cards bounded and retains Arrow/Home/End keyboard traversal
 across loaded records that begin off-screen.
 ``make web`` now builds the actual Yew application as hashed Trunk/WASM assets.
-The local monolith can mount a reviewed build with ``--web-root`` (or discover
-``~/.x-img/web``) and serves it only through the Monas-authenticated canonical
-application path; direct backend requests are denied.
+Native packages install that exact bundle and compile its platform installation
+path into the monolith. A local ``~/.x-img/web`` tree or explicit
+``--web-root`` takes precedence for development. Every selected tree is
+bounded and symlink-free, and is served only through the Monas-authenticated
+canonical application path; direct backend requests are denied.
 ``make firefox-gallery-check`` exercises that compiled bundle in installed
 Firefox with 1,000 ephemeral mixed records, bounded windowing, keyboard focus,
 server filtering, unavailable/no-origin behavior, and desktop/narrow reflow.

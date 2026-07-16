@@ -434,9 +434,13 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   records: five pages, a bounded <=120-card DOM, scrolling beyond record 400,
   End-key focus on record 499, server filtering, unavailable preview with no
   non-loopback request, and desktop/390px reflow all pass in private temporary
-  profiles. This is browser-component evidence; automatic package installation,
-  live Monas session, DASObjectStore transport, capture/commit/restart
-  reconciliation, and normalized gallery playback remain.
+  profiles. This is browser-component evidence. Native DEB/RPM/PKG assembly now
+  builds and installs the real hashed Yew/WASM bundle, and embeds its matching
+  platform path in the monolith. Explicit ``--web-root`` and private
+  ``ROOT/web`` development overrides remain bounded, symlink-free, and higher
+  priority. Live Monas session, DASObjectStore transport,
+  capture/commit/restart reconciliation, and normalized gallery playback
+  remain.
 
 ## 0.6.0 — Firefox capture
 

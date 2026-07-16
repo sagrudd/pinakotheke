@@ -16,10 +16,13 @@ case "$arch" in
 esac
 
 rustup target add "$target"
-cargo +1.97.0 build --locked --release -p pinakotheke-cli --target "$target"
+web="$dist/web"
+[ -f "$web/index.html" ] || { echo "missing built web application: run make web" >&2; exit 2; }
+PINAKOTHEKE_DEFAULT_WEB_ROOT="/usr/local/share/$product/web" \
+  cargo +1.97.0 build --locked --release -p pinakotheke-cli --target "$target"
 root="target/package-macos/$arch/root"
 rm -rf "$root"
-mkdir -p "$root/usr/local/bin" "$root/usr/local/share/$product/monas" "$root/usr/local/share/doc/$product" "$dist/macos/$arch"
+mkdir -p "$root/usr/local/bin" "$root/usr/local/share/$product/monas" "$root/usr/local/share/$product/web" "$root/usr/local/share/doc/$product" "$dist/macos/$arch"
 bootstrap=contracts/monas/x-img-product-bootstrap.v1.json
 if [ "$product" = pinakotheke ]; then
   bootstrap=contracts/monas/x-img-product-bootstrap.v1.json
@@ -29,6 +32,7 @@ else
   install -m 0755 "target/$target/release/x-img" "$root/usr/local/bin/x-img"
 fi
 install -m 0644 "$bootstrap" "$root/usr/local/share/$product/monas/product-bootstrap.json"
+cp -a "$web/." "$root/usr/local/share/$product/web/"
 install -m 0644 LICENSE "$root/usr/local/share/doc/$product/LICENSE"
 COPYFILE_DISABLE=1 pkgbuild --root "$root" --identifier "com.github.sagrudd.$product" --version "$version" \
   --install-location / "$dist/macos/$arch/$product-$version-macos-$arch.pkg"

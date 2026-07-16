@@ -24,8 +24,9 @@ def digest(path: pathlib.Path) -> str:
 
 
 def check_sources(version: str, product: str) -> None:
-    manifest_path = (ROOT / "firefox-extension/manifest.json" if product == "x-img" else
-                     ROOT / "packaging/firefox/pinakotheke-manifest.v1.candidate.json")
+    # The v1 identity cutover is complete: both the canonical package and the
+    # compatibility-labelled build consume the shipped manifest version.
+    manifest_path = ROOT / "firefox-extension/manifest.json"
     manifest = json.loads(manifest_path.read_text())
     assert manifest["version"] == version
     bootstrap_path = (ROOT / "contracts/monas/x-img-product-bootstrap.v1.json" if product == "x-img" else
@@ -36,6 +37,15 @@ def check_sources(version: str, product: str) -> None:
     makefile = (ROOT / "Makefile").read_text()
     for target in ["linux-x86_64", "linux-arm64", "macos-pkg-x86_64", "macos-pkg-arm64", "firefox"]:
         assert f"{target}:" in makefile
+    assert '--build-context web-assets="$(DIST)/web"' in makefile
+    assert "linux-x86_64: web" in makefile
+    assert "macos-pkg-x86_64: web" in makefile
+    dockerfile = (ROOT / "packaging/Dockerfile.linux").read_text()
+    assert "COPY --from=web-assets" in dockerfile
+    assert "PINAKOTHEKE_DEFAULT_WEB_ROOT" in dockerfile
+    macos_builder = (ROOT / "packaging/build-macos-pkg.sh").read_text()
+    assert "PINAKOTHEKE_DEFAULT_WEB_ROOT" in macos_builder
+    assert 'cp -a "$web/."' in macos_builder
 
 
 def artifact_record(path: pathlib.Path, dist: pathlib.Path) -> dict[str, object]:
