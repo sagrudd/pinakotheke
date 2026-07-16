@@ -250,7 +250,7 @@ pub(crate) fn serve(arguments: ServeArgs) -> Result<(), Box<dyn std::error::Erro
     let capture_plans = arguments
         .capture_authority_file
         .as_deref()
-        .map(load_capture_authority)
+        .map(|path| load_capture_authority(path, layout.root.join("state/capture-plans.v1.json")))
         .transpose()?;
     let monas_dispatch = arguments
         .monas_dispatch_token_file
@@ -338,7 +338,7 @@ pub(crate) fn serve(arguments: ServeArgs) -> Result<(), Box<dyn std::error::Erro
     Ok(())
 }
 
-fn load_capture_authority(path: &Path) -> io::Result<CapturePlanService> {
+fn load_capture_authority(path: &Path, journal_path: PathBuf) -> io::Result<CapturePlanService> {
     let metadata = std::fs::symlink_metadata(path)?;
     if !path.is_absolute()
         || metadata.file_type().is_symlink()
@@ -424,7 +424,8 @@ fn load_capture_authority(path: &Path) -> io::Result<CapturePlanService> {
             })
         })
         .collect::<io::Result<Vec<_>>>()?;
-    Ok(CapturePlanService::new(pairings, sites))
+    CapturePlanService::with_journal(pairings, sites, journal_path)
+        .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))
 }
 
 fn safe_identifier(value: &str) -> bool {
@@ -582,14 +583,17 @@ mod tests {
             use std::os::unix::fs::PermissionsExt;
             std::fs::set_permissions(&authority, std::fs::Permissions::from_mode(0o600)).unwrap();
         }
-        assert!(load_capture_authority(&authority).is_ok());
+        let journal = root.join("capture-plans.json");
+        assert!(load_capture_authority(&authority, journal.clone()).is_ok());
         std::fs::write(
             &authority,
             r#"{"schema_version":"future.v2","pairings":[],"sites":[]}"#,
         )
         .unwrap();
         assert_eq!(
-            load_capture_authority(&authority).unwrap_err().kind(),
+            load_capture_authority(&authority, journal)
+                .unwrap_err()
+                .kind(),
             io::ErrorKind::InvalidData
         );
         std::fs::remove_dir_all(root).unwrap();

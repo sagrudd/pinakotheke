@@ -675,6 +675,9 @@ Exit criteria:
 - foreground and managed-service modes can mount the metadata-only Firefox
   capture-plan endpoint behind Monas from a strict private pairing/site
   authority document, without accepting payload bytes or browser credentials;
+- accepted Firefox plans survive restart in a bounded private atomic journal,
+  retain actor scope and daily page budgets, and reconcile idempotent retries
+  without claiming that pending metadata is stored media;
 - local authentication remains Monas/Prosopikon-owned; the monolith does not
   invent Pinakotheke passwords, cookies, or a parallel session issuer; and
 - unauthenticated navigation presents a polished Monas-owned, Mnemosyne-design-

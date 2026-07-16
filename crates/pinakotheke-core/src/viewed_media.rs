@@ -8,11 +8,14 @@
 
 #![allow(missing_docs)]
 
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, path::PathBuf};
 
 use serde::{Deserialize, Serialize};
 
-use crate::scheduler::{JobBudget, JobKind, RefreshOutcome, Scheduler, SourceScope};
+use crate::{
+    capture_plan_journal::{CapturePlanJournal, CapturePlanJournalError, PendingCapturePlan},
+    scheduler::{JobBudget, JobKind, RefreshOutcome, Scheduler, SourceScope},
+};
 
 pub const CAPTURE_REQUEST_SCHEMA_VERSION: &str = "x-img.capture-request.v1";
 pub const CAPTURE_PLAN_SCHEMA_VERSION: &str = "x-img.capture-plan.v1";
@@ -63,7 +66,7 @@ pub struct CapturePlan {
     pub state: CapturePlanState,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum CapturePlanState {
     AwaitingApprovedAcquisition,
@@ -104,6 +107,7 @@ pub enum CapturePlanError {
     CaptureNotEligible,
     CandidateBudgetExceeded,
     Scheduler,
+    Persistence,
 }
 
 impl std::fmt::Display for CapturePlanError {
@@ -119,21 +123,24 @@ impl std::fmt::Display for CapturePlanError {
             Self::CaptureNotEligible => "the requested media event is not eligible",
             Self::CandidateBudgetExceeded => "the site candidate budget has been reached",
             Self::Scheduler => "capture could not be admitted to the scheduler",
+            Self::Persistence => "capture plan could not be persisted",
         })
     }
 }
 
 impl std::error::Error for CapturePlanError {}
 
-/// In-memory policy boundary for a host composition.  Persistence, Monas
-/// pairing issuance, and worker execution remain authority adapters.
+/// Policy boundary for a host composition. Monas pairing issuance and worker
+/// execution remain authority adapters; an optional journal preserves accepted
+/// metadata across process restarts.
 #[derive(Debug)]
 pub struct CapturePlanService {
     pairings: BTreeMap<String, CapturePairing>,
     sites: BTreeMap<String, SiteCapturePolicy>,
-    observed_by_page: BTreeMap<String, u64>,
     scheduler: Scheduler,
     next_plan: u64,
+    journal: Option<CapturePlanJournal>,
+    accepted: Vec<PendingCapturePlan>,
 }
 
 impl CapturePlanService {
@@ -150,10 +157,48 @@ impl CapturePlanService {
                 .into_iter()
                 .map(|site| (site.origin.clone(), site))
                 .collect(),
-            observed_by_page: BTreeMap::new(),
             scheduler: Scheduler::default(),
             next_plan: 0,
+            journal: None,
+            accepted: Vec::new(),
         }
+    }
+
+    pub fn with_journal(
+        pairings: impl IntoIterator<Item = CapturePairing>,
+        sites: impl IntoIterator<Item = SiteCapturePolicy>,
+        path: impl Into<PathBuf>,
+    ) -> Result<Self, CapturePlanJournalError> {
+        let journal = CapturePlanJournal::new(path);
+        let accepted = journal.load()?;
+        let next_plan = accepted
+            .iter()
+            .filter_map(|pending| pending.plan.plan_id.strip_prefix("capture-plan-"))
+            .filter_map(|suffix| suffix.parse::<u64>().ok())
+            .max()
+            .map_or(0, |value| value.saturating_add(1));
+        let mut service = Self::new(pairings, sites);
+        service.journal = Some(journal);
+        service.next_plan = next_plan;
+        for pending in &accepted {
+            let restored_job = service
+                .schedule(&pending.actor_id, 1_000, pending.plan.plan_id.clone())
+                .map_err(|_| CapturePlanJournalError::InvalidRecord)?;
+            if restored_job != pending.plan.scheduler_job_id {
+                return Err(CapturePlanJournalError::InvalidRecord);
+            }
+        }
+        service.accepted = accepted;
+        Ok(service)
+    }
+
+    #[must_use]
+    pub fn pending_for_actor(&self, actor_id: &str) -> Vec<CapturePlan> {
+        self.accepted
+            .iter()
+            .filter(|pending| pending.actor_id == actor_id)
+            .map(|pending| pending.plan.clone())
+            .collect()
     }
 
     pub fn plan(
@@ -179,7 +224,8 @@ impl CapturePlanService {
         let site = self
             .sites
             .get(&request.origin)
-            .ok_or(CapturePlanError::SiteNotEnabled)?;
+            .ok_or(CapturePlanError::SiteNotEnabled)?
+            .clone();
         if !site.capture_enabled {
             return Err(CapturePlanError::SiteNotEnabled);
         }
@@ -199,53 +245,91 @@ impl CapturePlanService {
         }
         let canonical_page_url = canonical_page_url(&request.origin, &request.page_url)
             .ok_or(CapturePlanError::InvalidRequest)?;
+        let canonical_media_url =
+            canonical_media_url(&request.media_url).ok_or(CapturePlanError::InvalidRequest)?;
+        if let Some(existing) = self.accepted.iter().find(|pending| {
+            pending.actor_id == actor_id
+                && pending.plan.site_id == site.site_id
+                && pending.plan.canonical_media_url == canonical_media_url
+                && pending.plan.capture_kind == request.capture_kind
+        }) {
+            return Ok(existing.plan.clone());
+        }
+        let day = now / 86_400;
         let observed = self
-            .observed_by_page
-            .entry(canonical_page_url.clone())
-            .or_default();
-        if *observed >= site.max_candidates_per_page {
+            .accepted
+            .iter()
+            .filter(|pending| {
+                pending.actor_id == actor_id
+                    && pending.plan.canonical_page_url == canonical_page_url
+                    && pending.admitted_at_epoch_seconds / 86_400 == day
+            })
+            .count() as u64;
+        if observed >= site.max_candidates_per_page {
             return Err(CapturePlanError::CandidateBudgetExceeded);
         }
-        *observed = observed.saturating_add(1);
 
         let plan_id = format!("capture-plan-{}", self.next_plan);
         self.next_plan = self.next_plan.saturating_add(1);
-        let source = SourceScope::new(JobKind::ExtensionCapture, plan_id.clone())
-            .map_err(|_| CapturePlanError::Scheduler)?;
-        let actor_scope = format!("capture-{actor_id}");
-        let scheduler_job_id = match self.scheduler.request_refresh(
-            actor_scope.clone(),
-            [source.clone()],
-            JobBudget {
-                max_concurrent_children: 1,
-                max_requests: site.max_candidates_per_page,
-                max_bytes: 0,
-                max_duration_seconds: 60,
-            },
-        ) {
-            Ok(RefreshOutcome::Started { job_id }) => job_id,
-            Ok(RefreshOutcome::Coalesced { .. }) => self
-                .scheduler
-                .admit_sources(&actor_scope, [source])
-                .map_err(|_| CapturePlanError::Scheduler)?,
-            Err(_) => return Err(CapturePlanError::Scheduler),
-        };
-        Ok(CapturePlan {
+        let scheduler_job_id =
+            self.schedule(actor_id, site.max_candidates_per_page, plan_id.clone())?;
+        let plan = CapturePlan {
             schema_version: CAPTURE_PLAN_SCHEMA_VERSION,
             plan_id,
             scheduler_job_id,
             site_id: site.site_id.clone(),
             origin: request.origin,
             canonical_page_url,
-            canonical_media_url: canonical_media_url(&request.media_url)
-                .ok_or(CapturePlanError::InvalidRequest)?,
+            canonical_media_url,
             adapter_kind: request.adapter_kind,
             adapter_version: request.adapter_version,
             capture_kind: request.capture_kind,
             width: request.width,
             height: request.height,
             state: CapturePlanState::AwaitingApprovedAcquisition,
-        })
+        };
+        let pending = PendingCapturePlan {
+            actor_id: actor_id.into(),
+            admitted_at_epoch_seconds: now,
+            plan: plan.clone(),
+        };
+        if let Some(journal) = &self.journal {
+            let mut replacement = self.accepted.clone();
+            replacement.push(pending.clone());
+            journal
+                .replace(&replacement)
+                .map_err(|_| CapturePlanError::Persistence)?;
+        }
+        self.accepted.push(pending);
+        Ok(plan)
+    }
+
+    fn schedule(
+        &mut self,
+        actor_id: &str,
+        max_requests: u64,
+        plan_id: String,
+    ) -> Result<String, CapturePlanError> {
+        let source = SourceScope::new(JobKind::ExtensionCapture, plan_id)
+            .map_err(|_| CapturePlanError::Scheduler)?;
+        let actor_scope = format!("capture-{actor_id}");
+        match self.scheduler.request_refresh(
+            actor_scope.clone(),
+            [source.clone()],
+            JobBudget {
+                max_concurrent_children: 1,
+                max_requests,
+                max_bytes: 0,
+                max_duration_seconds: 60,
+            },
+        ) {
+            Ok(RefreshOutcome::Started { job_id }) => Ok(job_id),
+            Ok(RefreshOutcome::Coalesced { .. }) => self
+                .scheduler
+                .admit_sources(&actor_scope, [source])
+                .map_err(|_| CapturePlanError::Scheduler),
+            Err(_) => Err(CapturePlanError::Scheduler),
+        }
     }
 }
 
@@ -398,11 +482,61 @@ mod tests {
     fn bounds_candidates_and_adds_each_accepted_plan_to_the_common_job() {
         let mut planner = service();
         let first = planner.plan("actor", 1, request()).expect("first");
-        let second = planner.plan("actor", 1, request()).expect("second");
+        let mut second_request = request();
+        second_request.media_url = "https://example.invalid/media/second.webp".into();
+        let second = planner.plan("actor", 1, second_request).expect("second");
         assert_eq!(first.scheduler_job_id, second.scheduler_job_id);
+        let mut third_request = request();
+        third_request.media_url = "https://example.invalid/media/third.webp".into();
         assert_eq!(
-            planner.plan("actor", 1, request()),
+            planner.plan("actor", 1, third_request),
             Err(CapturePlanError::CandidateBudgetExceeded)
         );
+    }
+
+    #[test]
+    fn journal_restarts_idempotently_and_preserves_pending_actor_scope() {
+        let root = std::env::temp_dir().join(format!(
+            "pinakotheke-capture-restart-{}",
+            std::process::id()
+        ));
+        let _ = std::fs::remove_dir_all(&root);
+        let journal = root.join("capture-plans.json");
+        let pairings = || {
+            [CapturePairing {
+                pairing_id: "pair-0".into(),
+                actor_id: "actor".into(),
+                expires_at: 100,
+                revoked: false,
+            }]
+        };
+        let sites = || {
+            [SiteCapturePolicy {
+                site_id: "site".into(),
+                origin: "https://example.invalid".into(),
+                capture_enabled: true,
+                adapter_kind: AdapterKind::ExperimentalGeneric,
+                adapter_version: "1.0.0".into(),
+                allow_observed_thumbnails: true,
+                allow_explicit_originals: false,
+                max_candidates_per_page: 2,
+            }]
+        };
+        let mut first =
+            CapturePlanService::with_journal(pairings(), sites(), &journal).expect("first start");
+        let accepted = first.plan("actor", 1, request()).expect("accepted");
+        drop(first);
+        let mut restarted =
+            CapturePlanService::with_journal(pairings(), sites(), &journal).expect("restart");
+        assert_eq!(restarted.pending_for_actor("actor"), vec![accepted.clone()]);
+        assert!(restarted.pending_for_actor("different-actor").is_empty());
+        assert_eq!(
+            restarted
+                .plan("actor", 2, request())
+                .expect("idempotent retry"),
+            accepted
+        );
+        assert_eq!(restarted.pending_for_actor("actor").len(), 1);
+        let _ = std::fs::remove_dir_all(root);
     }
 }

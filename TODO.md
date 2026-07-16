@@ -473,6 +473,16 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   verified DASObjectStore commit, and crash reconciliation remain.
   The packaged extension now targets the canonical Monas product API and app
   mounts, closing the former origin-only pairing plus legacy-path mismatch.
+  Accepted capture plans are now committed to a strict private atomic journal
+  before success, restored after restart, deduplicated across retries, and
+  listed only to their authenticated actor. Daily per-page budgets also survive
+  restart. The remaining transition is execution of this explicit pending work
+  through verified DASObjectStore ingest and persistent gallery admission.
+  Verification on 2026-07-16: 151 focused Rust tests, repository quality and
+  privacy/version checks, and local Sphinx 8.2.3 warnings-as-errors passed.
+  Docker Desktop again failed to answer its local socket, so the documented
+  container replication remains a host-service follow-up rather than a code
+  acceptance blocker.
 
 ## 0.6.0 — Firefox capture
 

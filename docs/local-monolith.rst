@@ -209,6 +209,11 @@ under ``~/.config/monas/prosopikon``; Pinakotheke
 metadata and logs remain under ``~/.x-img``; DASObjectStore retains its own
 authority roots.
 
+When capture planning is configured, accepted metadata is journalled at
+``~/.x-img/state/capture-plans.v1.json`` before success is returned. Restarting
+either foreground or launchd operation reloads the pending actor-scoped plans
+and preserves idempotent retries; the journal contains no media payloads.
+
 .. code-block:: console
 
    pinakotheke service status

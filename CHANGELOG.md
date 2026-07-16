@@ -51,6 +51,10 @@ All notable changes to Pinakotheke will be documented in this file. The project 
   including per-user launchd composition and fail-closed validation.
 - Route Firefox capture planning and gallery navigation through the canonical
   Monas Pinakotheke product mounts instead of obsolete standalone paths.
+- Persist accepted Firefox capture plans in a bounded private atomic journal,
+  restore actor-scoped pending work and daily budgets after restart, return
+  idempotent retries, and expose an authenticated pending-plan reconciliation
+  view without media bytes or credentials.
 - Carry an explicit positive immutable object version from verified acquisition
   and normalized-video evidence through persistent gallery records, authorized
   read grants, and host-helper requests, with legacy catalogue-v1 records

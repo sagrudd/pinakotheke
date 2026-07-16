@@ -139,6 +139,9 @@ behind Monas when given a strict private ``--capture-authority-file``. This file
 contains only opaque pairing/actor references and explicit per-origin policy;
 accepted plans remain metadata awaiting verified acquisition and are not
 misrepresented as stored media.
+Accepted plan metadata is atomically journalled beneath the private product
+state root. Retries are idempotent across restart, daily page budgets survive a
+restart, and an authenticated actor can list only their own pending plans.
 
 The release hardening path now includes one deterministic fault/recovery
 command, ``scripts/faults/check.sh``. It covers critical authority, ingest,

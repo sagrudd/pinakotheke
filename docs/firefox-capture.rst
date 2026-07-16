@@ -107,6 +107,32 @@ schemas, duplicate pairings/origins, unsafe origins, excessive records, and
 non-private or symlinked files fail closed. The wire schema is
 ``contracts/monas/pinakotheke-capture-authority.v1.schema.json``.
 
+Restart-safe pending plans
+--------------------------
+
+Accepted plans are atomically journalled as private metadata beneath
+``ROOT/state/capture-plans.v1.json`` before the API reports success. The
+journal records the authenticated actor reference, admission time, canonical
+page/media identities, adapter, capture kind, dimensions, and scheduler
+identity. It never records response bodies, media bytes, cookies,
+authorization headers, signed query values, or credentials. A corrupt,
+oversized, non-private, symlinked, future-schema, duplicate-ID, or cross-origin
+record prevents startup rather than being ignored.
+
+An identical actor/media/capture-kind retry returns the existing plan, including
+after restart. Candidate budgets are reconstructed for the actor, canonical
+page, and UTC day, and active scheduler lanes are rehydrated before new work is
+admitted so job identities are not silently reused. A Monas-authenticated actor
+can inspect only their own pending plans with:
+
+.. code-block:: text
+
+   GET /products/pinakotheke/api/extension/v1/capture-plans
+
+Pending means ``awaiting_approved_acquisition``. It is explicit reconciliation
+work, not evidence that DASObjectStore contains the object and not permission
+to display a ``Stored in ObjectStore`` badge.
+
 Compatibility evidence
 ----------------------
 
