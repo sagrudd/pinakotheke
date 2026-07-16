@@ -2,7 +2,7 @@
 
 Status: dependency-ordered planning backlog
 
-Version: 1.1.0
+Version: 1.2.0
 
 Updated: 2026-07-14
 
@@ -371,6 +371,16 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   API and authorized image/video routes; (3) persistent capture/review wiring
   and the restart/Firefox acceptance harness. Update the ThumbsPlus-style user
   documentation and record the local container-built Sphinx evidence.
+  The production normalization seam is now implemented: ``pinakotheke video
+  normalize`` consumes one private confirmed plan, runs the structured
+  digest-pinned network-isolated Docker adapter, and streams the normalized
+  video, poster, and manifest directly to a reviewed helper that owns
+  DASObjectStore authentication. Exact authority receipts are mandatory;
+  malformed or changed completion fails, unfinished children are killed, and
+  pristine bounded scratch is removed on every outcome. A process-fixture test
+  exercises all three byte streams and cleanup without retaining repository
+  media. The remaining gate is to run this seam against the selected live
+  authority and admit and play the verified result in real Firefox.
   Progress: slice 1 now defines a strict bounded Monas-hosted catalogue page
   whose image/video card and preview representations contain complete verified
   DASObjectStore references, explicit availability, and only host-local

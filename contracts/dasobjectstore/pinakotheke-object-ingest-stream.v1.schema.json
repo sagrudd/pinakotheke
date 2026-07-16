@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/sagrudd/pinakotheke/contracts/dasobjectstore/pinakotheke-object-ingest-stream.v1.schema.json",
+  "title": "Pinakotheke streaming object ingest helper exchange",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "ingest_id", "endpoint_id", "object_store_id", "object_key", "expected_size_bytes", "expected_checksum"],
+      "properties": {
+        "schema_version": { "const": "pinakotheke.object-ingest-stream.v1" },
+        "ingest_id": { "$ref": "#/$defs/identifier" },
+        "endpoint_id": { "$ref": "#/$defs/identifier" },
+        "object_store_id": { "$ref": "#/$defs/identifier" },
+        "object_key": { "$ref": "#/$defs/objectKey" },
+        "expected_size_bytes": { "type": "integer", "minimum": 1 },
+        "expected_checksum": { "$ref": "#/$defs/checksum" }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "endpoint_id", "object_store_id", "object_key", "size_bytes", "checksum", "object_reference"],
+      "properties": {
+        "schema_version": { "const": "pinakotheke.object-ingest-stream.v1" },
+        "endpoint_id": { "$ref": "#/$defs/identifier" },
+        "object_store_id": { "$ref": "#/$defs/identifier" },
+        "object_key": { "$ref": "#/$defs/objectKey" },
+        "size_bytes": { "type": "integer", "minimum": 1 },
+        "checksum": { "$ref": "#/$defs/checksum" },
+        "object_reference": { "type": "string", "minLength": 1, "maxLength": 2048 }
+      }
+    }
+  ],
+  "$defs": {
+    "identifier": { "type": "string", "pattern": "^[A-Za-z0-9._:-]{1,128}$" },
+    "objectKey": { "type": "string", "minLength": 1, "maxLength": 512, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*(/[A-Za-z0-9][A-Za-z0-9._:-]*)*$" },
+    "checksum": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+  }
+}

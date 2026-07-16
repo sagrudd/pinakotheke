@@ -228,7 +228,16 @@ pub trait DockerRuntime {
 
 /// Docker CLI runtime. `Command` receives an argument vector directly; there
 /// is no shell, script, interpolation, network access, or captured stderr.
-pub struct SystemDockerRuntime;
+pub struct SystemDockerRuntime {
+    executable: PathBuf,
+}
+
+impl SystemDockerRuntime {
+    #[must_use]
+    pub fn new(executable: PathBuf) -> Self {
+        Self { executable }
+    }
+}
 
 impl DockerRuntime for SystemDockerRuntime {
     fn run(
@@ -239,7 +248,7 @@ impl DockerRuntime for SystemDockerRuntime {
         if cancellation.is_cancelled() {
             return Err(DockerRuntimeError::Cancelled);
         }
-        let mut command = Command::new("docker");
+        let mut command = Command::new(&self.executable);
         command.args(&invocation.arguments).stderr(Stdio::null());
         if invocation.capture_stdout {
             command.stdout(Stdio::piped());

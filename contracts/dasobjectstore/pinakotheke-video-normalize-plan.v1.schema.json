@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/sagrudd/pinakotheke/contracts/dasobjectstore/pinakotheke-video-normalize-plan.v1.schema.json",
+  "title": "Pinakotheke confirmed video normalization plan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "job_id", "source_identity", "profile_id", "video_codec", "audio_codec", "endpoint_id", "object_store_id", "actor_ref", "reviewed_at_unix_seconds", "pairing_ref", "device_ref", "image_reference", "image_digest", "cpu_millis_limit", "memory_bytes_limit", "scratch_bytes_limit", "cleanup_ref", "scratch_root", "normalized_object_key", "poster_object_key", "manifest_object_key"],
+  "properties": {
+    "schema_version": { "const": "pinakotheke.video-normalize-plan.v1" },
+    "job_id": { "$ref": "#/$defs/identifier" },
+    "source_identity": { "$ref": "#/$defs/identifier" },
+    "profile_id": { "enum": ["pinakotheke-video-webm-v1", "pinakotheke-video-mp4-v1"] },
+    "video_codec": { "enum": ["vp9", "av1", "h264"] },
+    "audio_codec": { "enum": ["opus", "aac"] },
+    "endpoint_id": { "$ref": "#/$defs/identifier" },
+    "object_store_id": { "$ref": "#/$defs/identifier" },
+    "actor_ref": { "$ref": "#/$defs/identifier" },
+    "reviewed_at_unix_seconds": { "type": "integer", "minimum": 1 },
+    "pairing_ref": { "$ref": "#/$defs/identifier" },
+    "device_ref": { "$ref": "#/$defs/identifier" },
+    "image_reference": { "type": "string", "pattern": "^registry://[^@ ?#]+$", "maxLength": 512 },
+    "image_digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "cpu_millis_limit": { "type": "integer", "minimum": 1 },
+    "memory_bytes_limit": { "type": "integer", "minimum": 1 },
+    "scratch_bytes_limit": { "type": "integer", "minimum": 1 },
+    "cleanup_ref": { "$ref": "#/$defs/identifier" },
+    "scratch_root": { "type": "string", "pattern": "^/", "maxLength": 1024 },
+    "normalized_object_key": { "$ref": "#/$defs/objectKey" },
+    "poster_object_key": { "$ref": "#/$defs/objectKey" },
+    "manifest_object_key": { "$ref": "#/$defs/objectKey" }
+  },
+  "$defs": {
+    "identifier": { "type": "string", "pattern": "^[A-Za-z0-9._:-]{1,128}$" },
+    "objectKey": { "type": "string", "minLength": 1, "maxLength": 512, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*(/[A-Za-z0-9][A-Za-z0-9._:-]*)*$" }
+  }
+}

@@ -7,6 +7,11 @@ All notable changes to Pinakotheke will be documented in this file. The project 
 
 ### Added
 
+- Add a packaged ``pinakotheke video normalize`` host command that accepts one
+  private confirmed plan, runs the digest-pinned network-isolated Docker/FFmpeg
+  adapter, streams video/poster/manifest bytes to a reviewed DASObjectStore
+  helper over stdin, verifies exact receipts, kills unfinished children, and
+  removes bounded scratch on every outcome.
 - Allow each managed local profile lifecycle command to select an explicit
   loopback DASObjectStore API port while retaining port 3900 as the default,
   and strictly bind discovery to the requested authority.

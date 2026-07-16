@@ -2,7 +2,7 @@
 
 Status: 1.0 stable release
 
-Version: 1.1.0
+Version: 1.2.0
 
 Updated: 2026-07-15
 
@@ -312,6 +312,14 @@ original through the production capture path. Non-default-port sites retain
 exact-origin policy/provenance while using Firefox's required port-independent
 host match pattern. Live paired DASObjectStore commit and restart evidence is
 still required to close XIMG-096.
+
+The packaged CLI now exposes the former in-process-only video normalizer as a
+reviewed host command. A strict private confirmed plan drives the immutable
+container, profile, and resource contract, while normalized video, poster, and
+manifest bytes stream to a helper-owned DASObjectStore authority over stdin;
+exact receipts are required and scratch is always removed. This closes the
+production worker-seam gap. XIMG-096 still requires the live selected-authority
+run plus Firefox playback and gallery admission evidence.
 
 The clean-home authority run now provisions and strictly rediscovers a real
 isolated DASObjectStore endpoint/ObjectStore, including a mode-0600 persisted
@@ -779,6 +787,17 @@ Exit criteria:
 - a clean-home end-to-end test proves first start, login, ObjectStore selection,
   one synthetic ingest/read/restart reconciliation, and clean shutdown without
   root privileges or hosted CI.
+
+## 1.2.0 — Runnable normalized-video authority path
+
+Goal: close the remaining XIMG-096 production-video gap by carrying one
+confirmed user-selected video through a reviewed normalization worker, the
+selected DASObjectStore, persistent gallery admission, and real Firefox
+playback. The first slice packages the strict host normalization command and
+stdin-streaming authority helper. The remaining release evidence must use a
+registered digest-pinned image and live selected ObjectStore, then prove poster
+rendering, play, seek, pause/resume, restart persistence, and unavailable or
+partial-failure behavior without origin fallback.
 
 ## Post-1.0 candidates
 

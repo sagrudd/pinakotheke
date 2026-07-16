@@ -13,6 +13,7 @@ mod launchd;
 mod local_objectstore;
 mod monolith;
 mod object_read_helper;
+mod video_normalize;
 
 /// Canonical command name used by the v1 entry point.
 pub const CANONICAL_COMMAND: &str = "pinakotheke";
@@ -103,6 +104,11 @@ enum Command {
         #[command(subcommand)]
         command: monolith::CaptureCommand,
     },
+    /// Normalize a reviewed video and stream its derived objects to DASObjectStore.
+    Video {
+        #[command(subcommand)]
+        command: video_normalize::VideoCommand,
+    },
 }
 
 #[derive(Debug, PartialEq, Eq, Subcommand)]
@@ -158,6 +164,7 @@ pub fn run(invocation: Invocation, cli: Cli) -> Result<(), Box<dyn std::error::E
         Some(Command::Storage { command }) => local_objectstore::run(command)?,
         Some(Command::Service { command }) => launchd::run(command)?,
         Some(Command::Capture { command }) => monolith::run_capture(command)?,
+        Some(Command::Video { command }) => video_normalize::run(command)?,
         Some(Command::AcquireImageV1) => das_capture_helper::run()?,
         Some(Command::ReadObjectV1) => das_object_read_helper::run()?,
     }

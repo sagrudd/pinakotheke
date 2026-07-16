@@ -34,6 +34,51 @@ reads, then streams the rendition, poster, and a small provenance manifest
 through the authorized DASObjectStore ingest port.  It does not retain a copy
 after the verified ingest.  Scratch is deleted after both success and failure.
 
+Packaged host command
+---------------------
+
+The first runnable host boundary is:
+
+.. code-block:: console
+
+   pinakotheke video normalize \
+     --plan /absolute/private/confirmed-plan.json \
+     --docker /absolute/reviewed/docker \
+     --ingest-helper /absolute/reviewed/das-stream-helper
+
+The plan must be a strict mode-``0600``
+``pinakotheke.video-normalize-plan.v1`` document. It fixes the confirmed job,
+source identity, playback profile and codec variant, endpoint plus ObjectStore,
+actor, paired device, immutable container digest, resource bounds, three
+derived object keys, and one mode-``0700`` scratch directory below the system
+temporary root. That directory must contain exactly one non-empty regular
+``input.media`` file. Pre-existing outputs, extra files, and symlinks are
+rejected before Docker runs.
+The public JSON shapes are
+``contracts/dasobjectstore/pinakotheke-video-normalize-plan.v1.schema.json``
+and
+``contracts/dasobjectstore/pinakotheke-object-ingest-stream.v1.schema.json``.
+
+The Docker and ingest-helper paths must be absolute executable regular files,
+not symlinks. Pinakotheke invokes Docker with structured, network-isolated
+arguments. For each normalized video, poster, and provenance manifest, it
+starts the reviewed ingest helper and writes one bounded JSON header followed
+by the declared payload bytes on stdin. The helper owns DASObjectStore
+authentication and must return one strict
+``pinakotheke.object-ingest-stream.v1`` verified receipt. A changed endpoint,
+ObjectStore, key, length, checksum, object reference, schema, failed process,
+or response over 16 KiB fails the job. Helper stderr is suppressed, unfinished
+children are killed, and the scratch tree is removed on every outcome.
+The helper boundary was reviewed against DASObjectStore commit
+``093772da79bbb494da070965c7d4f49e5ad83f56``: the daemon remains authoritative
+for scoped application identity, quota, provider verification, catalogue
+publication, capability replay, and the final completion decision.
+
+This command makes the normalization adapter deployable, but does not itself
+admit a gallery card. The host must still record successful Firefox playback
+evidence and pass the normalized-video admission boundary. The live XIMG-096
+run must use the selected DASObjectStore rather than a fixture helper.
+
 States and recovery
 -------------------
 
@@ -66,6 +111,7 @@ authority remains:
    docker build --pull --progress=plain -f docs/Dockerfile -t x-img-docs:check .
    docker run --rm x-img-docs:check
 
-The implementation has no live website adapter, no real user media fixture,
-and no production DASObjectStore or pairing credential.  Deployments must test
-their registered image digest and granted ObjectStore scope before use.
+The repository contains no live website adapter, real user media fixture,
+production DASObjectStore credential, or default container image. Deployments
+must review their stream helper, registered image digest, pairing, and granted
+ObjectStore scope before use.
