@@ -381,21 +381,13 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   ready ObjectStore thumbnails, original images, posters, and normalized video,
   and fails closed with accessible loading/empty/permission/transport/schema/
   unavailable states. Source counts and filtering use returned account/website
-  classifications; Instagram remains a website. Persistent catalogue
-  population, authorized image/video object delivery composition, and the
-  real-Firefox restart proof remain. The authenticated monolith now composes the
+  classifications; Instagram remains a website. The authenticated monolith now composes the
   canonical gallery route and returns an honest empty catalogue until a host
   supplies the persistent projection. Persistent gallery metadata now loads on
   monolith startup from a private, strict, bounded, atomically replaced v1 JSON
   document. Missing state is empty; corrupt/future/oversized/symlinked state
   fails closed, and restart tests preserve complete ObjectStore identity,
-  review state, and availability without payload bytes. Verified capture/review
-  admission must populate the store next, followed by authorized object
-  delivery and the real-Firefox restart proof. Local Sphinx 8.2.3 HTML and
-  dummy builds pass with warnings denied; the required pinned container rerun
-  remains outstanding because Docker Desktop's engine did not recover after
-  two clean/hard restarts on 2026-07-16 (``docker info`` remained unavailable).
-  This environmental evidence gap does not mark XIMG-096 complete.
+  review state, and availability without payload bytes.
   Verified Firefox image admission now bridges committed acquisition evidence,
   website provenance, the common ``New`` review queue, and atomic persistent
   gallery replacement. Observed thumbnails create cards; explicitly opened
@@ -403,8 +395,19 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   with the same endpoint/ObjectStore. Original-first, uncommitted, conflicting,
   and destination-changing attempts fail closed; server-generated delivery
   paths and restart tests preserve both immutable objects without payload
-  bytes. Live worker composition, authorized object streaming, real Firefox,
-  large-catalogue virtualization, and the container evidence rerun remain.
+  bytes.
+  Persisted thumbnail/original paths now resolve to the exact catalogue-bound
+  endpoint, ObjectStore, object key, checksum, MIME type, and length and stream
+  through the existing authorized read port under the private Monas dispatch.
+  Tests prove direct access denial, missing/original-unavailable handling,
+  exact backend selection, metadata validation, and payload streaming without
+  origin fallback or local persistence. DASObjectStore commit
+  ``bdafc51154989db075f241d041d9eab699f4a022`` still exposes no stable public
+  application HTTP-read wire, so live CLI backend composition, browser failure
+  reconciliation, real Firefox evidence, video persistence/delivery,
+  and virtualization remain. Local Sphinx 8.2.3 HTML/dummy builds and the
+  pinned Dockerfile build/container run passed with warnings denied on
+  2026-07-16 after Docker Desktop recovered.
 
 ## 0.6.0 — Firefox capture
 

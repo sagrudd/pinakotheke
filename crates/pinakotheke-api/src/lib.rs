@@ -25,7 +25,10 @@ use x_img_core::{
         CacheBypassReason, CacheLookupOutcome, CacheLookupRequest, CacheLookupService,
         CacheRepresentation,
     },
-    gallery_catalogue::{GalleryCatalogue, GalleryCatalogueError, GalleryPage},
+    gallery_catalogue::{
+        GalleryCatalogue, GalleryCatalogueError, GalleryImageResolveError, GalleryImageRole,
+        GalleryPage,
+    },
     host_context::{
         AuthenticatedHostContext, HostContextAdapter, MonasHostContextAdapter, XIMG_ACCESS,
     },
@@ -285,6 +288,44 @@ pub fn monolith_router_with_gallery_authority(
         .merge(protected)
 }
 
+/// Returns the Monas-admitted monolith with exact gallery image streaming.
+pub fn monolith_router_with_gallery_delivery_authority(
+    dasobjectstore_ready: bool,
+    monas_dispatch: Option<MonasDispatchVerifier>,
+    gallery: GalleryCatalogue,
+    backend: HostObjectReadBackend,
+) -> Router {
+    let authentication_ready = monas_dispatch.is_some();
+    let protected = Router::new()
+        .route("/products/pinakotheke/api/context", get(context))
+        .route(
+            "/products/pinakotheke/api/gallery/v1/catalogue",
+            get(gallery_catalogue),
+        )
+        .route(
+            "/products/pinakotheke/api/gallery/v1/objects/{catalogue_id}/{role}",
+            get(deliver_gallery_image),
+        )
+        .layer(Extension(Arc::new(gallery)))
+        .layer(Extension(Arc::new(Mutex::new(
+            AuthorizedObjectReader::new(backend),
+        ))))
+        .layer(middleware::from_fn_with_state(
+            monas_dispatch,
+            admit_monas_dispatch,
+        ));
+    Router::new()
+        .route("/", get(monolith_landing))
+        .route("/health", get(health))
+        .route(
+            "/ready",
+            get(move || async move {
+                monolith_readiness(dasobjectstore_ready, authentication_ready).await
+            }),
+        )
+        .merge(protected)
+}
+
 async fn admit_monas_dispatch(
     State(verifier): State<Option<MonasDispatchVerifier>>,
     mut request: Request<Body>,
@@ -434,6 +475,27 @@ pub fn router_with_gallery_catalogue(catalogue: GalleryCatalogue) -> Router {
         .layer(Extension(Arc::new(catalogue)))
 }
 
+/// Returns an authenticated gallery with exact DASObjectStore image streaming.
+pub fn router_with_gallery_delivery(
+    catalogue: GalleryCatalogue,
+    backend: HostObjectReadBackend,
+) -> Router {
+    Router::new()
+        .route("/health", get(health))
+        .route(
+            "/products/pinakotheke/api/gallery/v1/catalogue",
+            get(gallery_catalogue),
+        )
+        .route(
+            "/products/pinakotheke/api/gallery/v1/objects/{catalogue_id}/{role}",
+            get(deliver_gallery_image),
+        )
+        .layer(Extension(Arc::new(catalogue)))
+        .layer(Extension(Arc::new(Mutex::new(
+            AuthorizedObjectReader::new(backend),
+        ))))
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct CataloguePageQuery {
@@ -479,6 +541,75 @@ async fn gallery_catalogue(
             GalleryCatalogueError::InvalidPageSize => StatusCode::BAD_REQUEST,
             GalleryCatalogueError::InvalidItem(_) => StatusCode::INTERNAL_SERVER_ERROR,
         })
+}
+
+async fn deliver_gallery_image(
+    Path((catalogue_id, role)): Path<(String, String)>,
+    headers: HeaderMap,
+    context: Option<Extension<AuthenticatedHostContext>>,
+    catalogue: Option<Extension<MonasGalleryCatalogue>>,
+    delivery: Option<Extension<ImageDelivery>>,
+) -> Result<Response, StatusCode> {
+    let context = context.ok_or(StatusCode::UNAUTHORIZED)?.0;
+    let role = match role.as_str() {
+        "thumbnail" => GalleryImageRole::Thumbnail,
+        "original" => GalleryImageRole::Original,
+        _ => return Err(StatusCode::NOT_FOUND),
+    };
+    let grant = catalogue
+        .ok_or(StatusCode::SERVICE_UNAVAILABLE)?
+        .0
+        .resolve_image(&context, &catalogue_id, role)
+        .map_err(|error| match error {
+            GalleryImageResolveError::Unauthorized => StatusCode::FORBIDDEN,
+            GalleryImageResolveError::NotFound | GalleryImageResolveError::NotAnImage => {
+                StatusCode::NOT_FOUND
+            }
+            GalleryImageResolveError::Unavailable => StatusCode::GONE,
+        })?;
+    let request = ObjectReadRequest {
+        object: grant.object,
+        range: None,
+        if_none_match_etag: headers
+            .get(header::IF_NONE_MATCH)
+            .and_then(|value| value.to_str().ok())
+            .map(str::to_owned),
+    };
+    let delivery = delivery.ok_or(StatusCode::SERVICE_UNAVAILABLE)?.0;
+    let mut delivery = delivery
+        .lock()
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    match delivery
+        .open(&request)
+        .map_err(|_| StatusCode::BAD_GATEWAY)?
+    {
+        ValidatedObjectRead::NotModified { etag } => Response::builder()
+            .status(StatusCode::NOT_MODIFIED)
+            .header(header::ETAG, etag)
+            .header(header::CACHE_CONTROL, "private, no-store")
+            .header("cross-origin-resource-policy", "same-origin")
+            .header("x-content-type-options", "nosniff")
+            .body(Body::empty())
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR),
+        ValidatedObjectRead::Content { metadata, stream } => {
+            if metadata.content_type != grant.content_type
+                || metadata.content_length != grant.content_length
+                || metadata.total_length != grant.content_length
+            {
+                return Err(StatusCode::BAD_GATEWAY);
+            }
+            Response::builder()
+                .status(StatusCode::OK)
+                .header(header::CONTENT_TYPE, metadata.content_type)
+                .header(header::CONTENT_LENGTH, metadata.content_length)
+                .header(header::ETAG, metadata.etag)
+                .header(header::CACHE_CONTROL, "private, no-store")
+                .header("cross-origin-resource-policy", "same-origin")
+                .header("x-content-type-options", "nosniff")
+                .body(stream)
+                .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
 }
 
 /// Returns a host composition with a direct, authorized normalized-video
@@ -1042,10 +1173,10 @@ mod tests {
     use super::{
         HostObjectReadBackend, MonasDispatchVerifier, monolith_router,
         monolith_router_with_authorities, monolith_router_with_gallery_authority,
-        monolith_router_with_storage, router, router_with_cache_aliases,
-        router_with_cache_substitution, router_with_capture_plans, router_with_direct_playback,
-        router_with_gallery_catalogue, router_with_image_substitution, router_with_operations,
-        router_with_synoptikon_catalogue,
+        monolith_router_with_gallery_delivery_authority, monolith_router_with_storage, router,
+        router_with_cache_aliases, router_with_cache_substitution, router_with_capture_plans,
+        router_with_direct_playback, router_with_gallery_catalogue, router_with_gallery_delivery,
+        router_with_image_substitution, router_with_operations, router_with_synoptikon_catalogue,
     };
 
     const CHECKSUM: &str =
@@ -1089,6 +1220,28 @@ mod tests {
             )),
         }])
         .unwrap()
+    }
+
+    fn gallery_image_backend() -> HostObjectReadBackend {
+        HostObjectReadBackend::new(Box::new(|request| {
+            assert_eq!(request.object.endpoint_id, "endpoint-1");
+            assert_eq!(request.object.object_store_id, "store-1");
+            assert_eq!(request.object.object_key, "objects/media-1");
+            if request.if_none_match_etag.as_deref() == Some(ETAG) {
+                return Ok(ObjectReadResult::NotModified { etag: ETAG.into() });
+            }
+            Ok(ObjectReadResult::Content {
+                metadata: ObjectContentMetadata {
+                    content_type: "image/jpeg".into(),
+                    content_length: 12,
+                    total_length: 12,
+                    checksum: CHECKSUM.into(),
+                    etag: ETAG.into(),
+                    content_range: None,
+                },
+                stream: Body::from(b"image-bytes!".to_vec()),
+            })
+        }))
     }
 
     fn direct_playback() -> DirectPlaybackService<HostObjectReadBackend> {
@@ -1338,6 +1491,95 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(denied.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[tokio::test]
+    async fn gallery_image_streams_only_the_persisted_authorized_object() {
+        let context = MonasHostContextAdapter
+            .authenticate(MONAS_CONTEXT.as_bytes())
+            .unwrap();
+        let response = router_with_gallery_delivery(gallery_catalogue(), gallery_image_backend())
+            .layer(Extension(context))
+            .oneshot(
+                Request::builder()
+                    .uri("/products/pinakotheke/api/gallery/v1/objects/media-1/thumbnail")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(response.headers()["content-type"], "image/jpeg");
+        assert_eq!(response.headers()["cache-control"], "private, no-store");
+        assert_eq!(
+            to_bytes(response.into_body(), 64).await.unwrap().as_ref(),
+            b"image-bytes!"
+        );
+
+        let unavailable =
+            router_with_gallery_delivery(gallery_catalogue(), gallery_image_backend())
+                .layer(Extension(
+                    MonasHostContextAdapter
+                        .authenticate(MONAS_CONTEXT.as_bytes())
+                        .unwrap(),
+                ))
+                .oneshot(
+                    Request::builder()
+                        .uri("/products/pinakotheke/api/gallery/v1/objects/media-1/original")
+                        .body(Body::empty())
+                        .unwrap(),
+                )
+                .await
+                .unwrap();
+        assert_eq!(unavailable.status(), StatusCode::GONE);
+
+        let unauthorized =
+            router_with_gallery_delivery(gallery_catalogue(), gallery_image_backend())
+                .oneshot(
+                    Request::builder()
+                        .uri("/products/pinakotheke/api/gallery/v1/objects/media-1/thumbnail")
+                        .body(Body::empty())
+                        .unwrap(),
+                )
+                .await
+                .unwrap();
+        assert_eq!(unauthorized.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[tokio::test]
+    async fn monolith_gallery_delivery_requires_the_private_monas_dispatch() {
+        let token = "synthetic-monas-dispatch-token-0001";
+        let router = || {
+            monolith_router_with_gallery_delivery_authority(
+                true,
+                Some(MonasDispatchVerifier::new(token.into()).unwrap()),
+                gallery_catalogue(),
+                gallery_image_backend(),
+            )
+        };
+        let direct = router()
+            .oneshot(
+                Request::builder()
+                    .uri("/products/pinakotheke/api/gallery/v1/objects/media-1/thumbnail")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(direct.status(), StatusCode::UNAUTHORIZED);
+
+        let admitted = router()
+            .oneshot(
+                Request::builder()
+                    .uri("/products/pinakotheke/api/gallery/v1/objects/media-1/thumbnail")
+                    .header("x-monas-dispatch-token", token)
+                    .header("x-monas-host-context", MONAS_CONTEXT)
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(admitted.status(), StatusCode::OK);
     }
 
     #[test]

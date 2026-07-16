@@ -12,7 +12,10 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 
-use crate::host_context::{AuthenticatedHostContext, HostMode, XIMG_ACCESS};
+use crate::{
+    host_context::{AuthenticatedHostContext, HostMode, XIMG_ACCESS},
+    object_read::AuthorizedObjectReference,
+};
 
 pub const GALLERY_CATALOGUE_SCHEMA: &str = "pinakotheke.gallery-catalogue.v1";
 pub const MAX_GALLERY_PAGE_SIZE: usize = 200;
@@ -103,6 +106,27 @@ pub enum GalleryCatalogueError {
     Unauthorized,
     InvalidPageSize,
     InvalidItem(String),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum GalleryImageRole {
+    Thumbnail,
+    Original,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GalleryImageGrant {
+    pub object: AuthorizedObjectReference,
+    pub content_type: String,
+    pub content_length: u64,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum GalleryImageResolveError {
+    Unauthorized,
+    NotFound,
+    Unavailable,
+    NotAnImage,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -296,6 +320,54 @@ impl GalleryCatalogue {
             schema_version: GALLERY_CATALOGUE_SCHEMA,
             items,
             next_offset,
+        })
+    }
+
+    pub fn resolve_image(
+        &self,
+        context: &AuthenticatedHostContext,
+        catalogue_id: &str,
+        role: GalleryImageRole,
+    ) -> Result<GalleryImageGrant, GalleryImageResolveError> {
+        if context.host_mode() != HostMode::MonasStandalone || !context.permits(XIMG_ACCESS) {
+            return Err(GalleryImageResolveError::Unauthorized);
+        }
+        let item = self
+            .items
+            .iter()
+            .find(|item| item.catalogue_id == catalogue_id)
+            .ok_or(GalleryImageResolveError::NotFound)?;
+        if item.media_kind != GalleryMediaKind::Image {
+            return Err(GalleryImageResolveError::NotAnImage);
+        }
+        let representation = match role {
+            GalleryImageRole::Thumbnail => &item.thumbnail,
+            GalleryImageRole::Original => item
+                .preview
+                .as_ref()
+                .ok_or(GalleryImageResolveError::Unavailable)?,
+        };
+        let expected_kind = match role {
+            GalleryImageRole::Thumbnail => GalleryRepresentationKind::Thumbnail,
+            GalleryImageRole::Original => GalleryRepresentationKind::OriginalImage,
+        };
+        if representation.kind != expected_kind
+            || !representation.content_type.starts_with("image/")
+        {
+            return Err(GalleryImageResolveError::NotAnImage);
+        }
+        if representation.availability != GalleryObjectAvailability::Ready {
+            return Err(GalleryImageResolveError::Unavailable);
+        }
+        Ok(GalleryImageGrant {
+            object: AuthorizedObjectReference {
+                endpoint_id: representation.endpoint_id.clone(),
+                object_store_id: representation.object_store_id.clone(),
+                object_key: representation.object_key.clone(),
+                checksum: representation.checksum.clone(),
+            },
+            content_type: representation.content_type.clone(),
+            content_length: representation.content_length,
         })
     }
 
@@ -493,5 +565,28 @@ mod tests {
             ));
         }
         fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn resolves_only_ready_image_roles_for_the_monas_actor() {
+        let context = MonasHostContextAdapter
+            .authenticate(include_bytes!(
+                "../../../fixtures/host-context/v1/monas-valid.json"
+            ))
+            .unwrap();
+        let catalogue = GalleryCatalogue::new(vec![item("image-1", 1)]).unwrap();
+        let grant = catalogue
+            .resolve_image(&context, "image-1", GalleryImageRole::Thumbnail)
+            .unwrap();
+        assert_eq!(grant.object.object_key, "objects/thumbnail-1");
+        assert_eq!(grant.content_type, "image/jpeg");
+        assert_eq!(
+            catalogue.resolve_image(&context, "image-1", GalleryImageRole::Original),
+            Err(GalleryImageResolveError::Unavailable)
+        );
+        assert_eq!(
+            catalogue.resolve_image(&context, "missing", GalleryImageRole::Thumbnail),
+            Err(GalleryImageResolveError::NotFound)
+        );
     }
 }

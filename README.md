@@ -91,6 +91,12 @@ the common website review queue to this store. An observed thumbnail creates a
 card; an explicitly opened and independently committed original can enrich that
 same card. Original-first, uncommitted, destination-changing, and conflicting
 replays are rejected, and delivery paths are generated server-side.
+Those paths now resolve only through the persisted catalogue and a
+Monas-authenticated, host-supplied DASObjectStore streaming-read backend.
+Pinakotheke validates MIME type, length, checksum, and ETag and streams without
+local persistence or origin fallback. The local CLI still requires a published
+DASObjectStore application-read transport before it can compose the live
+backend safely.
 
 The release hardening path now includes one deterministic fault/recovery
 command, ``scripts/faults/check.sh``. It covers critical authority, ingest,

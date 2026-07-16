@@ -19,6 +19,9 @@ All notable changes to Pinakotheke will be documented in this file. The project 
 - Bridge verified Firefox image acquisitions through website provenance and the
   common review queue into persistent gallery cards, with idempotent thumbnail
   admission and independently committed explicit-original enrichment.
+- Resolve persistent gallery image paths under private Monas dispatch and
+  stream only the exact catalogue-authorized DASObjectStore object through a
+  host backend with strict MIME, length, checksum, and ETag validation.
 - Add the XIMG-200 Synoptikon product manifest, strict tenant/account/project
   host scope, and bounded authenticated catalogue projection over immutable
   DASObjectStore references.

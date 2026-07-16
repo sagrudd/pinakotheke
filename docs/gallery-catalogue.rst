@@ -98,3 +98,27 @@ store. The server generates the original delivery path and atomically replaces
 the complete metadata document. A restart test proves that one card retains
 both object references, dimensions, ``New`` review state, and ready
 availability without retaining image bytes.
+
+Authorized gallery image delivery
+---------------------------------
+
+The generated ``.../objects/{catalogue_id}/thumbnail`` and
+``.../objects/{catalogue_id}/original`` paths now resolve through the persisted
+catalogue. The resolver requires a Monas standalone actor with Pinakotheke
+access, an image card, the exact requested representation role, and ``Ready``
+availability. Unknown records and non-image roles return not found; a known but
+unavailable representation returns gone. Request parameters can never supply
+an endpoint, ObjectStore, object key, checksum, MIME type, or source URL.
+
+The authenticated monolith composition passes the resolved immutable reference
+to its host-supplied DASObjectStore streaming-read backend. Pinakotheke validates
+the returned MIME type, total length, checksum, and checksum ETag before handing
+the stream to the browser. Conditional ``If-None-Match`` reads are retained.
+Responses are same-origin, ``nosniff``, and ``private, no-store``; Pinakotheke
+does not persist the bytes and has no origin fallback.
+
+This code consumes the existing versioned ObjectStore read port and was checked
+against DASObjectStore commit ``bdafc51154989db075f241d041d9eab699f4a022``.
+DASObjectStore does not yet publish a stable application HTTP-read wire, so the
+local CLI does not invent one or consume an unpublished sibling path. Live host
+backend composition remains required before real stored images can be rendered.
