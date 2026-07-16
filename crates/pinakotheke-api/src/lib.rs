@@ -25,6 +25,7 @@ use x_img_core::{
         CacheBypassReason, CacheLookupOutcome, CacheLookupRequest, CacheLookupService,
         CacheRepresentation,
     },
+    gallery_catalogue::{GalleryCatalogue, GalleryCatalogueError, GalleryPage},
     host_context::{
         AuthenticatedHostContext, HostContextAdapter, MonasHostContextAdapter, XIMG_ACCESS,
     },
@@ -48,6 +49,7 @@ type CacheAliases = Arc<Mutex<CacheLookupService>>;
 type ImageDelivery = Arc<Mutex<AuthorizedObjectReader<HostObjectReadBackend>>>;
 type Operations = Arc<Mutex<OperationalTelemetry>>;
 type SynoptikonCatalogue = Arc<SynoptikonCatalogueProjection>;
+type MonasGalleryCatalogue = Arc<GalleryCatalogue>;
 
 const CACHE_LOOKUP_SCHEMA_VERSION: &str = "x-img.cache-alias-lookup.v1";
 const CACHE_RESULT_SCHEMA_VERSION: &str = "x-img.cache-alias-result.v1";
@@ -383,6 +385,17 @@ pub fn router_with_synoptikon_catalogue(catalogue: SynoptikonCatalogueProjection
         .layer(Extension(Arc::new(catalogue)))
 }
 
+/// Returns a bounded Monas-hosted gallery catalogue.
+///
+/// Items contain verified DASObjectStore references and host-local authorized
+/// delivery paths only. There is deliberately no source URL or origin fallback.
+pub fn router_with_gallery_catalogue(catalogue: GalleryCatalogue) -> Router {
+    Router::new()
+        .route("/health", get(health))
+        .route("/api/gallery/v1/catalogue", get(gallery_catalogue))
+        .layer(Extension(Arc::new(catalogue)))
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct CataloguePageQuery {
@@ -410,6 +423,23 @@ async fn synoptikon_catalogue(
             SynoptikonCatalogueError::Unauthorized => StatusCode::FORBIDDEN,
             SynoptikonCatalogueError::InvalidScope => StatusCode::UNAUTHORIZED,
             SynoptikonCatalogueError::InvalidPageSize => StatusCode::BAD_REQUEST,
+        })
+}
+
+async fn gallery_catalogue(
+    context: Option<Extension<AuthenticatedHostContext>>,
+    catalogue: Option<Extension<MonasGalleryCatalogue>>,
+    Query(query): Query<CataloguePageQuery>,
+) -> Result<Json<GalleryPage>, StatusCode> {
+    let context = context.ok_or(StatusCode::UNAUTHORIZED)?.0;
+    let catalogue = catalogue.ok_or(StatusCode::SERVICE_UNAVAILABLE)?.0;
+    catalogue
+        .page(&context, query.offset, query.limit)
+        .map(Json)
+        .map_err(|error| match error {
+            GalleryCatalogueError::Unauthorized => StatusCode::FORBIDDEN,
+            GalleryCatalogueError::InvalidPageSize => StatusCode::BAD_REQUEST,
+            GalleryCatalogueError::InvalidItem(_) => StatusCode::INTERNAL_SERVER_ERROR,
         })
 }
 
@@ -948,6 +978,10 @@ mod tests {
             CacheAliasIndex, CacheAliasRecord, CacheEligibility, CacheLookupAuthorization,
             CacheLookupService, CacheObjectAvailability, CacheRepresentation,
         },
+        gallery_catalogue::{
+            GalleryCatalogue, GalleryItem, GalleryMediaKind, GalleryObjectAvailability,
+            GalleryRepresentation, GalleryRepresentationKind, GalleryReviewState,
+        },
         host_context::{HostContextAdapter, MonasHostContextAdapter},
         object_read::{
             AuthorizedObjectReader, AuthorizedObjectReference, ObjectContentMetadata,
@@ -970,8 +1004,8 @@ mod tests {
         HostObjectReadBackend, MonasDispatchVerifier, monolith_router,
         monolith_router_with_authorities, monolith_router_with_storage, router,
         router_with_cache_aliases, router_with_cache_substitution, router_with_capture_plans,
-        router_with_direct_playback, router_with_image_substitution, router_with_operations,
-        router_with_synoptikon_catalogue,
+        router_with_direct_playback, router_with_gallery_catalogue, router_with_image_substitution,
+        router_with_operations, router_with_synoptikon_catalogue,
     };
 
     const CHECKSUM: &str =
@@ -980,6 +1014,41 @@ mod tests {
         "\"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"";
     const PLAYBACK_BYTES: &[u8] = b"synthetic-firefox-playback";
     const MONAS_CONTEXT: &str = r#"{"schema_version":"x-img.host-context.v1","host":"monas","host_mode":"monas_standalone","actor_id":"synthetic-monas-user","authorizations":["ximg.access"],"correlation_id":"fixture-monas-correlation"}"#;
+
+    fn gallery_catalogue() -> GalleryCatalogue {
+        let object = |kind, path: Option<&str>, availability| GalleryRepresentation {
+            kind,
+            availability,
+            endpoint_id: "endpoint-1".into(),
+            object_store_id: "store-1".into(),
+            object_key: "objects/media-1".into(),
+            checksum: CHECKSUM.into(),
+            content_type: "image/jpeg".into(),
+            content_length: 12,
+            delivery_path: path.map(Into::into),
+        };
+        GalleryCatalogue::new(vec![GalleryItem {
+            catalogue_id: "media-1".into(),
+            title: "Synthetic redistributable image".into(),
+            source_label: "Example website".into(),
+            media_kind: GalleryMediaKind::Image,
+            review_state: GalleryReviewState::New,
+            discovered_at_epoch_seconds: 1,
+            width: 320,
+            height: 200,
+            thumbnail: object(
+                GalleryRepresentationKind::Thumbnail,
+                Some("/api/gallery/v1/objects/thumbnail-1"),
+                GalleryObjectAvailability::Ready,
+            ),
+            preview: Some(object(
+                GalleryRepresentationKind::OriginalImage,
+                None,
+                GalleryObjectAvailability::Unavailable,
+            )),
+        }])
+        .unwrap()
+    }
 
     fn direct_playback() -> DirectPlaybackService<HostObjectReadBackend> {
         let backend = HostObjectReadBackend::new(Box::new(|request| {
@@ -1183,6 +1252,45 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .uri("/api/synoptikon/v1/catalogue")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(denied.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[tokio::test]
+    async fn monas_gallery_exposes_only_authorized_object_delivery_paths() {
+        let context = MonasHostContextAdapter
+            .authenticate(MONAS_CONTEXT.as_bytes())
+            .unwrap();
+        let response = router_with_gallery_catalogue(gallery_catalogue())
+            .layer(Extension(context))
+            .oneshot(
+                Request::builder()
+                    .uri("/api/gallery/v1/catalogue?limit=100")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = to_bytes(response.into_body(), 8192).await.unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        assert_eq!(json["schema_version"], "pinakotheke.gallery-catalogue.v1");
+        assert_eq!(
+            json["items"][0]["thumbnail"]["delivery_path"],
+            "/api/gallery/v1/objects/thumbnail-1"
+        );
+        assert_eq!(json["items"][0]["preview"]["availability"], "unavailable");
+        assert!(json["items"][0].get("source_url").is_none());
+        assert!(json["items"][0]["preview"]["delivery_path"].is_null());
+
+        let denied = router_with_gallery_catalogue(gallery_catalogue())
+            .oneshot(
+                Request::builder()
+                    .uri("/api/gallery/v1/catalogue")
                     .body(Body::empty())
                     .unwrap(),
             )

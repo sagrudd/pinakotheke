@@ -7,6 +7,9 @@ All notable changes to Pinakotheke will be documented in this file. The project 
 
 ### Added
 
+- Define XIMG-096 as the non-waivable Firefox-to-DASObjectStore-to-gallery
+  stable-release gate and add its first bounded, Monas-authenticated gallery
+  catalogue boundary with explicit object availability and no origin fallback.
 - Add the XIMG-200 Synoptikon product manifest, strict tenant/account/project
   host scope, and bounded authenticated catalogue projection over immutable
   DASObjectStore references.

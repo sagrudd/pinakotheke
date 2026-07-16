@@ -47,6 +47,7 @@ Configuration
    site-adapters
    review-admission
    quick-preview
+   gallery-catalogue
    video-candidates
    normalized-video-profiles
    video-normalization

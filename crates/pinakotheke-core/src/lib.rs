@@ -12,6 +12,7 @@ pub mod connector_fixtures;
 pub mod destination;
 pub mod destination_selection;
 pub mod extension_pairing;
+pub mod gallery_catalogue;
 pub mod host_context;
 pub mod host_product;
 pub mod instagram_discovery;

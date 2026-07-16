@@ -371,6 +371,12 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   API and authorized image/video routes; (3) persistent capture/review wiring
   and the restart/Firefox acceptance harness. Update the ThumbsPlus-style user
   documentation and record the local container-built Sphinx evidence.
+  Progress: slice 1 now defines a strict bounded Monas-hosted catalogue page
+  whose image/video card and preview representations contain complete verified
+  DASObjectStore references, explicit availability, and only host-local
+  authorized delivery paths. Core and Axum tests reject origin URLs,
+  inconsistent availability, unbounded pages, and unauthenticated access. The
+  Yew/API replacement, persistent wiring, and real-Firefox restart proof remain.
 
 ## 0.6.0 — Firefox capture
 
