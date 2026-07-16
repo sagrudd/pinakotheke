@@ -205,6 +205,35 @@ impl CapturePlanService {
     }
 
     #[must_use]
+    pub fn recoverable_pending(&self, now: u64) -> Vec<(String, CapturePlan)> {
+        self.accepted
+            .iter()
+            .filter(|pending| {
+                if pending.settled {
+                    return false;
+                }
+                let actor_authorized = self.pairings.values().any(|pairing| {
+                    pairing.actor_id == pending.actor_id
+                        && !pairing.revoked
+                        && pairing.expires_at > now
+                });
+                let site_authorized = self.sites.get(&pending.plan.origin).is_some_and(|site| {
+                    site.capture_enabled
+                        && site.site_id == pending.plan.site_id
+                        && site.adapter_kind == pending.plan.adapter_kind
+                        && site.adapter_version == pending.plan.adapter_version
+                        && match pending.plan.capture_kind {
+                            CaptureKind::ObservedThumbnail => site.allow_observed_thumbnails,
+                            CaptureKind::ExplicitOriginal => site.allow_explicit_originals,
+                        }
+                });
+                actor_authorized && site_authorized
+            })
+            .map(|pending| (pending.actor_id.clone(), pending.plan.clone()))
+            .collect()
+    }
+
+    #[must_use]
     pub fn pending(&self, actor_id: &str, plan_id: &str) -> Option<CapturePlan> {
         self.accepted
             .iter()
@@ -567,6 +596,8 @@ mod tests {
         let mut restarted =
             CapturePlanService::with_journal(pairings(), sites(), &journal).expect("restart");
         assert_eq!(restarted.pending_for_actor("actor"), vec![accepted.clone()]);
+        assert_eq!(restarted.recoverable_pending(2).len(), 1);
+        assert!(restarted.recoverable_pending(100).is_empty());
         assert!(restarted.pending_for_actor("different-actor").is_empty());
         assert_eq!(
             restarted

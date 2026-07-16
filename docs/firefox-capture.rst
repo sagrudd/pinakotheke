@@ -220,6 +220,13 @@ policy, transport, validation, or authority failure leaves the plan visibly
 pending and makes no ``Stored in ObjectStore`` claim; a later explicit retry can
 resume it. No failure triggers origin traversal or a browser credential retry.
 
+At startup the monolith loads every durable unsettled plan and revalidates the
+current pairing actor, expiry/revocation, enabled exact-origin policy, pinned
+adapter version, and capture-kind permission. Eligible work is requeued through
+the same one-helper-at-a-time path without waiting for Firefox to repeat the
+request. Withdrawn or expired authority leaves the record pending and performs
+no network or ObjectStore operation. Settled markers are never requeued.
+
 Compatibility evidence
 ----------------------
 

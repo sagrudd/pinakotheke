@@ -515,6 +515,16 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   repository quality/privacy/version checks, and local warnings-denied Sphinx
   8.2.3 passed. Docker Desktop again did not answer its local socket, so the
   container replication remains the recorded host-service follow-up.
+  Monolith startup now discovers durable unsettled plans and requeues eligible
+  work without a Firefox retry. Current actor pairing, expiry/revocation,
+  exact-origin policy, adapter version, and capture-kind permission are
+  revalidated first; withdrawn authority remains pending and performs no
+  helper/network/ObjectStore work. Concrete DASObjectStore helper packaging and
+  real Firefox/live-authority acceptance remain.
+  Verification on 2026-07-16: 158 focused Rust tests, warnings-denied Clippy,
+  repository quality/privacy/version checks, and local warnings-denied Sphinx
+  8.2.3 passed. Docker Desktop again did not answer its local socket; container
+  replication remains the recorded host-service follow-up.
 
 ## 0.6.0 — Firefox capture
 

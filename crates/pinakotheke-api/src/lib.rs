@@ -658,18 +658,29 @@ pub fn monolith_router_with_gallery_web_delivery_and_capture_authority(
             )
             .layer(Extension(Arc::clone(&capture_plans)));
         if let Some(authority) = completion_authority {
+            let now = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .map_or(0, |duration| duration.as_secs());
+            let recoverable = capture_plans
+                .lock()
+                .map(|plans| plans.recoverable_pending(now))
+                .unwrap_or_default();
+            let runtime = Arc::new(CaptureCompletionRuntime {
+                authority,
+                plans: capture_plans,
+                gallery,
+                acquire: acquire.map(Mutex::new),
+                in_flight: Mutex::new(BTreeSet::new()),
+            });
+            for (actor_id, plan) in recoverable {
+                let _ = schedule_capture_runtime(&runtime, actor_id, plan);
+            }
             protected = protected
                 .route(
                     "/products/pinakotheke/api/internal/v1/capture-plans/{plan_id}/complete",
                     post(complete_capture_plan),
                 )
-                .layer(Extension(Arc::new(CaptureCompletionRuntime {
-                    authority,
-                    plans: capture_plans,
-                    gallery,
-                    acquire: acquire.map(Mutex::new),
-                    in_flight: Mutex::new(BTreeSet::new()),
-                })));
+                .layer(Extension(runtime));
         }
     }
     if let Some(web_root) = web_root {
@@ -1253,34 +1264,48 @@ async fn capture_plan(
         .plan(context.actor_id(), now, request)
         .map_err(capture_plan_status)?;
     drop(capture_plans);
-    if let Some(runtime) = runtime.map(|runtime| runtime.0)
-        && runtime.acquire.is_some()
-    {
-        let actor_id = context.actor_id().to_owned();
-        let key = format!("{actor_id}:{}", plan.plan_id);
-        let admitted = runtime
-            .in_flight
-            .lock()
-            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
-            .insert(key.clone());
-        if admitted {
-            let runtime = Arc::clone(&runtime);
-            let worker_plan = plan.clone();
-            tokio::task::spawn_blocking(move || {
-                let evidence = runtime
-                    .acquire
-                    .as_ref()
-                    .and_then(|backend| backend.lock().ok()?.acquire(&worker_plan).ok());
-                if let Some(evidence) = evidence {
-                    let _ = settle_capture_runtime(&runtime, &actor_id, evidence);
-                }
-                if let Ok(mut in_flight) = runtime.in_flight.lock() {
-                    in_flight.remove(&key);
-                }
-            });
-        }
+    if let Some(runtime) = runtime.map(|runtime| runtime.0) {
+        schedule_capture_runtime(&runtime, context.actor_id().to_owned(), plan.clone())
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     }
     Ok(Json(plan))
+}
+
+fn schedule_capture_runtime(
+    runtime: &Arc<CaptureCompletionRuntime>,
+    actor_id: String,
+    plan: CapturePlan,
+) -> Result<bool, ()> {
+    if runtime.acquire.is_none() {
+        return Ok(false);
+    }
+    let key = format!("{actor_id}:{}", plan.plan_id);
+    if !runtime
+        .in_flight
+        .lock()
+        .map_err(|_| ())?
+        .insert(key.clone())
+    {
+        return Ok(false);
+    }
+    let Ok(handle) = tokio::runtime::Handle::try_current() else {
+        runtime.in_flight.lock().map_err(|_| ())?.remove(&key);
+        return Ok(false);
+    };
+    let runtime = Arc::clone(runtime);
+    handle.spawn_blocking(move || {
+        let evidence = runtime
+            .acquire
+            .as_ref()
+            .and_then(|backend| backend.lock().ok()?.acquire(&plan).ok());
+        if let Some(evidence) = evidence {
+            let _ = settle_capture_runtime(&runtime, &actor_id, evidence);
+        }
+        if let Ok(mut in_flight) = runtime.in_flight.lock() {
+            in_flight.remove(&key);
+        }
+    });
+    Ok(true)
 }
 
 async fn capture_plans_pending(
@@ -3084,6 +3109,131 @@ mod tests {
             serde_json::from_slice(&to_bytes(pending.into_body(), 16 * 1024).await.unwrap())
                 .unwrap();
         assert_eq!(pending["plans"].as_array().unwrap().len(), 1);
+        let _ = std::fs::remove_dir_all(root);
+    }
+
+    #[tokio::test]
+    async fn startup_requeues_journalled_pending_plan_without_browser_retry() {
+        let root = std::env::temp_dir().join(format!(
+            "pinakotheke-api-startup-recovery-{}",
+            std::process::id()
+        ));
+        let _ = std::fs::remove_dir_all(&root);
+        let pairings = || {
+            [CapturePairing {
+                pairing_id: "pair-0".into(),
+                actor_id: "synthetic-monas-user".into(),
+                expires_at: u64::MAX,
+                revoked: false,
+            }]
+        };
+        let sites = || {
+            [SiteCapturePolicy {
+                site_id: "synthetic-site".into(),
+                origin: "https://example.invalid".into(),
+                capture_enabled: true,
+                adapter_kind: AdapterKind::ExperimentalGeneric,
+                adapter_version: "1.0.0".into(),
+                allow_observed_thumbnails: true,
+                allow_explicit_originals: false,
+                max_candidates_per_page: 2,
+            }]
+        };
+        let journal = root.join("capture-plans.json");
+        let mut before_restart =
+            CapturePlanService::with_journal(pairings(), sites(), &journal).unwrap();
+        before_restart
+            .plan(
+                "synthetic-monas-user",
+                1,
+                CapturePlanRequest {
+                    schema_version: CAPTURE_REQUEST_SCHEMA_VERSION.into(),
+                    pairing_id: "pair-0".into(),
+                    origin: "https://example.invalid".into(),
+                    page_url: "https://example.invalid/gallery".into(),
+                    adapter_kind: AdapterKind::ExperimentalGeneric,
+                    adapter_version: "1.0.0".into(),
+                    capture_kind: CaptureKind::ObservedThumbnail,
+                    media_url: "https://example.invalid/startup.jpg".into(),
+                    width: 320,
+                    height: 200,
+                },
+            )
+            .unwrap();
+        drop(before_restart);
+        let restarted = CapturePlanService::with_journal(pairings(), sites(), &journal).unwrap();
+        let store = GalleryCatalogueStore::new(root.join("gallery.json"));
+        let dispatch = "synthetic-monas-dispatch-token-0001";
+        let acquire = HostCaptureAcquireBackend::new(Box::new(|plan| {
+            Ok(VerifiedCaptureCompletion {
+                plan_id: plan.plan_id.clone(),
+                catalogue_id: "startup-card-1".into(),
+                title: "Recovered image".into(),
+                content_type: "image/jpeg".into(),
+                content_length: 12,
+                endpoint_id: "synthetic-endpoint".into(),
+                object_store_id: "synthetic-store".into(),
+                object_key: "startup-object-1".into(),
+                object_version: 1,
+                checksum_sha256: CHECKSUM.strip_prefix("sha256:").unwrap().into(),
+                verified_at_epoch_seconds: 42,
+            })
+        }));
+        let app = monolith_router_with_gallery_web_delivery_and_capture_authority(
+            true,
+            Some(MonasDispatchVerifier::new(dispatch.into()).unwrap()),
+            GalleryCatalogue::default(),
+            None,
+            gallery_image_backend(),
+            Some(
+                CapturePlanComposition::new(
+                    restarted,
+                    Some(
+                        CaptureCompletionAuthority::new(
+                            "synthetic-capture-worker-token-0001".into(),
+                            store,
+                            "synthetic-endpoint".into(),
+                            "synthetic-store".into(),
+                        )
+                        .unwrap(),
+                    ),
+                )
+                .with_acquire(acquire),
+            ),
+        );
+        let mut visible = false;
+        for _ in 0..50 {
+            let response = app
+                .clone()
+                .oneshot(
+                    Request::builder()
+                        .uri("/products/pinakotheke/api/gallery/v1/catalogue")
+                        .header("x-monas-dispatch-token", dispatch)
+                        .header("x-monas-host-context", MONAS_CONTEXT)
+                        .body(Body::empty())
+                        .unwrap(),
+                )
+                .await
+                .unwrap();
+            let json: serde_json::Value =
+                serde_json::from_slice(&to_bytes(response.into_body(), 16 * 1024).await.unwrap())
+                    .unwrap();
+            if json["items"]
+                .as_array()
+                .is_some_and(|items| items.len() == 1)
+            {
+                visible = true;
+                break;
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+        }
+        assert!(visible, "startup should recover durable pending capture");
+        let recovered = CapturePlanService::with_journal(pairings(), sites(), &journal).unwrap();
+        assert!(
+            recovered
+                .pending_for_actor("synthetic-monas-user")
+                .is_empty()
+        );
         let _ = std::fs::remove_dir_all(root);
     }
 

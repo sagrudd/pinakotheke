@@ -156,6 +156,9 @@ The monolith can use that same adapter continuously with
 ``--capture-acquire-helper``. Admission returns promptly, identical concurrent
 work is coalesced, helper execution is serialized, verified success updates the
 live gallery, and every failure remains pending without a false stored badge.
+On restart, eligible durable pending plans are revalidated and requeued without
+a browser retry. Expired/revoked pairings, disabled sites, changed adapters, and
+settled records are not executed.
 
 The release hardening path now includes one deterministic fault/recovery
 command, ``scripts/faults/check.sh``. It covers critical authority, ingest,

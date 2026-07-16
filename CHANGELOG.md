@@ -67,6 +67,9 @@ All notable changes to Pinakotheke will be documented in this file. The project 
 - Compose the reviewed acquisition helper into foreground and launchd monolith
   operation with prompt browser admission, serialized background execution,
   per-plan retry coalescing, live verified settlement, and pending-on-failure.
+- Recover durable unsettled captures automatically on monolith startup after
+  revalidating current actor pairing, expiry/revocation, site policy, adapter,
+  and capture-kind authority; withdrawn work remains pending and untouched.
 - Carry an explicit positive immutable object version from verified acquisition
   and normalized-video evidence through persistent gallery records, authorized
   read grants, and host-helper requests, with legacy catalogue-v1 records

@@ -687,6 +687,9 @@ Exit criteria:
 - foreground and managed-service modes can continuously schedule that helper
   with one process at a time, coalesced retries, prompt Firefox admission, and
   pending-on-failure semantics before verified live-gallery settlement;
+- restart automatically requeues only still-authorized unsettled captures after
+  pairing, expiry/revocation, site, adapter, and capture-kind revalidation,
+  without requiring Firefox to repeat an observed-media request;
 - local authentication remains Monas/Prosopikon-owned; the monolith does not
   invent Pinakotheke passwords, cookies, or a parallel session issuer; and
 - unauthenticated navigation presents a polished Monas-owned, Mnemosyne-design-
