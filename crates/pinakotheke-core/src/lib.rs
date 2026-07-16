@@ -21,6 +21,7 @@ pub mod object_ingest;
 pub mod object_read;
 pub mod operations;
 pub mod persistent_gallery_admission;
+pub mod persistent_video_gallery;
 pub mod playback_delivery;
 pub mod reconciliation;
 pub mod review_admission;

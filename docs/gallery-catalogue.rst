@@ -122,3 +122,28 @@ against DASObjectStore commit ``bdafc51154989db075f241d041d9eab699f4a022``.
 DASObjectStore does not yet publish a stable application HTTP-read wire, so the
 local CLI does not invent one or consume an unpublished sibling path. Live host
 backend composition remains required before real stored images can be rendered.
+
+Normalized-video cards and playback
+-----------------------------------
+
+``admit_ready_normalized_video`` creates one persistent ``New`` card only from
+a ``Ready`` normalized-video record that passes the versioned profile validator
+with matching Firefox playback evidence. The record must already contain a
+typed, checksummed normalized rendition, poster, and provenance manifest in the
+same reviewed endpoint/ObjectStore. Planned, normalizing, source-only,
+unproven, malformed, or conflicting records are rejected.
+
+The poster becomes the card's thumbnail representation and is served through
+the same authenticated image route. The normalized rendition becomes the
+``.../objects/{catalogue_id}/video`` preview. Both delivery paths are generated
+server-side and survive metadata-store restart; video and poster remain
+separate DASObjectStore objects and no bytes enter the metadata document.
+
+The video route resolves the exact persisted rendition and supports one bounded
+HTTP byte range, open-ended ranges, checksum ETags, conditional responses, and
+``416`` with the complete object length for invalid or multiple ranges. It
+revalidates content type, total length, checksum, ETag, and returned range
+before streaming. Responses are authenticated, same-origin, ``nosniff``, and
+``private, no-store`` with no origin fallback. Native Axum tests prove poster
+delivery plus MP4 range playback; real Firefox restart/play/seek/pause/resume
+acceptance remains required by XIMG-096.

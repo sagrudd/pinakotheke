@@ -121,6 +121,13 @@ pub struct GalleryImageGrant {
     pub content_length: u64,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GalleryVideoGrant {
+    pub object: AuthorizedObjectReference,
+    pub content_type: String,
+    pub content_length: u64,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum GalleryImageResolveError {
     Unauthorized,
@@ -337,9 +344,6 @@ impl GalleryCatalogue {
             .iter()
             .find(|item| item.catalogue_id == catalogue_id)
             .ok_or(GalleryImageResolveError::NotFound)?;
-        if item.media_kind != GalleryMediaKind::Image {
-            return Err(GalleryImageResolveError::NotAnImage);
-        }
         let representation = match role {
             GalleryImageRole::Thumbnail => &item.thumbnail,
             GalleryImageRole::Original => item
@@ -347,9 +351,19 @@ impl GalleryCatalogue {
                 .as_ref()
                 .ok_or(GalleryImageResolveError::Unavailable)?,
         };
-        let expected_kind = match role {
-            GalleryImageRole::Thumbnail => GalleryRepresentationKind::Thumbnail,
-            GalleryImageRole::Original => GalleryRepresentationKind::OriginalImage,
+        let expected_kind = match (item.media_kind, role) {
+            (GalleryMediaKind::Image, GalleryImageRole::Thumbnail) => {
+                GalleryRepresentationKind::Thumbnail
+            }
+            (GalleryMediaKind::Image, GalleryImageRole::Original) => {
+                GalleryRepresentationKind::OriginalImage
+            }
+            (GalleryMediaKind::NormalizedVideo, GalleryImageRole::Thumbnail) => {
+                GalleryRepresentationKind::VideoPoster
+            }
+            (GalleryMediaKind::NormalizedVideo, GalleryImageRole::Original) => {
+                return Err(GalleryImageResolveError::NotAnImage);
+            }
         };
         if representation.kind != expected_kind
             || !representation.content_type.starts_with("image/")
@@ -360,6 +374,46 @@ impl GalleryCatalogue {
             return Err(GalleryImageResolveError::Unavailable);
         }
         Ok(GalleryImageGrant {
+            object: AuthorizedObjectReference {
+                endpoint_id: representation.endpoint_id.clone(),
+                object_store_id: representation.object_store_id.clone(),
+                object_key: representation.object_key.clone(),
+                checksum: representation.checksum.clone(),
+            },
+            content_type: representation.content_type.clone(),
+            content_length: representation.content_length,
+        })
+    }
+
+    pub fn resolve_video(
+        &self,
+        context: &AuthenticatedHostContext,
+        catalogue_id: &str,
+    ) -> Result<GalleryVideoGrant, GalleryImageResolveError> {
+        if context.host_mode() != HostMode::MonasStandalone || !context.permits(XIMG_ACCESS) {
+            return Err(GalleryImageResolveError::Unauthorized);
+        }
+        let item = self
+            .items
+            .iter()
+            .find(|item| item.catalogue_id == catalogue_id)
+            .ok_or(GalleryImageResolveError::NotFound)?;
+        if item.media_kind != GalleryMediaKind::NormalizedVideo {
+            return Err(GalleryImageResolveError::NotAnImage);
+        }
+        let representation = item
+            .preview
+            .as_ref()
+            .ok_or(GalleryImageResolveError::Unavailable)?;
+        if representation.kind != GalleryRepresentationKind::NormalizedVideo
+            || !representation.content_type.starts_with("video/")
+        {
+            return Err(GalleryImageResolveError::NotAnImage);
+        }
+        if representation.availability != GalleryObjectAvailability::Ready {
+            return Err(GalleryImageResolveError::Unavailable);
+        }
+        Ok(GalleryVideoGrant {
             object: AuthorizedObjectReference {
                 endpoint_id: representation.endpoint_id.clone(),
                 object_store_id: representation.object_store_id.clone(),

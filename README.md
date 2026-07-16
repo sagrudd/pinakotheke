@@ -97,6 +97,12 @@ Pinakotheke validates MIME type, length, checksum, and ETag and streams without
 local persistence or origin fallback. The local CLI still requires a published
 DASObjectStore application-read transport before it can compose the live
 backend safely.
+Verified normalized-video records with matching Firefox profile evidence can
+now persist as one card containing separate DASObjectStore poster and rendition
+references. The poster uses authenticated image delivery and the rendition uses
+authenticated single-range playback with strict MIME, length, checksum, ETag,
+and range validation. Planned, source-only, unproven, or conflicting video is
+not catalogue-ready.
 
 The release hardening path now includes one deterministic fault/recovery
 command, ``scripts/faults/check.sh``. It covers critical authority, ingest,

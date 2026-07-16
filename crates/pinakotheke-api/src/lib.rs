@@ -306,6 +306,10 @@ pub fn monolith_router_with_gallery_delivery_authority(
             "/products/pinakotheke/api/gallery/v1/objects/{catalogue_id}/{role}",
             get(deliver_gallery_image),
         )
+        .route(
+            "/products/pinakotheke/api/gallery/v1/objects/{catalogue_id}/video",
+            get(deliver_gallery_video),
+        )
         .layer(Extension(Arc::new(gallery)))
         .layer(Extension(Arc::new(Mutex::new(
             AuthorizedObjectReader::new(backend),
@@ -490,6 +494,10 @@ pub fn router_with_gallery_delivery(
             "/products/pinakotheke/api/gallery/v1/objects/{catalogue_id}/{role}",
             get(deliver_gallery_image),
         )
+        .route(
+            "/products/pinakotheke/api/gallery/v1/objects/{catalogue_id}/video",
+            get(deliver_gallery_video),
+        )
         .layer(Extension(Arc::new(catalogue)))
         .layer(Extension(Arc::new(Mutex::new(
             AuthorizedObjectReader::new(backend),
@@ -606,6 +614,109 @@ async fn deliver_gallery_image(
                 .header(header::CACHE_CONTROL, "private, no-store")
                 .header("cross-origin-resource-policy", "same-origin")
                 .header("x-content-type-options", "nosniff")
+                .body(stream)
+                .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}
+
+async fn deliver_gallery_video(
+    Path(catalogue_id): Path<String>,
+    headers: HeaderMap,
+    context: Option<Extension<AuthenticatedHostContext>>,
+    catalogue: Option<Extension<MonasGalleryCatalogue>>,
+    delivery: Option<Extension<ImageDelivery>>,
+) -> Result<Response, StatusCode> {
+    let context = context.ok_or(StatusCode::UNAUTHORIZED)?.0;
+    let grant = catalogue
+        .ok_or(StatusCode::SERVICE_UNAVAILABLE)?
+        .0
+        .resolve_video(&context, &catalogue_id)
+        .map_err(|error| match error {
+            GalleryImageResolveError::Unauthorized => StatusCode::FORBIDDEN,
+            GalleryImageResolveError::NotFound | GalleryImageResolveError::NotAnImage => {
+                StatusCode::NOT_FOUND
+            }
+            GalleryImageResolveError::Unavailable => StatusCode::GONE,
+        })?;
+    let range = match headers
+        .get(header::RANGE)
+        .and_then(|value| value.to_str().ok())
+    {
+        Some(value) => match parse_single_range(value, grant.content_length) {
+            Ok(range) => Some(range),
+            Err(_) => {
+                return Response::builder()
+                    .status(StatusCode::RANGE_NOT_SATISFIABLE)
+                    .header(
+                        header::CONTENT_RANGE,
+                        format!("bytes */{}", grant.content_length),
+                    )
+                    .header(header::ACCEPT_RANGES, "bytes")
+                    .header(header::CACHE_CONTROL, "private, no-store")
+                    .body(Body::empty())
+                    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR);
+            }
+        },
+        None => None,
+    };
+    let request = ObjectReadRequest {
+        object: grant.object,
+        range,
+        if_none_match_etag: headers
+            .get(header::IF_NONE_MATCH)
+            .and_then(|value| value.to_str().ok())
+            .map(str::to_owned),
+    };
+    let delivery = delivery.ok_or(StatusCode::SERVICE_UNAVAILABLE)?.0;
+    let result = {
+        let mut delivery = delivery
+            .lock()
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        delivery
+            .open(&request)
+            .map_err(|_| StatusCode::BAD_GATEWAY)?
+    };
+    match result {
+        ValidatedObjectRead::NotModified { etag } => Response::builder()
+            .status(StatusCode::NOT_MODIFIED)
+            .header(header::ETAG, etag)
+            .header(header::ACCEPT_RANGES, "bytes")
+            .header(header::CACHE_CONTROL, "private, no-store")
+            .header("cross-origin-resource-policy", "same-origin")
+            .header("x-content-type-options", "nosniff")
+            .body(Body::empty())
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR),
+        ValidatedObjectRead::Content { metadata, stream } => {
+            if metadata.content_type != grant.content_type
+                || metadata.total_length != grant.content_length
+                || metadata.content_range != range
+            {
+                return Err(StatusCode::BAD_GATEWAY);
+            }
+            let mut response = Response::builder()
+                .status(if range.is_some() {
+                    StatusCode::PARTIAL_CONTENT
+                } else {
+                    StatusCode::OK
+                })
+                .header(header::CONTENT_TYPE, metadata.content_type)
+                .header(header::CONTENT_LENGTH, metadata.content_length)
+                .header(header::ETAG, metadata.etag)
+                .header(header::ACCEPT_RANGES, "bytes")
+                .header(header::CACHE_CONTROL, "private, no-store")
+                .header("cross-origin-resource-policy", "same-origin")
+                .header("x-content-type-options", "nosniff");
+            if let Some(range) = metadata.content_range {
+                response = response.header(
+                    header::CONTENT_RANGE,
+                    format!(
+                        "bytes {}-{}/{}",
+                        range.start, range.end_inclusive, metadata.total_length
+                    ),
+                );
+            }
+            response
                 .body(stream)
                 .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
         }
@@ -1244,6 +1355,89 @@ mod tests {
         }))
     }
 
+    fn video_gallery_catalogue() -> GalleryCatalogue {
+        let representation = |kind, object_key: &str, content_type: &str, content_length, role| {
+            GalleryRepresentation {
+                kind,
+                availability: GalleryObjectAvailability::Ready,
+                endpoint_id: "endpoint-1".into(),
+                object_store_id: "store-1".into(),
+                object_key: object_key.into(),
+                checksum: CHECKSUM.into(),
+                content_type: content_type.into(),
+                content_length,
+                delivery_path: Some(format!(
+                    "/products/pinakotheke/api/gallery/v1/objects/video-1/{role}"
+                )),
+            }
+        };
+        GalleryCatalogue::new(vec![GalleryItem {
+            catalogue_id: "video-1".into(),
+            title: "Synthetic normalized video".into(),
+            source_label: "Example website".into(),
+            source_kind: GallerySourceKind::Website,
+            media_kind: GalleryMediaKind::NormalizedVideo,
+            review_state: GalleryReviewState::New,
+            discovered_at_epoch_seconds: 1,
+            width: 1920,
+            height: 1080,
+            thumbnail: representation(
+                GalleryRepresentationKind::VideoPoster,
+                "video/poster.webp",
+                "image/webp",
+                12,
+                "thumbnail",
+            ),
+            preview: Some(representation(
+                GalleryRepresentationKind::NormalizedVideo,
+                "video/normalized.mp4",
+                "video/mp4",
+                PLAYBACK_BYTES.len() as u64,
+                "video",
+            )),
+        }])
+        .unwrap()
+    }
+
+    fn gallery_video_backend() -> HostObjectReadBackend {
+        HostObjectReadBackend::new(Box::new(|request| {
+            assert_eq!(request.object.object_key, "video/normalized.mp4");
+            let range = request.range;
+            let (start, end) = range.map_or((0, PLAYBACK_BYTES.len() - 1), |range| {
+                (range.start as usize, range.end_inclusive as usize)
+            });
+            let bytes = PLAYBACK_BYTES[start..=end].to_vec();
+            Ok(ObjectReadResult::Content {
+                metadata: ObjectContentMetadata {
+                    content_type: "video/mp4".into(),
+                    content_length: bytes.len() as u64,
+                    total_length: PLAYBACK_BYTES.len() as u64,
+                    checksum: CHECKSUM.into(),
+                    etag: ETAG.into(),
+                    content_range: range,
+                },
+                stream: Body::from(bytes),
+            })
+        }))
+    }
+
+    fn gallery_poster_backend() -> HostObjectReadBackend {
+        HostObjectReadBackend::new(Box::new(|request| {
+            assert_eq!(request.object.object_key, "video/poster.webp");
+            Ok(ObjectReadResult::Content {
+                metadata: ObjectContentMetadata {
+                    content_type: "image/webp".into(),
+                    content_length: 12,
+                    total_length: 12,
+                    checksum: CHECKSUM.into(),
+                    etag: ETAG.into(),
+                    content_range: None,
+                },
+                stream: Body::from(b"poster-bytes".to_vec()),
+            })
+        }))
+    }
+
     fn direct_playback() -> DirectPlaybackService<HostObjectReadBackend> {
         let backend = HostObjectReadBackend::new(Box::new(|request| {
             if request.if_none_match_etag.as_deref() == Some(ETAG) {
@@ -1580,6 +1774,65 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(admitted.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn gallery_video_preserves_authenticated_single_range_playback() {
+        let context = MonasHostContextAdapter
+            .authenticate(MONAS_CONTEXT.as_bytes())
+            .unwrap();
+        let poster =
+            router_with_gallery_delivery(video_gallery_catalogue(), gallery_poster_backend())
+                .layer(Extension(context.clone()))
+                .oneshot(
+                    Request::builder()
+                        .uri("/products/pinakotheke/api/gallery/v1/objects/video-1/thumbnail")
+                        .body(Body::empty())
+                        .unwrap(),
+                )
+                .await
+                .unwrap();
+        assert_eq!(poster.status(), StatusCode::OK);
+        assert_eq!(poster.headers()["content-type"], "image/webp");
+
+        let response =
+            router_with_gallery_delivery(video_gallery_catalogue(), gallery_video_backend())
+                .layer(Extension(context))
+                .oneshot(
+                    Request::builder()
+                        .uri("/products/pinakotheke/api/gallery/v1/objects/video-1/video")
+                        .header("range", "bytes=2-10")
+                        .body(Body::empty())
+                        .unwrap(),
+                )
+                .await
+                .unwrap();
+        assert_eq!(response.status(), StatusCode::PARTIAL_CONTENT);
+        assert_eq!(response.headers()["content-type"], "video/mp4");
+        assert_eq!(response.headers()["accept-ranges"], "bytes");
+        assert_eq!(response.headers()["content-range"], "bytes 2-10/26");
+        assert_eq!(
+            to_bytes(response.into_body(), 64).await.unwrap().as_ref(),
+            &PLAYBACK_BYTES[2..=10]
+        );
+
+        let invalid =
+            router_with_gallery_delivery(video_gallery_catalogue(), gallery_video_backend())
+                .layer(Extension(
+                    MonasHostContextAdapter
+                        .authenticate(MONAS_CONTEXT.as_bytes())
+                        .unwrap(),
+                ))
+                .oneshot(
+                    Request::builder()
+                        .uri("/products/pinakotheke/api/gallery/v1/objects/video-1/video")
+                        .header("range", "bytes=0-1,3-4")
+                        .body(Body::empty())
+                        .unwrap(),
+                )
+                .await
+                .unwrap();
+        assert_eq!(invalid.status(), StatusCode::RANGE_NOT_SATISFIABLE);
     }
 
     #[test]

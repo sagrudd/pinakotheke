@@ -22,6 +22,9 @@ All notable changes to Pinakotheke will be documented in this file. The project 
 - Resolve persistent gallery image paths under private Monas dispatch and
   stream only the exact catalogue-authorized DASObjectStore object through a
   host backend with strict MIME, length, checksum, and ETag validation.
+- Persist only Firefox-proven ready normalized videos as poster-backed gallery
+  cards and deliver their exact rendition through authenticated, validated
+  single-range playback without local bytes or origin fallback.
 - Add the XIMG-200 Synoptikon product manifest, strict tenant/account/project
   host scope, and bounded authenticated catalogue projection over immutable
   DASObjectStore references.

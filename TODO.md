@@ -408,6 +408,15 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   and virtualization remain. Local Sphinx 8.2.3 HTML/dummy builds and the
   pinned Dockerfile build/container run passed with warnings denied on
   2026-07-16 after Docker Desktop recovered.
+  Ready normalized-video records with matching versioned Firefox evidence now
+  persist as one ``New`` card with separate typed/checksummed poster and
+  rendition references. Planned/source-only/unproven/conflicting records fail
+  closed. The poster streams through authenticated image delivery and the
+  rendition through authenticated single-range delivery with MIME, length,
+  checksum, ETag, conditional, and range validation; Axum tests prove poster,
+  partial MP4, and multi-range rejection after restart-safe admission. Live CLI
+  DASObjectStore transport, real Firefox restart/play/seek/pause/resume,
+  browser failure reconciliation, and large-catalogue virtualization remain.
 
 ## 0.6.0 — Firefox capture
 
