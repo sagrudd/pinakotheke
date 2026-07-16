@@ -91,6 +91,11 @@ the common website review queue to this store. An observed thumbnail creates a
 card; an explicitly opened and independently committed original can enrich that
 same card. Original-first, uncommitted, destination-changing, and conflicting
 replays are rejected, and delivery paths are generated server-side.
+For an enabled image site, a trusted click on an image link (or an image
+document) can submit the explicitly opened original through the same capture
+plan. Synthetic clicks and unlinked thumbnail clicks are rejected, and the
+generic adapter applies to arbitrary HTTPS origins only after explicit site
+permission and opt-in.
 Those paths now resolve only through the persisted catalogue and a
 Monas-authenticated, host-supplied DASObjectStore streaming-read backend.
 Pinakotheke validates MIME type, length, checksum, and ETag and streams without

@@ -16,11 +16,19 @@ intersect the current viewport. It submits each eligible item separately to
 the paired instance. It does not open an image, inspect off-screen images,
 traverse hidden DOM content, crawl a page, or simulate browsing.
 
-The current endpoint intentionally admits only ``observed_thumbnail`` events.
-An ``explicit_original`` event is rejected unless a site policy explicitly
-allows it; a later extension slice must record a real user-open event before
-that policy can be enabled. Video acquisition is not implemented by this
-endpoint.
+After a site is explicitly enabled and the user runs its cache control, the
+extension installs one idempotent click observer in that tab. It submits an
+``explicit_original`` only for a trusted primary-button click on an image link,
+or an image already displayed as the document itself. Unlinked thumbnail
+clicks, synthetic events, hidden traversal, and automatic opening are not
+eligible. Page provenance comes from Firefox's sender tab rather than message
+data. Video acquisition is not implemented by this endpoint.
+
+The experimental generic adapter is available for any exact HTTPS origin only
+after that origin has been added through the site policy UI and Firefox has
+granted its optional permission. Explicit adapters may remain origin-limited.
+Login and settings paths remain excluded. This makes user-added websites useful
+without granting a wildcard site policy or initiating background crawling.
 
 Host-authenticated endpoint
 ---------------------------

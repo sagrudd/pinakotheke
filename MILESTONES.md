@@ -690,6 +690,9 @@ Exit criteria:
 - restart automatically requeues only still-authorized unsettled captures after
   pairing, expiry/revocation, site, adapter, and capture-kind revalidation,
   without requiring Firefox to repeat an observed-media request;
+- the Firefox generic adapter works for explicitly opted-in HTTPS origins and
+  records an original only from a trusted image-link or image-document click,
+  never from synthetic events, unlinked thumbnails, or automatic navigation;
 - local authentication remains Monas/Prosopikon-owned; the monolith does not
   invent Pinakotheke passwords, cookies, or a parallel session issuer; and
 - unauthenticated navigation presents a polished Monas-owned, Mnemosyne-design-

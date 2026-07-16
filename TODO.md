@@ -525,6 +525,18 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   repository quality/privacy/version checks, and local warnings-denied Sphinx
   8.2.3 passed. Docker Desktop again did not answer its local socket; container
   replication remains the recorded host-service follow-up.
+  Firefox now installs an idempotent trusted-click observer for enabled image
+  sites and submits ``explicit_original`` only for an image link or image
+  document; synthetic and unlinked-thumbnail clicks are ineligible. The
+  experimental generic adapter now applies to arbitrary HTTPS origins only
+  after explicit site opt-in and optional-origin permission. Node/extension
+  contract evidence proves canonical Monas routing, sender-tab provenance,
+  signed-query removal, disabled-policy rejection, and redacted diagnostics.
+  The focused Node syntax/event contracts, toolbar contract, repository quality
+  checks, release audit, and warnings-denied local Sphinx 8.2.3 build pass.
+  The required Docker documentation build was attempted for 20 seconds but the
+  local Docker Desktop daemon did not respond; this host replication gap does
+  not invalidate the successful local documentation or feature checks.
 
 ## 0.6.0 — Firefox capture
 

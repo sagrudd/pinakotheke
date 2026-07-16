@@ -70,6 +70,9 @@ All notable changes to Pinakotheke will be documented in this file. The project 
 - Recover durable unsettled captures automatically on monolith startup after
   revalidating current actor pairing, expiry/revocation, site policy, adapter,
   and capture-kind authority; withdrawn work remains pending and untouched.
+- Enable the experimental generic Firefox adapter for explicitly opted-in HTTPS
+  origins and admit originals only from trusted image-link/image-document
+  clicks, using sender-tab provenance and no automatic opening or traversal.
 - Carry an explicit positive immutable object version from verified acquisition
   and normalized-video evidence through persistent gallery records, authorized
   read grants, and host-helper requests, with legacy catalogue-v1 records

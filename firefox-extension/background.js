@@ -16,12 +16,56 @@ async function matchingAdapter(url) {
   const registry = await fetch(browser.runtime.getURL("adapters.json")).then(response => response.json());
   const target = new URL(url);
   return registry.adapters.find(adapter =>
-    adapter.origins.includes(target.origin)
+    (adapter.origins.includes(target.origin) || adapter.kind === "experimental_generic")
       && !adapter.exclude_paths.some(path => target.pathname.startsWith(path))
       && (adapter.capabilities.observed_thumbnail
+        || adapter.capabilities.explicit_original
         || adapter.capabilities.image_substitution
         || adapter.capabilities.mp4_substitution),
   ) || null;
+}
+
+function installExplicitOpenObserver() {
+  if (globalThis.__pinakothekeExplicitOpenObserver) return { installed: false };
+  globalThis.__pinakothekeExplicitOpenObserver = true;
+  document.addEventListener("click", event => {
+    if (!event.isTrusted || event.button !== 0) return;
+    const image = event.target instanceof Element ? event.target.closest("img") : null;
+    if (!image || !image.currentSrc || image.naturalWidth < 1 || image.naturalHeight < 1) return;
+    const link = image.closest("a[href]");
+    if (!link && !document.contentType?.startsWith("image/")) return;
+    const mediaUrl = link?.href || image.currentSrc;
+    try {
+      if (new URL(mediaUrl).protocol !== "https:") return;
+    } catch (_) { return; }
+    void browser.runtime.sendMessage({
+      command: "explicit-original-opened",
+      mediaUrl,
+      width: image.naturalWidth,
+      height: image.naturalHeight,
+    });
+  }, true);
+  return { installed: true };
+}
+
+async function submitCapture(instanceUrl, pairId, origin, pageUrl, adapter, captureKind, media) {
+  return fetch(`${instanceUrl}/products/pinakotheke/api/extension/v1/capture-plans`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      schema_version: "x-img.capture-request.v1",
+      pairing_id: pairId,
+      origin,
+      page_url: pageUrl,
+      adapter_kind: adapter.kind,
+      adapter_version: adapter.version,
+      capture_kind: captureKind,
+      media_url: media.url,
+      width: media.width,
+      height: media.height,
+    }),
+  });
 }
 
 function canonicalAlias(rawUrl) {
@@ -283,25 +327,16 @@ async function runCacheForTab(tab) {
     const images = rule.media.includes("images")
       ? (await browser.scripting.executeScript({ target: { tabId: tab.id }, func: displayedImages }))[0].result || []
       : [];
+    if (rule.capture && rule.media.includes("images") && adapter.capabilities.explicit_original) {
+      await browser.scripting.executeScript({
+        target: { tabId: tab.id }, func: installExplicitOpenObserver,
+      });
+    }
     for (const observed of images) {
       if (rule.capture && adapter.capabilities.observed_thumbnail) {
-        const capture = await fetch(`${instanceUrl}/products/pinakotheke/api/extension/v1/capture-plans`, {
-          method: "POST",
-          credentials: "include",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({
-            schema_version: "x-img.capture-request.v1",
-            pairing_id: pairId,
-            origin,
-            page_url: tab.url,
-            adapter_kind: adapter.kind,
-            adapter_version: adapter.version,
-            capture_kind: "observed_thumbnail",
-            media_url: observed.url,
-            width: observed.width,
-            height: observed.height,
-          }),
-        });
+        const capture = await submitCapture(
+          instanceUrl, pairId, origin, tab.url, adapter, "observed_thumbnail", observed,
+        );
         if (capture.ok) {
           await recordSiteDiagnostic(origin, {
             state: "Previously observed",
@@ -400,9 +435,43 @@ async function runCacheForTab(tab) {
   }
 }
 
-browser.runtime.onMessage.addListener(async message => {
-  if (message?.command !== "run-cache") return undefined;
-  const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
-  await runCacheForTab(tab);
-  return { completed: true };
+browser.runtime.onMessage.addListener(async (message, sender) => {
+  if (message?.command === "run-cache") {
+    const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
+    await runCacheForTab(tab);
+    return { completed: true };
+  }
+  if (message?.command !== "explicit-original-opened" || !sender?.tab?.id || !sender.tab.url) {
+    return undefined;
+  }
+  try {
+    const origin = new URL(sender.tab.url).origin;
+    const { instanceUrl, pairId, sites = [] } = await browser.storage.local.get([
+      "instanceUrl", "pairId", "sites",
+    ]);
+    const rule = sites.find(site => site.origin === origin);
+    if (!instanceUrl || !pairId || !rule?.capture || !rule.media.includes("images")) return undefined;
+    const adapter = await matchingAdapter(sender.tab.url);
+    if (!adapter?.capabilities.explicit_original) return undefined;
+    const width = Number(message.width);
+    const height = Number(message.height);
+    if (!Number.isInteger(width) || !Number.isInteger(height)
+      || width < 1 || height < 1 || width > 32768 || height > 32768) return undefined;
+    const mediaUrl = canonicalAlias(String(message.mediaUrl));
+    const capture = await submitCapture(
+      instanceUrl, pairId, origin, sender.tab.url, adapter, "explicit_original",
+      { url: mediaUrl, width, height },
+    );
+    if (capture.ok) {
+      await recordSiteDiagnostic(origin, {
+        state: "Original queued",
+        reason: "User-opened image accepted for ObjectStore acquisition",
+        previouslyObserved: true,
+        storedInObjectStore: false,
+      });
+    }
+    return { completed: capture.ok };
+  } catch (_) {
+    return { completed: false };
+  }
 });
