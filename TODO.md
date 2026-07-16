@@ -572,12 +572,19 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   unrelated page images separate, and migrates legacy journals by falling back
   to canonical media identity. This closes the distinct thumbnail/original URL
   correlation gap without guessing.
+  Installed Firefox 152 now accepts the dual background manifest and an
+  isolated WebDriver BiDi harness proves an actually observed linked thumbnail
+  plus trusted explicitly opened original through the production capture path.
+  Non-default-port sites use Firefox's required port-independent host match
+  pattern while exact-origin policy and provenance remain port-bound. This is
+  browser-path evidence; the live paired DASObjectStore commit/restart vertical
+  remains the final XIMG-096 authority gap.
   Verification on 2026-07-16: all 168 workspace tests, strict workspace Clippy,
-  Firefox observation/explicit-open/toolbar contracts, repository quality and
-  release security/privacy audits, and warnings-denied Sphinx 8.2.3 passed.
-  Docker Desktop again did not answer within the bounded 20-second container
-  build attempt. Real installed-Firefox capture against the paired live
-  DASObjectStore authority remains before XIMG-096 can close.
+  Firefox observation/explicit-open/toolbar contracts, installed Firefox 152
+  observed/opened capture, repository quality and release security/privacy
+  audits, and warnings-denied Sphinx 8.2.3 passed. Docker Desktop again did not
+  answer within the bounded 30-second container build attempt. Capture against
+  the paired live DASObjectStore authority remains before XIMG-096 can close.
   Verification on 2026-07-16: all 166 workspace tests, strict CLI Clippy,
   repository quality/privacy/version checks, release security/license audits,
   strict JSON contracts, and warnings-denied Sphinx 8.2.3 passed. Docker

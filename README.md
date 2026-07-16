@@ -285,6 +285,14 @@ site policy, adapter, and candidate bound before adding a redacted plan to the
 common scheduler. It does not accept browser media bytes or mark anything as
 stored. See [Firefox capture plans](docs/firefox-capture.rst).
 
+The packaged manifest uses Firefox's background-script declaration while
+retaining the service-worker declaration for compatible browsers. On macOS,
+``make firefox-capture-check`` installs an isolated temporary test copy in real
+Firefox and proves that an observed linked thumbnail and a trusted user-opened
+original reach the production capture-plan path. The harness also covers
+explicitly enabled HTTPS sites on non-default ports: policy and provenance keep
+the exact port even though Firefox match patterns are port-independent.
+
 For an explicitly enabled site, a toolbar action can now replace a visible
 proven alias with its exact reviewed DASObjectStore image. The authenticated
 delivery route streams bytes without local persistence; Firefox validates the

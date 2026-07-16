@@ -306,6 +306,13 @@ normalized-video playback. Synthetic cards and proxy visuals are development
 scaffolding only and are not release evidence. XIMG-096 is the normative
 end-to-end gate for this intent.
 
+Installed Firefox 152 now accepts the dual background manifest, and an isolated
+WebDriver BiDi harness proves an observed linked thumbnail plus trusted opened
+original through the production capture path. Non-default-port sites retain
+exact-origin policy/provenance while using Firefox's required port-independent
+host match pattern. Live paired DASObjectStore commit and restart evidence is
+still required to close XIMG-096.
+
 - XIMG-050 implements the Mnemosyne-compatible Monas shell (commit `9e9cabb`):
   semantic-token CSS, compact header, responsive accessible empty state, and
   one mandatory footer provenance mark; host authentication remains Monas-owned.

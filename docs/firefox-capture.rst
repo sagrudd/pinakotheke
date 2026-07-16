@@ -7,6 +7,35 @@ committed catalogue item. Durable bytes remain with DASObjectStore, and a plan
 can proceed only through a future approved acquisition worker, ObjectStore
 verification, reconciliation, and review admission.
 
+Installed Firefox acceptance
+----------------------------
+
+On macOS, ``make firefox-capture-check`` starts the installed Firefox binary
+with an isolated temporary profile and an ephemeral HTTPS gallery. It installs
+an unsigned temporary test copy of the extension, uses the production
+background and content scripts, observes a linked thumbnail, and performs a
+trusted WebDriver BiDi pointer click on that thumbnail. The check requires one
+``observed_thumbnail`` request and one ``explicit_original`` request to share
+the opened presentation identity, and rejects payload, cookie, and header
+fields. The certificate, profile, add-on, and synthetic media are removed at
+the end of the run.
+
+The test copy is instrumented only to pre-authorize its ephemeral loopback
+origin and invoke the same action used by the toolbar; it is not release-XPI
+signature evidence. Firefox temporary extension installation is provided by
+the `WebDriver BiDi extension commands
+<https://firefox-source-docs.mozilla.org/remote/webdriver-bidi/Extensions.html>`_.
+The shipped manifest declares both ``background.scripts`` and
+``background.service_worker`` because Firefox uses the former; see the
+`Firefox background manifest reference
+<https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/background>`_.
+
+Firefox match patterns do not encode a port. Pinakotheke therefore requests
+the HTTPS host pattern needed by Firefox while retaining and comparing the
+complete origin, including its port, in site policy, capture requests, and
+provenance. Enabling one origin does not create a policy entry for another
+port.
+
 Eligibility
 -----------
 

@@ -17,6 +17,12 @@ browser.runtime.onStartup.addListener(syncExplicitOpenObservers);
 
 const EXPLICIT_OPEN_SCRIPT_ID = "pinakotheke-explicit-open-v1";
 
+function originMatchPattern(rawOrigin) {
+  const origin = new URL(rawOrigin);
+  if (origin.protocol !== "https:") throw new Error("only HTTPS origins are supported");
+  return `https://${origin.hostname}/*`;
+}
+
 async function matchingAdapter(url) {
   const registry = await fetch(browser.runtime.getURL("adapters.json")).then(response => response.json());
   const target = new URL(url);
@@ -48,9 +54,9 @@ async function syncExplicitOpenObservers() {
   await browser.scripting.registerContentScripts([{
     id: EXPLICIT_OPEN_SCRIPT_ID,
     js: ["content-explicit-open.js"],
-    matches: eligible.map(({ site }) => `${site.origin}/*`),
+    matches: eligible.map(({ site }) => originMatchPattern(site.origin)),
     excludeMatches: eligible.flatMap(({ site, adapter }) =>
-      adapter.exclude_paths.map(path => `${site.origin}${path}*`)),
+      adapter.exclude_paths.map(path => `${originMatchPattern(site.origin).slice(0, -2)}${path}*`)),
     allFrames: false,
     persistAcrossSessions: true,
     runAt: "document_idle",

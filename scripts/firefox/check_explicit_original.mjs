@@ -14,7 +14,7 @@ const storage = {
   instanceUrl: "https://pinakotheke.example.invalid",
   pairId: "pair-1",
   sites: [{
-    origin: "https://art.example.invalid",
+    origin: "https://art.example.invalid:8443",
     capture: true,
     substitution: false,
     media: ["images"],
@@ -141,7 +141,7 @@ assert.equal(contentMessages[0].command, "explicit-original-opened");
 assert.equal(contentMessages[0].presentationUrl, "https://media.example.invalid/open.jpg?signed=drop");
 assert.equal(contentMessages[0].width, 2048);
 
-const sender = { tab: { id: 7, url: "https://art.example.invalid/gallery?private=drop" } };
+const sender = { tab: { id: 7, url: "https://art.example.invalid:8443/gallery?private=drop" } };
 const result = await messageListener({
   command: "explicit-original-opened",
   mediaUrl: "https://media.example.invalid/original.jpg?signed=drop#fragment",
@@ -157,7 +157,7 @@ assert.equal(
 );
 const body = JSON.parse(captures[0].options.body);
 assert.equal(body.capture_kind, "explicit_original");
-assert.equal(body.origin, "https://art.example.invalid");
+assert.equal(body.origin, "https://art.example.invalid:8443");
 assert.equal(body.page_url, sender.tab.url, "page provenance must come from Firefox sender state");
 assert.equal(body.media_url, "https://media.example.invalid/original.jpg");
 assert.equal(body.presentation_url, "https://media.example.invalid/original.jpg");

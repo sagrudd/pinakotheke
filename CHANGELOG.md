@@ -7,9 +7,13 @@ All notable changes to Pinakotheke will be documented in this file. The project 
 
 ### Added
 
+- Add isolated installed-Firefox acceptance for an observed linked thumbnail
+  and trusted explicitly opened original through the production capture path.
+
 - Define XIMG-096 as the non-waivable Firefox-to-DASObjectStore-to-gallery
   stable-release gate and add its first bounded, Monas-authenticated gallery
   catalogue boundary with explicit object availability and no origin fallback.
+
 - Replace the Yew gallery's synthetic cards and proxy visuals with the canonical
   Monas-forwarded catalogue, real authorized media elements, source-derived
   filters, and explicit safe failure states.
@@ -136,6 +140,13 @@ All notable changes to Pinakotheke will be documented in this file. The project 
 - Complete the coordinated Pinakotheke identity migration across the Rust
   workspace, active authority contracts, Firefox identity, packaging defaults,
   documentation, and canonical public repository while retaining compatibility.
+
+### Fixed
+
+- Declare both Firefox ``background.scripts`` and cross-browser
+  ``background.service_worker`` in extension manifests, and generate valid
+  port-independent WebExtension match patterns for non-default-port HTTPS
+  origins while retaining the exact origin in policy and provenance.
 
 ## [0.9.0] - 2026-07-15
 
