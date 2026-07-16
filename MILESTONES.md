@@ -341,6 +341,15 @@ Desktop did not restore its daemon socket after the subsequent authorized
 restart, so the corrected authority rerun remains explicit rather than being
 replaced with direct-S3 evidence.
 
+DASObjectStore commit ``b35ee0b2`` and the Pinakotheke container helper now
+prove the missing authority core with real generated data: duplicate capture
+converges to one immutable object version, scoped readback verifies the exact
+checksum, and restart retains exactly one catalogue row. The final clean-home
+gate is narrowed to composing that authority evidence with the already-proven
+Monas login/monolith lifecycle in one run. Gallery admission additionally
+requires the capture upload to preserve its verified image media type rather
+than the provider's generic binary default.
+
 - XIMG-050 implements the Mnemosyne-compatible Monas shell (commit `9e9cabb`):
   semantic-token CSS, compact header, responsive accessible empty state, and
   one mandatory footer provenance mark; host authentication remains Monas-owned.

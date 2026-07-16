@@ -13,6 +13,9 @@ All notable changes to Pinakotheke will be documented in this file. The project 
   outcome.
 - Record the live authority defects resolved by DASObjectStore ``720ae9c1``:
   isolated port alignment and canonical folder-profile capacity binding.
+- Prove duplicate container-side captures, scoped checksum-verified readback,
+  and restart persistence against DASObjectStore ``b35ee0b2``; record the
+  remaining same-home Monas composition and media-type preservation gates.
 
 - Record and validate the DASObjectStore container-side remote-completion
   prerequisite that removes Docker Desktop bind-mounted Unix sockets from the

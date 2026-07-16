@@ -379,10 +379,20 @@ revisions; they are compatibility pins, not dependencies of the public build:
   container-packaged remote client;
 * DASObjectStore ``720ae9c1`` for aligned isolated-profile ports and the
   idempotent canonical folder binding required by daemon capacity admission;
-  and
+* DASObjectStore ``b35ee0b2`` for region-consistent provider verification,
+  matched finite capacity, durable local catalogue registration, and
+  retry-stable immutable remote-upload identity; and
 * Mnemosyne design language ``5539df8f662a78ebdf7cf4c868d71831380c8cfd`` and
   Mnemosyne ``52810176bf95a170f93d74a6f5daa94da5c6640e`` for host-relative
   product/API and task-pane boundaries.
+
+The current first live authority proof commits and reads the exact image bytes
+and converges duplicate requests. Garage still reports the uploaded object as
+``application/octet-stream`` because the remote upload command does not yet
+carry the helper's verified ``image/*`` media type. Treat this as an explicit
+gallery-admission blocker: do not relabel it in Pinakotheke or infer MIME from a
+filename. The next adapter slice must preserve the reviewed type at upload and
+verify it through ``head-object``.
 
 The persistent observer uses Firefox Manifest V3
 ``scripting.registerContentScripts`` with the already granted exact-origin

@@ -1084,6 +1084,18 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   binding. Docker Desktop then failed to restore its daemon socket after an
   authorized restart. The remaining gate is to rerun this fixed profile,
   commit/read the synthetic object, restart, and reconcile once.
+  Authority-core evidence now passes against DASObjectStore commit
+  ``b35ee0b2``: a clean canonical temporary home provisions a bounded local
+  profile, two identical HTTPS image acquisitions converge on one checksum key
+  and one immutable catalogue version, the scoped Pinakotheke read helper
+  verifies all 8,090 bytes, and daemon restart plus reprovision preserves one
+  catalogue row and the same checksum. The run also fixed S3 region handoff,
+  matching store/binding capacity, durable local catalogue placement, initial
+  profile-store registration, and retry-stable provider identity. The remaining
+  XIMG-094 step is the same-home Monas login/monolith composition and clean
+  shutdown. Before XIMG-096 gallery admission, capture upload must also preserve
+  the verified ``image/*`` content type instead of Garage's current
+  ``application/octet-stream`` default.
   Verification: all 173 workspace tests, strict workspace Clippy, repository
   quality/privacy/version checks, release security/license audits, and
   warnings-denied Sphinx 8.2.3 pass locally. The isolated containers and HOME

@@ -64,6 +64,7 @@ struct ContainerExecution {
 
 #[derive(Debug, Serialize)]
 #[serde(tag = "outcome", rename_all = "snake_case")]
+#[serde(rename = "committed")]
 struct Committed {
     schema_version: &'static str,
     catalogue_id: String,
@@ -656,6 +657,25 @@ mod tests {
             max_image_bytes: Some(1024),
         };
         assert!(validate_request(&request, &config).is_err());
+    }
+
+    #[test]
+    fn committed_receipt_uses_the_lowercase_protocol_discriminator() {
+        let receipt = Committed {
+            schema_version: REQUEST_SCHEMA,
+            catalogue_id: "card-1".into(),
+            title: "Synthetic".into(),
+            content_type: "image/png".into(),
+            content_length: 7,
+            endpoint_id: "endpoint-1".into(),
+            object_store_id: "store-1".into(),
+            object_key: "media/checksum".into(),
+            object_version: 1,
+            checksum_sha256: "a".repeat(64),
+            verified_at_epoch_seconds: 1,
+        };
+        let encoded = serde_json::to_value(receipt).unwrap();
+        assert_eq!(encoded["outcome"], "committed");
     }
 
     #[test]

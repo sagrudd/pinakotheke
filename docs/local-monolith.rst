@@ -282,3 +282,10 @@ keeps a non-default four-port Garage range aligned with Compose and provisions
 the canonical folder binding before remote completion reaches capacity
 admission. Do not substitute a direct S3 write when either authority contract
 is missing.
+
+The authority-core run against DASObjectStore ``b35ee0b2`` proves two identical
+capture submissions converge to one immutable catalogue object, scoped readback
+matches the complete SHA-256 digest, and restart preserves that single version.
+The remaining clean-home release check is to compose those operations with
+Monas login and the running monolith in the same temporary home, then shut the
+whole stack down cleanly.
