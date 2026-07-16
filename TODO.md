@@ -349,6 +349,29 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   over its synthetic catalogue. Server-side account/platform/site/media/time/
   dimension/review/object filters remain the catalogue API follow-up.
 
+- [ ] **XIMG-096 P0 — Prove the critical Firefox-capture-to-gallery vertical.**
+  This is a normative stable-release correction and cannot be satisfied by
+  synthetic cards, proxy artwork, packaging evidence, or published release
+  metadata. Through the Monas-authenticated Pinakotheke instance, prove that an
+  image thumbnail actually observed by Firefox and an original explicitly
+  opened by the user are committed to the selected DASObjectStore, admitted to
+  the common review catalogue, rendered as real ThumbsPlus-style cards, and
+  opened from authorized ObjectStore delivery without origin fallback. Prove
+  the equivalent user-selected video path through verified normalization,
+  poster/card rendering, and Firefox play, seek, pause, and resume. Restart the
+  local monolith and verify that cards, provenance, review state, endpoint/store
+  identity, and object availability survive. Exercise unavailable-object and
+  partial-failure states without broken media or silent origin access, plus a
+  large mixed catalogue with virtualization, keyboard traversal, filters, and
+  responsive desktop/mobile layouts. The evidence must use real Firefox and
+  ephemeral redistributable media; stored bytes remain solely in
+  DASObjectStore. Delivery slices: (1) a bounded host-authenticated gallery
+  catalogue exposing only verified ObjectStore references and explicit
+  availability; (2) replace synthetic Yew records and visual proxies with that
+  API and authorized image/video routes; (3) persistent capture/review wiring
+  and the restart/Firefox acceptance harness. Update the ThumbsPlus-style user
+  documentation and record the local container-built Sphinx evidence.
+
 ## 0.6.0 — Firefox capture
 
 - [x] **XIMG-060 P0 — Scaffold least-privilege Firefox extension.** Completed in

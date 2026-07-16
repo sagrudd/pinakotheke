@@ -297,6 +297,15 @@ Exit criteria:
 
 Goal: deliver the dense, fast visual browser.
 
+Critical product intent: Pinakotheke is a Monas-authenticated, ThumbsPlus-like
+personal media library for the images and videos that the user captures with
+Firefox. The useful product is the complete path from an observed thumbnail or
+explicitly opened/selected original, through the chosen DASObjectStore and the
+common review catalogue, to a real gallery card and authorized image preview or
+normalized-video playback. Synthetic cards and proxy visuals are development
+scaffolding only and are not release evidence. XIMG-096 is the normative
+end-to-end gate for this intent.
+
 - XIMG-050 implements the Mnemosyne-compatible Monas shell (commit `9e9cabb`):
   semantic-token CSS, compact header, responsive accessible empty state, and
   one mandatory footer provenance mark; host authentication remains Monas-owned.
@@ -348,6 +357,11 @@ Exit criteria:
   writable/read-only, health, capacity, pairing, TLS, and reconnect states
   without silently changing a reviewed destination; and
 - no full administration form is permanently embedded in the browsing view.
+
+The exit criteria above are component criteria. Stable-release acceptance also
+requires XIMG-096 to prove the assembled Firefox-to-DASObjectStore-to-gallery
+vertical with real ephemeral media, persistence across restart, explicit
+unavailable states, and no origin fallback.
 
 ## 0.6.0 — Firefox site capture
 
@@ -508,6 +522,13 @@ Exit criteria:
 
 Goal: stable public interfaces and dependable day-to-day operation.
 
+Normative correction: the critical Firefox-capture-to-ThumbsPlus-gallery intent
+defined in 0.5.0 and XIMG-096 is a mandatory v1 product criterion. Existing
+published v1.0.0 packaging and identity evidence does not prove this functional
+vertical and must not be used to waive it. Until XIMG-096 passes, the historical
+tag remains published but the complete v1 product claim is not functionally
+closed; the next stable release must carry the backfilled evidence.
+
 Published: ``v1.0.0`` is the canonical Pinakotheke release at
 https://github.com/sagrudd/pinakotheke/releases/tag/v1.0.0 with thirteen
 verified artifacts, checksums, typed manifest, CycloneDX SBOM, compatibility
@@ -542,6 +563,10 @@ Pinakotheke product rather than leaving release operations on candidate paths.
 Exit criteria:
 
 - no unresolved P0/P1 TODOs;
+- XIMG-096 proves real Firefox image and normalized-video capture through the
+  selected DASObjectStore into persistent, responsive ThumbsPlus-style cards,
+  authorized preview/playback, review state, and restart recovery without
+  synthetic media or origin fallback;
 - the coordinated Pinakotheke rename/rebrand is complete across user-facing
   documentation, Rust/code identifiers, CLI/package/product metadata,
   Monas/Synoptikon/DASObjectStore adapters, Firefox extension identity, and
