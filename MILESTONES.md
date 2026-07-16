@@ -347,8 +347,12 @@ converges to one immutable object version, scoped readback verifies the exact
 checksum, and restart retains exactly one catalogue row. The final clean-home
 gate is narrowed to composing that authority evidence with the already-proven
 Monas login/monolith lifecycle in one run. Gallery admission additionally
-requires the capture upload to preserve its verified image media type rather
-than the provider's generic binary default.
+required the capture upload to preserve its verified image media type rather
+than the provider's generic binary default. Pinakotheke now passes its bounded
+HTTPS ``image/*`` result through the native and container upload paths using
+the validated DASObjectStore remote-client contract introduced at sibling
+commit ``7a3d5578``. Live same-home readback still must prove that provider
+metadata and authorized delivery return that exact type.
 
 - XIMG-050 implements the Mnemosyne-compatible Monas shell (commit `9e9cabb`):
   semantic-token CSS, compact header, responsive accessible empty state, and

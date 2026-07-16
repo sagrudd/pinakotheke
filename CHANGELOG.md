@@ -16,6 +16,9 @@ All notable changes to Pinakotheke will be documented in this file. The project 
 - Prove duplicate container-side captures, scoped checksum-verified readback,
   and restart persistence against DASObjectStore ``b35ee0b2``; record the
   remaining same-home Monas composition and media-type preservation gates.
+- Preserve the capture helper's verified image MIME type through native and
+  container uploads using DASObjectStore's validated single-object content-type
+  contract at sibling commit ``7a3d5578``.
 
 - Record and validate the DASObjectStore container-side remote-completion
   prerequisite that removes Docker Desktop bind-mounted Unix sockets from the

@@ -1093,10 +1093,12 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   matching store/binding capacity, durable local catalogue placement, initial
   profile-store registration, and retry-stable provider identity. The remaining
   XIMG-094 step is the same-home Monas login/monolith composition and clean
-  shutdown. Before XIMG-096 gallery admission, capture upload must also preserve
-  the verified ``image/*`` content type instead of Garage's current
-  ``application/octet-stream`` default.
-  Verification: all 173 workspace tests, strict workspace Clippy, repository
+  shutdown. The capture helper now forwards its bounded verified ``image/*``
+  type through both native and container execution using the validated
+  ``--content-type`` contract in DASObjectStore commit ``7a3d5578``. The next
+  live run must prove provider head/readback returns that exact type rather
+  than ``application/octet-stream`` before XIMG-096 gallery admission.
+  Verification: all 175 workspace tests, strict workspace Clippy, repository
   quality/privacy/version checks, release security/license audits, and
   warnings-denied Sphinx 8.2.3 pass locally. The isolated containers and HOME
   were removed after evidence collection; unrelated DAS development containers

@@ -167,6 +167,13 @@ the complete metadata document. A restart test proves that one card retains
 both object references, dimensions, ``New`` review state, and ready
 availability without retaining image bytes.
 
+The packaged acquisition helper preserves the bounded ``image/*`` type reported
+by HTTPS retrieval when it submits either a native or container-side upload.
+It uses the validated single-file ``--content-type`` contract introduced by
+DASObjectStore commit ``7a3d5578``; folder uploads and malformed or parameterized
+MIME values are rejected. The remaining clean-home proof must confirm that the
+provider and authorized readback return the same type before gallery admission.
+
 Authorized gallery image delivery
 ---------------------------------
 

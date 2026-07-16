@@ -227,7 +227,14 @@ fn acquire(request: &Request, config: &Config) -> Result<Committed, Box<dyn std:
     let checksum = sha256_file(&payload)?;
     let object_key = format!("media/{checksum}");
     let version = u64::from_str_radix(&checksum[..16], 16).unwrap_or(1).max(1);
-    let mut upload = upload_command(config, &scratch, &payload, request, &object_key)?;
+    let mut upload = upload_command(
+        config,
+        &scratch,
+        &payload,
+        request,
+        &object_key,
+        &content_type,
+    )?;
     let (upload_status, upload_stdout) = output_bounded(&mut upload, 64 * 1024)?;
     if !upload_status.success() {
         return Err("DASObjectStore remote upload failed".into());
@@ -261,6 +268,7 @@ fn upload_command(
     payload: &Path,
     request: &Request,
     object_key: &str,
+    content_type: &str,
 ) -> Result<Command, Box<dyn std::error::Error>> {
     if let Some(container) = &config.container_execution {
         let remote_config = scratch.path.join("remote.json");
@@ -290,6 +298,8 @@ fn upload_command(
             .arg(container_payload)
             .arg("--key")
             .arg(object_key)
+            .arg("--content-type")
+            .arg(content_type)
             .args(["--no-progress", "--submit-to-daemon", "--daemon-socket"])
             .arg(&container.daemon_socket)
             .stderr(Stdio::null());
@@ -315,6 +325,8 @@ fn upload_command(
         .arg(payload)
         .arg("--key")
         .arg(object_key)
+        .arg("--content-type")
+        .arg(content_type)
         .args(["--no-progress", "--submit-to-daemon", "--daemon-socket"])
         .arg(
             config
@@ -570,7 +582,7 @@ mod tests {
         );
         executable(
             &remote,
-            "#!/bin/sh\nprintf '%s' \"$*\" | grep -q -- '--config .* upload store-1 --source .* --key media/.* --no-progress --submit-to-daemon --daemon-socket' || exit 9\nprintf 'Daemon remote upload job submitted\\nFinal: job state=Complete stage=remote_s3_transfer_complete\\n'\n",
+            "#!/bin/sh\nprintf '%s' \"$*\" | grep -q -- '--config .* upload store-1 --source .* --key media/.* --content-type image/png --no-progress --submit-to-daemon --daemon-socket' || exit 9\nprintf 'Daemon remote upload job submitted\\nFinal: job state=Complete stage=remote_s3_transfer_complete\\n'\n",
         );
         let remote_config = root.join("remote.json");
         fs::write(&remote_config, "{}").unwrap();
@@ -754,6 +766,7 @@ mod tests {
             )
         );
         assert!(arguments.contains("dasobjectstored dasobjectstore-remote --config"));
+        assert!(arguments.contains("--content-type image/png"));
         assert!(arguments.contains("--daemon-socket /run/dasobjectstore/dasobjectstored.sock"));
         assert_eq!(fs::read_dir(&managed).unwrap().count(), 0);
         let _ = fs::remove_dir_all(root);
