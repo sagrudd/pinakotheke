@@ -1105,6 +1105,10 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   image arrived without an observed-thumbnail plan. Original-first admission
   now creates a reviewable card using the same verified DAS object for its
   initial thumbnail delivery role; a later thumbnail safely replaces that role.
+  Delivered in ``b9697ec`` and ``f81235e``. Live DASServer restart recovery
+  settled ``capture-plan-5`` without a new browser submission, logged
+  ``gallery_admitted``, and produced an original-first gallery card whose
+  thumbnail and preview roles reference the same existing DAS object.
   Image delivery landed in ``dc09fe6``: enabled pages debounce load, mutation,
   and scroll observations; meaningful visible images are submitted without a
   toolbar action; linked originals retain the trusted-click boundary; and an
