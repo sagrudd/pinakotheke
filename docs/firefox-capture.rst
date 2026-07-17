@@ -415,9 +415,9 @@ the helper cannot infer a first store, change the endpoint selected by the
 capture authority, or prompt for a password in the background.
 
 ``object_store_bucket`` is retained only for compatibility with older private
-configurations. Authoritative daemon submission deliberately ignores it and
-passes the reviewed logical ``object_store_id``; DASObjectStore alone resolves
-the logical store to its current Garage bucket binding.
+configurations. Authoritative daemon submission passes both the reviewed
+logical ``object_store_id`` and this reviewed provider binding; DASObjectStore
+validates and settles the upload under the logical store authority.
 
 On macOS Docker Desktop, use the authority container rather than a
 container-created socket path on the host. DASObjectStore commit ``01a8c385``

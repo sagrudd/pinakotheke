@@ -386,6 +386,14 @@ fn upload_command(
             // logical ObjectStore identifier and let DASObjectStore resolve
             // its current bucket binding.
             .arg(&request.object_store_id)
+            .args(
+                config
+                    .object_store_bucket
+                    .as_deref()
+                    .map(|bucket| ["--bucket", bucket])
+                    .into_iter()
+                    .flatten(),
+            )
             .arg("--source")
             .arg(container_payload)
             .arg("--key")
@@ -413,6 +421,14 @@ fn upload_command(
         )
         .arg("upload")
         .arg(&request.object_store_id)
+        .args(
+            config
+                .object_store_bucket
+                .as_deref()
+                .map(|bucket| ["--bucket", bucket])
+                .into_iter()
+                .flatten(),
+        )
         .arg("--source")
         .arg(payload)
         .arg("--key")
@@ -809,7 +825,7 @@ mod tests {
         );
         executable(
             &remote,
-            "#!/bin/sh\nprintf '%s' \"$*\" | grep -q -- '--config .* upload store-1 --source .* --key sites/site-1/observed_thumbnail/.* --content-type image/png --no-progress --submit-to-daemon --daemon-socket' || exit 9\nprintf 'Daemon remote upload job submitted\\nFinal: job state=Complete stage=remote_s3_transfer_complete\\n'\n",
+            "#!/bin/sh\nprintf '%s' \"$*\" | grep -q -- '--config .* upload store-1 --bucket dos-store-1 --source .* --key sites/site-1/observed_thumbnail/.* --content-type image/png --no-progress --submit-to-daemon --daemon-socket' || exit 9\nprintf 'Daemon remote upload job submitted\\nFinal: job state=Complete stage=remote_s3_transfer_complete\\n'\n",
         );
         let remote_config = root.join("remote.json");
         fs::write(&remote_config, "{}").unwrap();

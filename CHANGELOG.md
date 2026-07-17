@@ -11,8 +11,9 @@
 - Remove transfer-only capture success: every image/video upload must complete
   through DASObjectStore daemon verification and authoritative catalogue
   publication.
-- Submit the reviewed logical ObjectStore ID to the DASObjectStore daemon,
-  leaving transport bucket resolution to the storage authority.
+- Submit the reviewed logical ObjectStore ID and provider binding to the
+  DASObjectStore daemon, leaving verification and catalogue settlement to the
+  storage authority.
 
 ## Unreleased
 
