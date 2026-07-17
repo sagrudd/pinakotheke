@@ -739,7 +739,7 @@ pub fn monolith_router_with_gallery_web_delivery_and_capture_authority(
             protected = protected
                 .route(
                     "/products/pinakotheke/api/extension/v1/site-corpus",
-                    get(get_site_corpus).put(put_site_corpus),
+                    get(get_site_corpus).post(put_site_corpus),
                 )
                 .layer(Extension(Arc::new(Mutex::new(site_corpus))));
         }
@@ -2879,7 +2879,7 @@ mod tests {
             .clone()
             .oneshot(
                 Request::builder()
-                    .method("PUT")
+                    .method("POST")
                     .uri("/products/pinakotheke/api/extension/v1/site-corpus")
                     .header("content-type", "application/json")
                     .header("x-monas-dispatch-token", token)
@@ -2893,7 +2893,7 @@ mod tests {
         let saved_json: serde_json::Value =
             serde_json::from_slice(&to_bytes(saved.into_body(), 4096).await.unwrap()).unwrap();
         assert_eq!(saved_json["revision"], 1);
-        let stale = app.clone().oneshot(Request::builder().method("PUT").uri("/products/pinakotheke/api/extension/v1/site-corpus").header("content-type", "application/json").header("x-monas-dispatch-token", token).header("x-monas-host-context", MONAS_CONTEXT).body(Body::from(r#"{"schema_version":"pinakotheke.site-corpus.v1","expected_revision":0,"rules":[]}"#)).unwrap()).await.unwrap();
+        let stale = app.clone().oneshot(Request::builder().method("POST").uri("/products/pinakotheke/api/extension/v1/site-corpus").header("content-type", "application/json").header("x-monas-dispatch-token", token).header("x-monas-host-context", MONAS_CONTEXT).body(Body::from(r#"{"schema_version":"pinakotheke.site-corpus.v1","expected_revision":0,"rules":[]}"#)).unwrap()).await.unwrap();
         assert_eq!(stale.status(), StatusCode::CONFLICT);
         let current: serde_json::Value =
             serde_json::from_slice(&to_bytes(stale.into_body(), 4096).await.unwrap()).unwrap();

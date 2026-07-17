@@ -42,7 +42,7 @@ async function syncSiteCorpusFromServer() {
       || !Number.isSafeInteger(corpus.revision) || !Array.isArray(corpus.rules)) return { outcome: "invalid" };
     if (corpus.revision === 0 && corpus.rules.length === 0 && (stored.sites || []).length > 0) {
       const upload = await fetch(`${stored.instanceUrl}/products/pinakotheke/api/extension/v1/site-corpus`, {
-        method: "PUT",
+        method: "POST",
         cache: "no-store",
         headers: { "content-type": "application/json", "x-pinakotheke-pairing": stored.pairId },
         body: JSON.stringify({

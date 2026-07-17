@@ -40,7 +40,7 @@ async function persistSites(nextSites) {
     return { outcome: 'local' };
   }
   const response = await fetch(`${stored.instanceUrl}/products/pinakotheke/api/extension/v1/site-corpus`, {
-    method: 'PUT',
+    method: 'POST',
     cache: 'no-store',
     headers: { 'content-type': 'application/json', 'x-pinakotheke-pairing': stored.pairId },
     body: JSON.stringify({

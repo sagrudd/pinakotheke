@@ -56,7 +56,7 @@ browsing and synchronizes it after pairing and browser startup.
 
 On first pairing, existing local rules are uploaded when the server corpus is
 empty. On later starts, the server revision restores rules to a replacement
-profile or additional paired device. Every options-page change supplies the
+profile or additional paired device. Every options-page POST supplies the
 last observed revision. HTTP 409 means another device changed the corpus;
 Firefox restores that newer server value and asks the user to review it rather
 than overwriting it. A server or network failure retains the previous corpus
