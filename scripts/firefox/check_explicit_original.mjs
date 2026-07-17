@@ -119,16 +119,14 @@ storage.sites.push({
   media: ["images"],
 });
 storage.instanceId = "";
-backgroundContext.document.images = [{
-  complete: true,
-  currentSrc: "https://pbs.twimg.com/media/visible-thumbnail.jpg?format=jpg&name=small",
-  naturalWidth: 640,
-  naturalHeight: 480,
-  closest(selector) { return selector === "a[href]" ? { href: "https://x.com/FixtureArtist/status/42" } : null; },
-  getBoundingClientRect() { return { width: 640, height: 480, top: 0, left: 0, bottom: 480, right: 640 }; },
-}];
+backgroundContext.document.images = [];
 await messageListener(
-  { command: "visible-media-changed" },
+  { command: "visible-media-changed", images: [{
+    url: "https://pbs.twimg.com/media/visible-thumbnail.jpg?format=jpg&name=small",
+    presentationUrl: "https://x.com/FixtureArtist/status/42",
+    width: 640,
+    height: 480,
+  }] },
   { tab: { id: 8, url: "https://x.com/home" } },
 );
 await new Promise(resolve => setImmediate(resolve));

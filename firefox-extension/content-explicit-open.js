@@ -6,10 +6,32 @@ if (!globalThis.__pinakothekeExplicitOpenObserver) {
   style.textContent = ".pinakotheke-stored-object { box-sizing: border-box !important; border: 2px solid #238636 !important; }";
   (document.head || document.documentElement).append(style);
   const canonical = raw => { const url = new URL(raw); url.search = ""; url.hash = ""; return url.href; };
+  const visibleImages = () => [...document.images]
+    .filter(image => {
+      const style = getComputedStyle(image);
+      const rect = image.getBoundingClientRect();
+      return image.complete && image.currentSrc
+        && image.naturalWidth >= 64 && image.naturalHeight >= 64
+        && style.display !== "none" && style.visibility !== "hidden"
+        && Number(style.opacity) > 0
+        && rect.width > 0 && rect.height > 0
+        && rect.bottom > 0 && rect.right > 0
+        && rect.top < innerHeight && rect.left < innerWidth;
+    })
+    .map(image => ({
+      url: image.currentSrc,
+      presentationUrl: image.closest("a[href]")?.href || image.currentSrc,
+      width: image.naturalWidth,
+      height: image.naturalHeight,
+    }))
+    .slice(0, 16);
   let observationTimer;
   const observed = () => {
     clearTimeout(observationTimer);
-    observationTimer = setTimeout(() => void browser.runtime.sendMessage({ command: "visible-media-changed" }), 250);
+    observationTimer = setTimeout(() => void browser.runtime.sendMessage({
+      command: "visible-media-changed",
+      images: visibleImages(),
+    }), 250);
   };
   new MutationObserver(observed).observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ["src", "srcset"] });
   document.addEventListener("scroll", observed, { passive: true, capture: true });

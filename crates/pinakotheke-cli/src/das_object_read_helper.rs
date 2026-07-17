@@ -2,6 +2,7 @@
 //! First-party bounded DASObjectStore object-read helper.
 
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use std::{
     fs::{self, File},
     io::{self, Read, Write},
@@ -150,18 +151,21 @@ fn serve(
         .checksum
         .strip_prefix("sha256:")
         .ok_or("unsupported checksum")?;
+    let authority_checksum = head
+        .metadata
+        .get("dasobjectstore-sha256")
+        .map(String::as_str);
     if head.content_length == 0
         || head.content_length > config.max_object_bytes.unwrap_or(DEFAULT_MAX_OBJECT_BYTES)
-        || head
-            .metadata
-            .get("dasobjectstore-sha256")
-            .map(String::as_str)
-            != Some(expected)
+        || authority_checksum.is_some_and(|checksum| checksum != expected)
+        || (request.range.is_some() && authority_checksum != Some(expected))
     {
         return Err("DAS authority metadata did not verify".into());
     }
     let etag = format!("\"sha256:{expected}\"");
-    if request.if_none_match_etag.as_deref() == Some(&etag) && request.range.is_none() {
+    let conditional_match =
+        request.if_none_match_etag.as_deref() == Some(&etag) && request.range.is_none();
+    if conditional_match && authority_checksum == Some(expected) {
         serde_json::to_writer(
             &mut protocol_out,
             &Response::NotModified {
@@ -188,6 +192,20 @@ fn serve(
     if length != expected_length {
         return Err("DAS object length did not verify".into());
     }
+    if range.is_none() && sha256_file(&object)? != expected {
+        return Err("DAS object checksum did not verify".into());
+    }
+    if conditional_match {
+        serde_json::to_writer(
+            &mut protocol_out,
+            &Response::NotModified {
+                schema_version: REQUEST_SCHEMA,
+                etag: &etag,
+            },
+        )?;
+        writeln!(protocol_out)?;
+        return Ok(());
+    }
     let content_type = head
         .content_type
         .as_deref()
@@ -213,6 +231,20 @@ fn serve(
         &mut payload_out,
     )?;
     Ok(())
+}
+
+fn sha256_file(path: &Path) -> io::Result<String> {
+    let mut file = File::open(path)?;
+    let mut digest = Sha256::new();
+    let mut buffer = [0_u8; 64 * 1024];
+    loop {
+        let read = file.read(&mut buffer)?;
+        if read == 0 {
+            break;
+        }
+        digest.update(&buffer[..read]);
+    }
+    Ok(format!("{:x}", digest.finalize()))
 }
 
 fn aws_base(config: &Config) -> Command {
@@ -500,6 +532,22 @@ mod tests {
                 .unwrap()
                 .contains("\"content_length\":3")
         );
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn verifies_full_legacy_object_bytes_when_authority_checksum_metadata_is_absent() {
+        let (root, config, mut request) = fixture();
+        fs::write(&config.aws_executable, "#!/bin/sh\ncase \"$*\" in *head-object*) printf '%s' '{\"ContentLength\":3,\"ContentType\":\"image/png\",\"Metadata\":{}}';; *get-object*) for arg do out=$arg; done; printf abc > \"$out\";; *) exit 9;; esac\n").unwrap();
+        let mut payload = Vec::new();
+        serve(&request, &config, &mut payload, Vec::new()).unwrap();
+        assert_eq!(payload, b"abc");
+
+        request.range = Some(Range {
+            start: 0,
+            end_inclusive: 1,
+        });
+        assert!(serve(&request, &config, Vec::new(), Vec::new()).is_err());
         fs::remove_dir_all(root).unwrap();
     }
 

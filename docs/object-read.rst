@@ -91,14 +91,18 @@ and never enter Pinakotheke configuration, requests, logs, or browser state.
 Only HTTPS endpoints are accepted, except explicit loopback HTTP development
 endpoints.
 
-The helper performs a bounded ``head-object`` before every read and requires
-the exact ``dasobjectstore-sha256`` metadata written by DASObjectStore's
-completion-bearing upload. It then uses structured ``s3api get-object``
-arguments, optionally with one reviewed byte range, into a private ephemeral
-directory. Length and metadata are verified before the response header is
-emitted; the supervisor additionally verifies the complete stream checksum.
-Scratch is deleted on every outcome and is never placed under the Pinakotheke
-root. Conditional checksum ETags avoid a payload read.
+The helper performs a bounded ``head-object`` before every read. When the
+object has ``dasobjectstore-sha256`` metadata it must exactly match the reviewed
+commit. A complete legacy S3-export object without that optional metadata is
+downloaded into private bounded scratch and its bytes are SHA-256 verified
+before any response header or payload is emitted. A ranged read remains
+fail-closed unless the authority metadata contains the exact checksum, because
+a partial byte range cannot independently prove the full-object digest. The
+helper uses structured ``s3api get-object`` arguments and verifies lengths;
+the supervisor additionally verifies complete streamed checksums. Scratch is
+deleted on every outcome and is never placed under the Pinakotheke root.
+Conditional checksum ETags avoid a payload read only when authority checksum
+metadata already proves the object; legacy objects are verified first.
 
 The strict configuration schema is
 ``contracts/dasobjectstore/pinakotheke-das-object-read-helper.v1.schema.json``.

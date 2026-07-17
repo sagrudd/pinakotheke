@@ -1,7 +1,7 @@
 {
   "schema_version": "x-img.monas-product-bootstrap.v1",
   "product_id": "pinakotheke",
-  "product_version": "1.7.1",
+  "product_version": "1.7.2",
   "host": "monas",
   "host_mode": "monas_standalone",
   "product_root": "/opt/pinakotheke",

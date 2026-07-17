@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Report bounded visible-image snapshots from the exact-origin Firefox content
+  observer so X mutations and image-navigator changes trigger automatic
+  thumbnail planning without a second privileged DOM execution.
+- Verify complete legacy DAS S3-export objects against their committed SHA-256
+  before gallery delivery when optional authority checksum metadata is absent;
+  ranged reads remain fail-closed without that metadata.
 - Accept the already-canonical X image ``format``/``name`` variant as a safe
   reconciliation alias, allowing a verified DASObjectStore commit to settle
   into the gallery while continuing to reject arbitrary or signed queries.

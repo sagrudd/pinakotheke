@@ -482,7 +482,23 @@ async function recordSegmentedOriginFallback(origin, kind) {
   });
 }
 
-async function runCacheForTab(tab) {
+function validatedObservedImages(images) {
+  if (!Array.isArray(images)) return null;
+  return images.slice(0, 16).flatMap(image => {
+    try {
+      const url = new URL(image.url);
+      const presentation = new URL(image.presentationUrl || image.url);
+      if (url.protocol !== "https:" || presentation.protocol !== "https:"
+        || !Number.isInteger(image.width) || !Number.isInteger(image.height)
+        || image.width < 1 || image.height < 1 || image.width > 32768 || image.height > 32768) return [];
+      return [{ url: url.href, presentationUrl: presentation.href, width: image.width, height: image.height }];
+    } catch (_) {
+      return [];
+    }
+  });
+}
+
+async function runCacheForTab(tab, contentImages = null) {
   try {
     if (!tab.id || !tab.url) {
       await traceEvent("viewport_scan", "skipped", "tab identity unavailable");
@@ -508,8 +524,9 @@ async function runCacheForTab(tab) {
       await traceEvent("viewport_scan", "skipped", "no eligible adapter", origin);
       return;
     }
+    const reported = validatedObservedImages(contentImages);
     const displayed = rule.media.includes("images")
-      ? (await browser.scripting.executeScript({ target: { tabId: tab.id }, func: displayedImages }))[0].result || []
+      ? reported || (await browser.scripting.executeScript({ target: { tabId: tab.id }, func: displayedImages }))[0].result || []
       : [];
     const images = eligibleObservedImages(origin, rule, displayed);
     await traceEvent("viewport_scan", "complete", `${displayed.length} visible image(s); ${images.length} eligible`, origin);
@@ -628,7 +645,7 @@ browser.runtime.onMessage.addListener(async (message, sender) => {
   }
   if (message?.command === "visible-media-changed" && sender?.tab) {
     await traceEvent("content_observer", "signal", "visible media changed", new URL(sender.tab.url).origin);
-    await runCacheForTab(sender.tab);
+    await runCacheForTab(sender.tab, message.images);
     return { completed: true };
   }
   if (!["explicit-original-opened", "explicit-video-opened"].includes(message?.command) || !sender?.tab?.id || !sender.tab.url) {

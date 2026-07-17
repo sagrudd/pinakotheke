@@ -2,7 +2,7 @@
 
 Status: 1.0 stable release
 
-Version: 1.7.1
+Version: 1.7.2
 
 Updated: 2026-07-17
 
@@ -937,6 +937,14 @@ Goal: settle an acquired X image whose canonical ``pbs.twimg.com`` alias keeps
 the strictly validated ``format`` and ``name`` variant. Reconciliation reuses
 the admission canonicalizer and continues to reject arbitrary queries, signed
 parameters, fragments, credentials, and non-canonical parameter ordering.
+
+## 1.7.2 — Observable thumbnails and verified gallery delivery
+
+Goal: have the exact-origin content observer report its bounded visible-image
+set with each mutation/navigation signal so capture does not depend on a second
+privileged page execution. Restore legacy DAS S3-export image delivery by
+verifying complete downloaded bytes against the committed SHA-256 before
+streaming; range delivery remains blocked without authority checksum metadata.
 
 ## Post-1.0 candidates
 

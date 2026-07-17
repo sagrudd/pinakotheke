@@ -2,7 +2,7 @@
 
 Status: dependency-ordered planning backlog
 
-Version: 1.7.1
+Version: 1.7.2
 
 Updated: 2026-07-17
 
@@ -1109,6 +1109,15 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   settled ``capture-plan-5`` without a new browser submission, logged
   ``gallery_admitted``, and produced an original-first gallery card whose
   thumbnail and preview roles reference the same existing DAS object.
+  Live gallery requests exposed HTTP 502 because the first-party read-helper
+  config was absent and existing DAS S3-export objects lack optional checksum
+  metadata. Version 1.7.2 provisions the reviewed store mapping and permits
+  full-image delivery only after bounded scratch download and SHA-256
+  verification; range reads still require authority checksum metadata.
+  Automatic X thumbnails produced no plans while explicit navigator opens did.
+  The exact-origin observer now supplies its validated visible-image snapshot
+  with each mutation signal, avoiding a second privileged DOM execution while
+  retaining viewport, size, HTTPS, origin-policy, and candidate bounds.
   Image delivery landed in ``dc09fe6``: enabled pages debounce load, mutation,
   and scroll observations; meaningful visible images are submitted without a
   toolbar action; linked originals retain the trusted-click boundary; and an
