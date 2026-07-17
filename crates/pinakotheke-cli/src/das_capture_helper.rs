@@ -25,6 +25,8 @@ struct Request {
     origin: String,
     canonical_page_url: String,
     canonical_media_url: String,
+    #[serde(default)]
+    retrieval_media_url: String,
     canonical_presentation_url: String,
     capture_kind: String,
     width: u32,
@@ -257,6 +259,11 @@ fn acquire(request: &Request, config: &Config) -> Result<Committed, Box<dyn std:
     };
     let max_bytes_text = max_bytes.to_string();
     let mut curl = Command::new(&config.curl_executable);
+    let retrieval_media_url = if request.retrieval_media_url.is_empty() {
+        &request.canonical_media_url
+    } else {
+        &request.retrieval_media_url
+    };
     curl.args([
         "--fail",
         "--silent",
@@ -278,7 +285,7 @@ fn acquire(request: &Request, config: &Config) -> Result<Committed, Box<dyn std:
     ])
     .arg(&payload)
     .args(["--write-out", "%{content_type}"])
-    .arg(&request.canonical_media_url)
+    .arg(retrieval_media_url)
     .stderr(Stdio::null());
     let (curl_status, curl_stdout) = output_bounded(&mut curl, 128)?;
     if !curl_status.success() {
@@ -564,12 +571,19 @@ fn validate_request(request: &Request, config: &Config) -> Result<(), Box<dyn st
     let origin = request.origin.parse::<axum::http::Uri>()?;
     let page = request.canonical_page_url.parse::<axum::http::Uri>()?;
     let media = request.canonical_media_url.parse::<axum::http::Uri>()?;
+    let retrieval_media_url = if request.retrieval_media_url.is_empty() {
+        &request.canonical_media_url
+    } else {
+        &request.retrieval_media_url
+    };
+    let retrieval = retrieval_media_url.parse::<axum::http::Uri>()?;
     let presentation = request
         .canonical_presentation_url
         .parse::<axum::http::Uri>()?;
     if origin.scheme_str() != Some("https")
         || page.scheme_str() != Some("https")
         || media.scheme_str() != Some("https")
+        || retrieval.scheme_str() != Some("https")
         || presentation.scheme_str() != Some("https")
         || page.authority() != origin.authority()
         || origin
@@ -579,6 +593,9 @@ fn validate_request(request: &Request, config: &Config) -> Result<(), Box<dyn st
             .authority()
             .is_some_and(|value| value.as_str().contains('@'))
         || media
+            .authority()
+            .is_some_and(|value| value.as_str().contains('@'))
+        || retrieval
             .authority()
             .is_some_and(|value| value.as_str().contains('@'))
         || presentation
@@ -855,6 +872,7 @@ mod tests {
             origin: "https://example.invalid".into(),
             canonical_page_url: "https://example.invalid/gallery".into(),
             canonical_media_url: "https://media.invalid/image.png".into(),
+            retrieval_media_url: "https://media.invalid/image.png".into(),
             canonical_presentation_url: "https://example.invalid/artists/example/status/1".into(),
             capture_kind: "observed_thumbnail".into(),
             width: 10,
@@ -907,6 +925,7 @@ mod tests {
             origin: "https://example.invalid".into(),
             canonical_page_url: "https://example.invalid/gallery".into(),
             canonical_media_url: "https://media.invalid/image.png".into(),
+            retrieval_media_url: "https://media.invalid/image.png".into(),
             canonical_presentation_url: "https://example.invalid/artists/example/status/1".into(),
             capture_kind: "explicit_original".into(),
             width: 10,
@@ -941,6 +960,7 @@ mod tests {
             origin: "https://media.example.invalid".into(),
             canonical_page_url: "https://media.example.invalid/watch/1".into(),
             canonical_media_url: "https://cdn.example.invalid/media/1.mp4".into(),
+            retrieval_media_url: "https://cdn.example.invalid/media/1.mp4?token=test".into(),
             canonical_presentation_url: "https://media.example.invalid/watch/1".into(),
             capture_kind: "explicit_video".into(),
             width: 1280,
@@ -994,6 +1014,7 @@ mod tests {
             origin: "https://x.com".into(),
             canonical_page_url: "https://x.com/home".into(),
             canonical_media_url: "https://pbs.twimg.com/media/image".into(),
+            retrieval_media_url: "https://pbs.twimg.com/media/image".into(),
             canonical_presentation_url: "https://x.com/Example_Artist/status/42".into(),
             capture_kind: "observed_thumbnail".into(),
             width: 640,
@@ -1071,6 +1092,7 @@ mod tests {
             origin: "https://example.invalid".into(),
             canonical_page_url: "https://example.invalid/gallery".into(),
             canonical_media_url: "https://media.invalid/image.png".into(),
+            retrieval_media_url: "https://media.invalid/image.png".into(),
             canonical_presentation_url: "https://example.invalid/artists/example/status/1".into(),
             capture_kind: "explicit_original".into(),
             width: 10,

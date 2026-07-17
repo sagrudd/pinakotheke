@@ -2,7 +2,7 @@
 
 Status: dependency-ordered planning backlog
 
-Version: 1.11.2
+Version: 1.12.0
 
 Updated: 2026-07-17
 
@@ -1259,6 +1259,12 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   Website names must not be compiled into code, manifests, fixtures, or user
   documentation. Acceptance requires generic-origin unit coverage and an
   installed-Firefox proof against one operator-enabled origin.
+  Pinakotheke 1.12.0 detects an opaque progressive HTTPS resource exposed in
+  the trusted-play window and carries its validated exact retrieval URL
+  privately to the isolated acquisition helper. Stable query-free identity
+  still provides idempotency, while a rotated capability refreshes an
+  unsettled plan. Synthetic browser and core coverage pass. Keep this item
+  open pending signed-extension deployment and installed-Firefox proof.
 
 - [ ] **XIMG-111 P0 — Automate container normalization handoff.**
   When progressive media is eligible but not already in the browser playback

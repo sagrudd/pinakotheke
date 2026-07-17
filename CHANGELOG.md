@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.12.0 - 2026-07-17
+
+- Detect user-played opaque progressive HTTPS video resources within a bounded
+  trusted-activation window on any explicitly enabled origin.
+- Preserve a validated exact retrieval capability privately through the
+  isolated acquisition helper while retaining query-free canonical identity
+  for idempotency and catalogue provenance.
+- Refresh rotating retrieval capabilities on unsettled plans without creating
+  duplicate media plans or exposing signed queries through APIs or logs.
+
 ## 1.11.0 - 2026-07-17
 
 - Terminate HTTPS directly in the Pinakotheke Axum service with Rustls using an

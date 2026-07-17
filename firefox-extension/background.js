@@ -219,6 +219,15 @@ function canonicalAlias(rawUrl) {
   return url.href;
 }
 
+function exactHttpsRetrievalUrl(rawUrl) {
+  const parsed = new URL(rawUrl);
+  if (parsed.protocol !== "https:" || parsed.username || parsed.password || rawUrl.length > 4096) {
+    throw new Error("media retrieval URL is not eligible");
+  }
+  parsed.hash = "";
+  return parsed.href;
+}
+
 async function substituteDisplayedImage(candidate) {
   const canonical = rawUrl => {
     const url = new URL(rawUrl);
@@ -673,7 +682,9 @@ browser.runtime.onMessage.addListener(async (message, sender) => {
     const height = Number(message.height);
     if (!Number.isInteger(width) || !Number.isInteger(height)
       || width < 1 || height < 1 || width > 32768 || height > 32768) return undefined;
-    const mediaUrl = canonicalAlias(String(message.mediaUrl));
+    const mediaUrl = video
+      ? exactHttpsRetrievalUrl(String(message.mediaUrl))
+      : canonicalAlias(String(message.mediaUrl));
     const presentationUrl = canonicalAlias(String(message.presentationUrl || message.mediaUrl));
     if (video && origin === "https://x.com" && new URL(mediaUrl).hostname !== "video.twimg.com") {
       await recordSiteDiagnostic(origin, { channel: "capture", state: "Video unavailable", reason: "The opened X video did not expose an eligible X media resource", previouslyObserved: true, storedInObjectStore: false });

@@ -62,6 +62,10 @@ pub struct CapturePlan {
     pub origin: String,
     pub canonical_page_url: String,
     pub canonical_media_url: String,
+    /// Exact, short-lived HTTPS retrieval capability. Never expose this in
+    /// catalogue records, diagnostics, or user-facing logs.
+    #[serde(skip_serializing)]
+    pub retrieval_media_url: String,
     pub canonical_presentation_url: String,
     pub catalogue_id: String,
     pub adapter_kind: AdapterKind,
@@ -372,19 +376,36 @@ impl CapturePlanService {
         }
         let canonical_page_url = canonical_page_url(&request.origin, &request.page_url)
             .ok_or(CapturePlanError::InvalidRequest)?;
+        let retrieval_media =
+            retrieval_media_url(&request.media_url).ok_or(CapturePlanError::InvalidRequest)?;
         let canonical_media =
             canonical_media_url(&request.media_url).ok_or(CapturePlanError::InvalidRequest)?;
         let canonical_presentation_url = match request.presentation_url.as_deref() {
             Some(value) => canonical_media_url(value).ok_or(CapturePlanError::InvalidRequest)?,
             None => canonical_media.clone(),
         };
-        if let Some(existing) = self.accepted.iter().find(|pending| {
+        if let Some(index) = self.accepted.iter().position(|pending| {
             pending.actor_id == actor_id
                 && pending.plan.site_id == site.site_id
                 && pending.plan.canonical_media_url == canonical_media
                 && pending.plan.capture_kind == request.capture_kind
         }) {
-            return Ok(existing.plan.clone());
+            // Signed delivery capabilities can rotate while the stable media
+            // identity remains unchanged. Refresh only an unsettled plan so a
+            // retry can use the newest browser-observed capability.
+            if !self.accepted[index].settled
+                && self.accepted[index].plan.retrieval_media_url != retrieval_media
+            {
+                let mut replacement = self.accepted.clone();
+                replacement[index].plan.retrieval_media_url = retrieval_media;
+                if let Some(journal) = &self.journal {
+                    journal
+                        .replace(&replacement)
+                        .map_err(|_| CapturePlanError::Persistence)?;
+                }
+                self.accepted = replacement;
+            }
+            return Ok(self.accepted[index].plan.clone());
         }
         let day = now / 86_400;
         let observed = self
@@ -422,6 +443,7 @@ impl CapturePlanService {
             origin: request.origin,
             canonical_page_url,
             canonical_media_url: canonical_media,
+            retrieval_media_url: retrieval_media,
             catalogue_id,
             canonical_presentation_url,
             adapter_kind: request.adapter_kind,
@@ -484,6 +506,7 @@ fn validate_request(request: &CapturePlanRequest) -> Result<(), CapturePlanError
         || canonical_page_url(&request.origin, &request.page_url).is_none()
         || !is_semver(&request.adapter_version)
         || canonical_media_url(&request.media_url).is_none()
+        || retrieval_media_url(&request.media_url).is_none()
         || request
             .presentation_url
             .as_deref()
@@ -496,6 +519,22 @@ fn validate_request(request: &CapturePlanRequest) -> Result<(), CapturePlanError
         return Err(CapturePlanError::InvalidRequest);
     }
     Ok(())
+}
+
+pub(crate) fn retrieval_media_url(value: &str) -> Option<String> {
+    if value.len() > 4_096
+        || !value.starts_with("https://")
+        || value.contains([' ', '\n', '\r', '@'])
+    {
+        return None;
+    }
+    let exact = value.split('#').next()?;
+    let host_and_path = exact.strip_prefix("https://")?;
+    let host = host_and_path.split('/').next()?.split('?').next()?;
+    if host.is_empty() || host.contains(':') || host.contains('*') {
+        return None;
+    }
+    Some(exact.to_owned())
 }
 
 #[must_use]
@@ -639,10 +678,52 @@ mod tests {
             plan.canonical_media_url,
             "https://example.invalid/media/thumbnail.webp"
         );
+        assert_eq!(
+            plan.retrieval_media_url,
+            "https://example.invalid/media/thumbnail.webp?rotating=signature"
+        );
         assert_eq!(plan.canonical_page_url, "https://example.invalid/gallery");
         assert_eq!(plan.capture_kind, CaptureKind::ObservedThumbnail);
         assert_eq!(plan.scheduler_job_id, "refresh-0");
         assert_eq!(plan.state, CapturePlanState::AwaitingApprovedAcquisition);
+    }
+
+    #[test]
+    fn rotating_video_capability_refreshes_one_unsettled_canonical_plan() {
+        let mut planner = CapturePlanService::new(
+            [CapturePairing {
+                pairing_id: "pair-0".into(),
+                actor_id: "actor".into(),
+                expires_at: 100,
+                revoked: false,
+            }],
+            [SiteCapturePolicy {
+                site_id: "site".into(),
+                origin: "https://example.invalid".into(),
+                capture_enabled: true,
+                adapter_kind: AdapterKind::ExperimentalGeneric,
+                adapter_version: "1.0.0".into(),
+                allow_observed_thumbnails: true,
+                allow_explicit_originals: true,
+                max_candidates_per_page: 2,
+            }],
+        );
+        let mut first = request();
+        first.capture_kind = CaptureKind::ExplicitVideo;
+        first.media_url = "https://cdn.example.invalid/opaque?token=first#ignored".into();
+        let initial = planner.plan("actor", 1, first).expect("initial plan");
+        let mut rotated = request();
+        rotated.capture_kind = CaptureKind::ExplicitVideo;
+        rotated.media_url = "https://cdn.example.invalid/opaque?token=second".into();
+        let refreshed = planner.plan("actor", 2, rotated).expect("refreshed plan");
+
+        assert_eq!(initial.plan_id, refreshed.plan_id);
+        assert_eq!(refreshed.canonical_media_url, "https://cdn.example.invalid/opaque");
+        assert_eq!(
+            refreshed.retrieval_media_url,
+            "https://cdn.example.invalid/opaque?token=second"
+        );
+        assert_eq!(planner.accepted.len(), 1);
     }
 
     #[test]

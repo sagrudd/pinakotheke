@@ -155,15 +155,17 @@ assert.deepEqual(Array.from(registeredScripts[0].excludeMatches), [
 assert.equal(registeredScripts[0].persistAcrossSessions, true);
 assert.equal(registeredScripts[0].allFrames, false);
 
-let clickListener;
+const contentListeners = new Map();
 const contentMessages = [];
 class FixtureElement {
   closest(selector) {
     if (selector === "img") return this;
+    if (selector === "video" && this instanceof FixtureVideo) return this;
     if (selector === "a[href]") return { href: "https://media.example.invalid/open.jpg?signed=drop" };
     return null;
   }
 }
+class FixtureVideo extends FixtureElement {}
 const openedImage = new FixtureElement();
 openedImage.currentSrc = "https://media.example.invalid/thumb.jpg";
 openedImage.naturalWidth = 2048;
@@ -181,19 +183,30 @@ vm.runInNewContext(contentSource, {
     createElement() { return { textContent: "" }; },
     querySelectorAll() { return []; },
     addEventListener(kind, callback, capture) {
-      if (kind === "click") {
-        assert.equal(capture, true);
-        clickListener = callback;
-      }
+      contentListeners.set(kind, callback);
+      if (["click", "pointerdown", "play"].includes(kind)) assert.equal(capture, true);
     },
   },
   Element: FixtureElement,
-  HTMLVideoElement: class {},
+  HTMLVideoElement: FixtureVideo,
   MutationObserver: class { observe() {} },
   setTimeout() { return 1; },
   clearTimeout() {},
+  performance: {
+    now() { return 5000; },
+    getEntriesByType(type) {
+      assert.equal(type, "resource");
+      return [
+        { name: "https://cdn.example.invalid/unrelated.mp4", initiatorType: "video", startTime: 100 },
+        { name: "https://cdn.example.invalid/progressive/opaque-asset?token=ephemeral", initiatorType: "video", startTime: 5100 },
+        { name: "https://cdn.example.invalid/page-script", initiatorType: "script", startTime: 5150 },
+      ];
+    },
+  },
+  location: { href: "https://art.example.invalid:8443/watch/fixture" },
   URL,
 });
+const clickListener = contentListeners.get("click");
 assert.equal(typeof clickListener, "function");
 clickListener({ isTrusted: false, button: 0, target: openedImage });
 assert.equal(contentMessages.length, 0, "synthetic clicks must be ignored");
@@ -203,6 +216,19 @@ assert.equal(contentMessages[0].command, "explicit-original-opened");
 assert.equal(contentMessages[0].mediaUrl, "https://media.example.invalid/thumb.jpg");
 assert.equal(contentMessages[0].presentationUrl, "https://media.example.invalid/open.jpg?signed=drop");
 assert.equal(contentMessages[0].width, 2048);
+
+const playedVideo = new FixtureVideo();
+playedVideo.currentSrc = "blob:https://art.example.invalid/fixture";
+playedVideo.videoWidth = 1280;
+playedVideo.videoHeight = 720;
+playedVideo.clientWidth = 640;
+playedVideo.clientHeight = 360;
+contentListeners.get("pointerdown")({ isTrusted: true, target: playedVideo });
+contentListeners.get("play")({ isTrusted: true, target: playedVideo });
+assert.equal(contentMessages.length, 2);
+assert.equal(contentMessages[1].command, "explicit-video-opened");
+assert.equal(contentMessages[1].mediaUrl, "https://cdn.example.invalid/progressive/opaque-asset?token=ephemeral");
+assert.equal(contentMessages[1].width, 1280);
 
 const sender = { tab: { id: 7, url: "https://art.example.invalid:8443/gallery?private=drop" } };
 const result = await messageListener({
@@ -228,6 +254,22 @@ assert.equal(body.width, 1920);
 assert.equal(storage.siteDiagnostics[body.origin].state, "Stored in ObjectStore");
 assert.equal(storage.siteDiagnostics[body.origin].storedInObjectStore, true);
 
+captures.length = 0;
+storage.sites[0].media.push("videos");
+const videoResult = await messageListener({
+  command: "explicit-video-opened",
+  mediaUrl: "https://cdn.example.invalid/progressive/opaque-asset?token=ephemeral#fragment",
+  presentationUrl: "https://art.example.invalid:8443/watch/fixture",
+  width: 1280,
+  height: 720,
+}, sender);
+assert.equal(videoResult.completed, true);
+assert.equal(captures.length, 1);
+const videoBody = JSON.parse(captures[0].options.body);
+assert.equal(videoBody.capture_kind, "explicit_video");
+assert.equal(videoBody.media_url, "https://cdn.example.invalid/progressive/opaque-asset?token=ephemeral");
+assert.equal(videoBody.origin, "https://art.example.invalid:8443");
+
 storage.sites[0].capture = false;
 await messageListener({
   command: "explicit-original-opened",
@@ -239,4 +281,4 @@ assert.equal(captures.length, 1, "paused site policy must block explicit capture
 await messageListener({ command: "sync-capture-observers" }, {});
 assert.equal(registeredScripts.length, 0, "pausing capture removes the persistent observer");
 
-console.log("Firefox explicit-original contract passed: persistent exact-origin observer, trusted click, canonical request");
+console.log("Firefox explicit-media contract passed: persistent observer, trusted image/video activation, generic progressive request");

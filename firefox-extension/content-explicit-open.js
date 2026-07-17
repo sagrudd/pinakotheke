@@ -54,7 +54,10 @@ if (!globalThis.__pinakothekeExplicitOpenObserver) {
     for (let depth = 0; !video && element && depth < 5; depth += 1, element = element.parentElement) {
       video = element.querySelector?.("video") || null;
     }
-    if (video) videoActivations.set(video, Date.now());
+    if (video) videoActivations.set(video, {
+      epochMilliseconds: Date.now(),
+      performanceMilliseconds: performance.now(),
+    });
   };
   document.addEventListener("pointerdown", rememberVideoActivation, true);
   document.addEventListener("keydown", event => {
@@ -63,15 +66,18 @@ if (!globalThis.__pinakothekeExplicitOpenObserver) {
   document.addEventListener("play", event => {
     if (!event.isTrusted || !(event.target instanceof HTMLVideoElement) || !event.target.currentSrc) return;
     const video = event.target;
-    if (Date.now() - (videoActivations.get(video) || 0) > 2000) return;
+    const activation = videoActivations.get(video);
+    if (!activation || Date.now() - activation.epochMilliseconds > 2000) return;
     // X frequently presents a blob: URL to the element while Firefox has
     // already fetched a concrete, independently retrievable MP4 resource.
     // Resource timing exposes URLs, not request headers or cookies. Prefer the
     // newest HTTPS MP4 associated with the played element and retain the page
     // URL only as provenance. Segmented/MSE playback remains origin-served.
     const candidates = [video.currentSrc, ...performance.getEntriesByType("resource")
+      .filter(entry => entry.initiatorType === "video"
+        && entry.startTime >= activation.performanceMilliseconds - 1000)
       .map(entry => entry.name)
-      .filter(url => /^https:\/\//.test(url) && /\.mp4(?:\?|$)/i.test(url))
+      .filter(url => /^https:\/\//.test(url))
       .slice(-12)
       .reverse()];
     const mediaUrl = candidates.find(url => {

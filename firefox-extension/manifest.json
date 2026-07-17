@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Pinakotheke",
-  "version": "1.11.2",
+  "version": "1.12.0",
   "description": "Least-privilege client for one configured Pinakotheke instance.",
   "icons": {"16": "icon-16.png", "32": "icon-32.png", "48": "icon-48.png", "96": "icon-96.png"},
   "permissions": ["storage", "activeTab", "scripting"],

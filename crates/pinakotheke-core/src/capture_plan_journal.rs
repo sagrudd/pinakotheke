@@ -92,6 +92,8 @@ struct StoredCapturePlan {
     canonical_page_url: String,
     canonical_media_url: String,
     #[serde(default)]
+    retrieval_media_url: Option<String>,
+    #[serde(default)]
     canonical_presentation_url: Option<String>,
     adapter_kind: AdapterKind,
     adapter_version: String,
@@ -233,6 +235,9 @@ impl StoredPendingPlan {
 
 impl StoredCapturePlan {
     fn into_plan(self) -> Result<CapturePlan, CapturePlanJournalError> {
+        let retrieval_media_url = self
+            .retrieval_media_url
+            .unwrap_or_else(|| self.canonical_media_url.clone());
         let canonical_presentation_url = self
             .canonical_presentation_url
             .unwrap_or_else(|| self.canonical_media_url.clone());
@@ -254,6 +259,8 @@ impl StoredCapturePlan {
             || !https_url(&self.canonical_page_url)
             || canonical_media_url(&self.canonical_media_url).as_deref()
                 != Some(self.canonical_media_url.as_str())
+            || super::viewed_media::retrieval_media_url(&retrieval_media_url).as_deref()
+                != Some(retrieval_media_url.as_str())
             || canonical_media_url(&canonical_presentation_url).as_deref()
                 != Some(canonical_presentation_url.as_str())
             || !(self.canonical_page_url == self.origin
@@ -277,6 +284,7 @@ impl StoredCapturePlan {
             origin: self.origin,
             canonical_page_url: self.canonical_page_url,
             canonical_media_url: self.canonical_media_url,
+            retrieval_media_url,
             canonical_presentation_url,
             catalogue_id,
             adapter_kind: self.adapter_kind,
@@ -304,6 +312,7 @@ impl From<&PendingCapturePlan> for StoredPendingPlan {
                 origin: plan.origin.clone(),
                 canonical_page_url: plan.canonical_page_url.clone(),
                 canonical_media_url: plan.canonical_media_url.clone(),
+                retrieval_media_url: Some(plan.retrieval_media_url.clone()),
                 canonical_presentation_url: Some(plan.canonical_presentation_url.clone()),
                 adapter_kind: plan.adapter_kind,
                 adapter_version: plan.adapter_version.clone(),
@@ -364,6 +373,7 @@ mod tests {
                 origin: "https://example.invalid".into(),
                 canonical_page_url: "https://example.invalid/page".into(),
                 canonical_media_url: "https://media.example.invalid/thumb.jpg".into(),
+                retrieval_media_url: "https://media.example.invalid/thumb.jpg".into(),
                 canonical_presentation_url: "https://media.example.invalid/thumb.jpg".into(),
                 catalogue_id,
                 adapter_kind: AdapterKind::ExperimentalGeneric,

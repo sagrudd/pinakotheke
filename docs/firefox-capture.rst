@@ -80,9 +80,10 @@ On the DASServer inspect them with:
      --no-pager | grep pinakotheke_ingress
 
 A trusted video ``play``
-gesture is detected. Pinakotheke 1.9 adds the first concrete X path: a trusted
-pointer or keyboard activation must be followed by playback, and Firefox must
-have exposed an HTTPS progressive MP4 from ``video.twimg.com``. That candidate
+gesture is detected. A trusted pointer or keyboard activation must be followed
+by playback, and Firefox must have exposed an HTTPS progressive response in
+that activation window. The URL may have an opaque path and a short-lived query;
+no website catalogue or filename suffix is used to recognize it. That candidate
 is routed through the capture worker, profile-verified, committed, admitted,
 and reported through an equivalent verified status. Blob-only or segmented/MSE
 playback remains origin-served and produces a redacted diagnostic; it is not
@@ -165,8 +166,13 @@ runnable Monas host mounts the endpoint at::
 The endpoint accepts strict JSON with schema version
 ``x-img.capture-request.v1``. Its required metadata is an opaque pairing
 reference, exact site origin, the current page URL, adapter kind and version,
-capture kind, source media URL, and positive dimensions. Query and fragment
-components are removed immediately. A linked image may add a presentation URL
+capture kind, source media URL, and positive dimensions. The stable canonical
+identity removes generic query and fragment components. A separately validated
+exact HTTPS retrieval URL preserves a short-lived CDN query only inside the
+private plan journal and isolated acquisition-helper request; it is omitted
+from API responses, catalogue metadata, diagnostics, and logs. A repeated
+unsettled identity may refresh this capability without creating another plan.
+A linked image may add a presentation URL
 that correlates the displayed thumbnail with the original the link opens; it
 does not authorize acquisition of anything the user did not observe or open.
 It has no payload field, headers field,

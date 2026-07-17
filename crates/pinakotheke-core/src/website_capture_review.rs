@@ -143,6 +143,7 @@ mod tests {
             origin: "https://example.invalid".into(),
             canonical_page_url: "https://example.invalid/gallery".into(),
             canonical_media_url: "https://example.invalid/media/thumbnail.webp".into(),
+            retrieval_media_url: "https://example.invalid/media/thumbnail.webp".into(),
             canonical_presentation_url: "https://example.invalid/media/thumbnail.webp".into(),
             catalogue_id: "website-card-1".into(),
             adapter_kind: AdapterKind::ExperimentalGeneric,
