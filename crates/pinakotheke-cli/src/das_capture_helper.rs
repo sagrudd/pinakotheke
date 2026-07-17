@@ -726,7 +726,10 @@ impl Scratch {
         #[cfg(unix)]
         {
             use std::os::unix::fs::PermissionsExt;
-            fs::set_permissions(&path, fs::Permissions::from_mode(0o700))?;
+            // Native daemon submission may run under the shared
+            // dasobjectstore group. A setgid TMPDIR supplies that group while
+            // this mode keeps the bounded payload unavailable to others.
+            fs::set_permissions(&path, fs::Permissions::from_mode(0o750))?;
         }
         Ok(Self { path })
     }

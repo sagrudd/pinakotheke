@@ -14,6 +14,8 @@
 - Submit the reviewed logical ObjectStore ID and provider binding to the
   DASObjectStore daemon, leaving verification and catalogue settlement to the
   storage authority.
+- Permit the DASObjectStore service group to read bounded native staging files
+  from a dedicated setgid ``TMPDIR`` until verified daemon completion.
 
 ## Unreleased
 

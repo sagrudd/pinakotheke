@@ -419,6 +419,13 @@ configurations. Authoritative daemon submission passes both the reviewed
 logical ``object_store_id`` and this reviewed provider binding; DASObjectStore
 validates and settles the upload under the logical store authority.
 
+For native daemon submission, configure ``TMPDIR`` as a dedicated ephemeral
+staging directory shared only by the Pinakotheke actor and the
+``dasobjectstore`` group. Make the directory setgid (mode ``2770``); each
+bounded capture directory is group-readable during submission and removed
+immediately afterwards. This avoids private-``/tmp`` namespace mismatches
+without creating a durable Pinakotheke payload store.
+
 On macOS Docker Desktop, use the authority container rather than a
 container-created socket path on the host. DASObjectStore commit ``01a8c385``
 packages the matching remote client and AWS CLI. Select this transport only in
