@@ -62,6 +62,11 @@ Firefox restores that newer server value and asks the user to review it rather
 than overwriting it. A server or network failure retains the previous corpus
 and reports that the requested change was not saved.
 
+Removed origins leave bounded revisioned tombstones, preventing an older
+paired device from resurrecting a deleted rule. Settings can export or import
+a bounded strict JSON rule document; this recovery document deliberately omits
+the server URL, pairing reference, endpoint/store authority, and diagnostics.
+
 The corpus contains exact origins, image/video selection, capture,
 substitution, and X-ingress intent. It contains no pairing secret, site
 credential, cookie, browsing history, or downloaded payload. Rules remain

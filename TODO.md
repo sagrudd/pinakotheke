@@ -1071,7 +1071,16 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   subdirectory. Deduplicate immutable bytes across actors while retaining
   actor-specific observation, provenance, and review state.
 
-- [ ] **XIMG-105 P0 — Persist and reconcile the user site corpus.** Store the
+- [x] **XIMG-105 P0 — Persist and reconcile the user site corpus.** Completed
+  in ``8bf3530`` with bounded deletion tombstones in ``7a2812d``. The strict
+  private store is actor-scoped and restart-safe; authenticated GET/PUT uses
+  optimistic revisions and returns HTTP 409 with the current corpus for stale
+  writers. Firefox migrates existing rules on first pairing, restores the
+  server corpus at startup, persists each settings change, reports conflicts,
+  and provides credential-free bounded JSON export/import. Native core/API
+  tests, strict clippy, wasm check, zero-warning ``web-ext`` lint, quality
+  checks, and the pinned Sphinx container build/run passed. Original scope:
+  store the
   strict versioned corpus of exact-origin rules under authenticated
   Pinakotheke authority, scoped to the actor and containing images/videos,
   capture, substitution, and X-ingress intent. Firefox keeps a local working
