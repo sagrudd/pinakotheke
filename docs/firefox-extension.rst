@@ -1,6 +1,19 @@
 Firefox extension scaffold
 ==========================
 
+Brand icon
+----------
+
+Firefox uses the approved black-and-white Mnemosyne Biosciences icon rather
+than its generic puzzle-piece fallback. The 16, 32, 48, and 96 pixel PNGs are
+aspect-preserving derivatives of
+``mnemosyne-biosciences-logo-icon-black.png`` from
+``mnemosyne_design_language`` commit
+``5539df8f662a78ebdf7cf4c868d71831380c8cfd``. Each derivative is centred on
+a transparent square canvas; the artwork is neither stretched nor recoloured.
+The 16/32 sizes serve the toolbar action and all four sizes serve Firefox's
+extension-management and installation surfaces.
+
 XIMG-060 supplies a Manifest V3 Firefox extension scaffold for one configured
 x-img instance. Its baseline permissions are only ``storage``, ``activeTab``,
 ``scripting``, and ``permissions``. Site access is an optional exact HTTPS

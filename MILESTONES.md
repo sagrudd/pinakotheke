@@ -2,7 +2,7 @@
 
 Status: 1.0 stable release
 
-Version: 1.2.1
+Version: 1.2.2
 
 Updated: 2026-07-17
 
@@ -819,6 +819,14 @@ embed DASObjectStore binaries, services, configuration, credentials, or object
 data; DASObjectStore retains its independent lifecycle and storage authority.
 XIMG-097 completed this boundary in ``c32241a`` with inspected DEB, RPM, and
 macOS PKG evidence.
+
+## 1.2.2 — Branded signed Firefox patch
+
+Goal: replace Firefox's generic puzzle-piece fallback with the approved
+black-and-white Mnemosyne Biosciences mark across the toolbar, Add-ons Manager,
+and installation prompt. The patch retains the signed extension identity,
+uses aspect-preserving transparent icon derivatives at Firefox-native sizes,
+and requires a new Mozilla unlisted signature before deployment.
 
 The deployed application itself is also a release gate: Monas must forward the
 built Pinakotheke HTML, JavaScript, CSS, and WASM rather than an empty product

@@ -14,6 +14,9 @@ ROOT = pathlib.Path(__file__).resolve().parents[2]
 MATRIX = ROOT / "docs/fixtures/release-audit-matrix.json"
 EXPECTED = {"privacy", "security", "accessibility", "licenses", "dependencies", "versions"}
 PAYLOAD_SUFFIXES = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".mp4", ".mov", ".mkv", ".webm", ".bam", ".cram", ".sra", ".fastq"}
+APPROVED_BRAND_ASSETS = {
+    pathlib.Path(f"firefox-extension/icon-{size}.png") for size in (16, 32, 48, 96)
+}
 
 
 def fail(message: str) -> None:
@@ -41,7 +44,8 @@ def audit_matrix() -> None:
 
 def privacy(files: list[pathlib.Path]) -> None:
     for path in files:
-        if path.suffix.lower() in PAYLOAD_SUFFIXES:
+        relative = path.relative_to(ROOT)
+        if path.suffix.lower() in PAYLOAD_SUFFIXES and relative not in APPROVED_BRAND_ASSETS:
             fail(f"tracked payload-like file is forbidden: {path.relative_to(ROOT)}")
         if path.suffix.lower() not in {".rs", ".py", ".sh", ".js", ".json", ".toml", ".md", ".rst", ".html", ".css", ".yml", ".yaml"}:
             continue
@@ -63,6 +67,13 @@ def security() -> None:
         fail("Firefox required permissions differ from the reviewed least-privilege set")
     if manifest.get("optional_host_permissions") != ["https://*/*"]:
         fail("Firefox origins must remain optional HTTPS permissions")
+    expected_icons = {str(size): f"icon-{size}.png" for size in (16, 32, 48, 96)}
+    if manifest.get("icons") != expected_icons:
+        fail("Firefox product icons differ from the approved Mnemosyne size set")
+    if manifest.get("action", {}).get("default_icon") != {
+        "16": "icon-16.png", "32": "icon-32.png"
+    }:
+        fail("Firefox toolbar icons differ from the approved Mnemosyne size set")
     collected = manifest.get("browser_specific_settings", {}).get("gecko", {}).get(
         "data_collection_permissions", {}
     ).get("required")

@@ -2,7 +2,7 @@
 
 Status: dependency-ordered planning backlog
 
-Version: 1.2.1
+Version: 1.2.2
 
 Updated: 2026-07-17
 
@@ -1029,6 +1029,14 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   Monas tests, WebAssembly checks, rendered desktop review, trusted-HTTPS
   inspection, and live DASServer deployment passed. Completed in sibling Monas
   commit ``114ef95`` on 2026-07-17.
+
+- [ ] **XIMG-102 P1 — Ship the branded signed Firefox extension.** Replace the
+  generic puzzle-piece fallback with approved grayscale Mnemosyne icon assets
+  at 16, 32, 48, and 96 pixels. Preserve aspect ratio and transparency, bind
+  the toolbar and product manifest icon maps, verify packaged XPI contents,
+  obtain the Mozilla unlisted ``1.2.2`` signature, prove permanent Firefox
+  installation, and update the trusted DASServer download without changing the
+  stable Gecko identity.
 
 - [x] **XIMG-090 P0 — Scaffold the runnable Pinakotheke monolith.** Completed
   in ``2cfa1e1``. ``pinakotheke serve`` now resolves ``$HOME/.x-img`` by

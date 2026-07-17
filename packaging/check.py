@@ -29,6 +29,11 @@ def check_sources(version: str, product: str) -> None:
     manifest_path = ROOT / "firefox-extension/manifest.json"
     manifest = json.loads(manifest_path.read_text())
     assert manifest["version"] == version
+    expected_icons = {str(size): f"icon-{size}.png" for size in (16, 32, 48, 96)}
+    assert manifest["icons"] == expected_icons
+    assert manifest["action"]["default_icon"] == {"16": "icon-16.png", "32": "icon-32.png"}
+    for icon in expected_icons.values():
+        assert (ROOT / "firefox-extension" / icon).is_file()
     bootstrap_path = (ROOT / "contracts/monas/x-img-product-bootstrap.v1.json" if product == "x-img" else
                       ROOT / "contracts/monas/x-img-product-bootstrap.v1.json")
     bootstrap = json.loads(bootstrap_path.read_text())
@@ -117,7 +122,10 @@ def main() -> int:
         if xpi.exists():
             with zipfile.ZipFile(xpi) as archive:
                 assert "manifest.json" in archive.namelist()
-                assert json.loads(archive.read("manifest.json"))["version"] == args.version
+                packaged_manifest = json.loads(archive.read("manifest.json"))
+                assert packaged_manifest["version"] == args.version
+                for icon in packaged_manifest["icons"].values():
+                    assert icon in archive.namelist()
     sbom = json.loads((args.dist / f"{args.product}-{args.version}.cdx.json").read_text())
     assert sbom["bomFormat"] == "CycloneDX"
     assert sbom["specVersion"] == "1.6"

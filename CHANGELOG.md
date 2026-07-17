@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Replace Firefox's generic puzzle-piece fallback with correctly scaled,
+  black-and-white Mnemosyne Biosciences icons for toolbar and add-on surfaces.
 - Adopt the product-aware, Mnemosyne-compliant Pinakotheke sign-on delivered by
   Monas 0.6.2 while preserving Monas/Prosopikon authentication ownership.
 - Add an AMO-compatible unlisted Firefox signing workflow with pinned Mozilla
