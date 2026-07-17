@@ -35,6 +35,14 @@ pub struct ActorSiteCorpus {
     pub schema_version: String,
     pub revision: u64,
     pub rules: Vec<SiteRule>,
+    pub tombstones: Vec<SiteTombstone>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct SiteTombstone {
+    pub origin: String,
+    pub deleted_at_revision: u64,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -121,13 +129,41 @@ impl SiteCorpusStore {
         if current.revision != requested.expected_revision {
             return Err(SiteCorpusError::Conflict(current));
         }
+        let next_revision = current
+            .revision
+            .checked_add(1)
+            .ok_or(SiteCorpusError::Invalid)?;
+        let requested_origins: BTreeSet<_> = requested
+            .rules
+            .iter()
+            .map(|rule| rule.origin.as_str())
+            .collect();
+        let current_origins: BTreeSet<_> = current
+            .rules
+            .iter()
+            .map(|rule| rule.origin.as_str())
+            .collect();
+        let mut tombstones: Vec<_> = current
+            .tombstones
+            .into_iter()
+            .filter(|item| !requested_origins.contains(item.origin.as_str()))
+            .collect();
+        for origin in current_origins.difference(&requested_origins) {
+            tombstones.retain(|item| item.origin != **origin);
+            tombstones.push(SiteTombstone {
+                origin: (*origin).to_owned(),
+                deleted_at_revision: next_revision,
+            });
+        }
+        tombstones.sort_by_key(|item| item.deleted_at_revision);
+        if tombstones.len() > MAX_RULES {
+            tombstones.drain(..tombstones.len() - MAX_RULES);
+        }
         let next = ActorSiteCorpus {
             schema_version: SITE_CORPUS_SCHEMA.into(),
-            revision: current
-                .revision
-                .checked_add(1)
-                .ok_or(SiteCorpusError::Invalid)?,
+            revision: next_revision,
             rules: requested.rules,
+            tombstones,
         };
         document.actors.insert(actor.into(), next.clone());
         if document.actors.len() > MAX_ACTORS {
@@ -174,6 +210,17 @@ impl SiteCorpusStore {
                 return Err(SiteCorpusError::UnsupportedSchema);
             }
             validate_rules(&corpus.rules)?;
+            if corpus.tombstones.len() > MAX_RULES
+                || corpus.tombstones.iter().any(|item| {
+                    item.deleted_at_revision == 0
+                        || item.deleted_at_revision > corpus.revision
+                        || Url::parse(&item.origin).map_or(true, |url| {
+                            url.origin().ascii_serialization() != item.origin
+                        })
+                })
+            {
+                return Err(SiteCorpusError::Invalid);
+            }
         }
         Ok(document)
     }
@@ -209,6 +256,7 @@ fn empty_corpus() -> ActorSiteCorpus {
         schema_version: SITE_CORPUS_SCHEMA.into(),
         revision: 0,
         rules: Vec::new(),
+        tombstones: Vec::new(),
     }
 }
 fn validate_actor(actor: &str) -> Result<(), SiteCorpusError> {
@@ -276,6 +324,18 @@ mod tests {
         assert!(
             matches!(store.replace("actor-1", request), Err(SiteCorpusError::Conflict(current)) if current.revision == 1)
         );
+        let deleted = store
+            .replace(
+                "actor-1",
+                ReplaceSiteCorpus {
+                    schema_version: SITE_CORPUS_SCHEMA.into(),
+                    expected_revision: 1,
+                    rules: Vec::new(),
+                },
+            )
+            .unwrap();
+        assert_eq!(deleted.tombstones[0].origin, "https://x.com");
+        assert_eq!(deleted.tombstones[0].deleted_at_revision, 2);
         let _ = fs::remove_dir_all(root);
     }
     #[test]
