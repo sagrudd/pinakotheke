@@ -884,6 +884,27 @@ Compatibility-sensitive references: Mnemosyne design language
 ``df452a5535f378ccf2b856d8d040b0c2659559a7``, and Mnemosyne
 ``52810176bf95a170f93d74a6f5daa94da5c6640e``.
 
+## 1.4.0 — Light-touch automatic cache
+
+Goal: reduce the Firefox interaction to defining an exact-origin import rule
+and browsing normally. The rule is standing capture consent: visible
+thumbnails are cached automatically, opened images acquire their originals,
+and opened/played videos are acquired when selected by the rule. Successful
+verified DASObjectStore commits appear immediately as ``New`` gallery cards;
+review is catalogue organisation after capture, never an ingest gate. Firefox
+marks material served by or verified in ObjectStore with a two-pixel green
+frame without modifying media bytes.
+
+The authenticated Pinakotheke service owns a versioned actor-scoped corpus of
+site definitions so signed extension updates, replacement Firefox profiles,
+and additional paired devices do not discard user configuration. Local rules
+remain available for low-latency browsing and reconcile explicitly with the
+server. Shared immutable payloads may deduplicate across users, while rule,
+observation, provenance, and review state remain actor-specific. X objects use
+the logical namespace and gallery grouping ``x.com/<canonical-account>/...``;
+this is not permission to bypass DASObjectStore with filesystem subfolders.
+XIMG-104 and XIMG-105 are release gates for this simplified metaphor.
+
 ## Post-1.0 candidates
 
 - Synoptikon catalogue/plugin integration through the preserved host adapter

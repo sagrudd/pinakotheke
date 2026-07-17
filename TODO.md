@@ -1052,6 +1052,32 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   pairing proof, and failed pairing when logged out or when payload values are
   changed.
 
+- [ ] **XIMG-104 P0 — Replace capture approval with automatic site caching.**
+  Treat an enabled exact-origin site rule as the user's standing consent to
+  cache the selected media classes. Cache displayed thumbnails immediately;
+  cache an image original only after the user opens it, and cache video only
+  after the user opens or plays it. Verified commits enter the common gallery
+  immediately with review state ``New`` and require no pre-ingest approval.
+  Ignore incidental browser/site chrome when a source adapter can identify
+  content media. A cache hit must add a non-obstructing two-pixel green frame
+  in Firefox using extension styling only; never mutate stored media bytes.
+  X media uses a stable logical DASObjectStore key prefix and gallery grouping
+  ``x.com/<canonical-account>/...`` rather than an unmanaged filesystem
+  subdirectory. Deduplicate immutable bytes across actors while retaining
+  actor-specific observation, provenance, and review state.
+
+- [ ] **XIMG-105 P0 — Persist and reconcile the user site corpus.** Store the
+  strict versioned corpus of exact-origin rules under authenticated
+  Pinakotheke authority, scoped to the actor and containing images/videos,
+  capture, substitution, and X-ingress intent. Firefox keeps a local working
+  copy for light-touch operation, but reconciles with the server after pairing
+  and startup. Ordinary signed-extension upgrades must preserve rules through
+  the stable Gecko identity and ``browser.storage.local``; uninstall, profile
+  replacement, or a second device restores them from Pinakotheke. Use explicit
+  revision/conflict handling, reject unknown schema majors, preserve deletions
+  with bounded tombstones, and never silently promote actor rules to a shared
+  multi-user policy. Add export/import for recovery without credentials.
+
 - [x] **XIMG-090 P0 — Scaffold the runnable Pinakotheke monolith.** Completed
   in ``2cfa1e1``. ``pinakotheke serve`` now resolves ``$HOME/.x-img`` by
   default, requires an absolute non-symlink root, creates only private
