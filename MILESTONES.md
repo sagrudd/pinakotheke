@@ -2,7 +2,7 @@
 
 Status: 1.0 stable release
 
-Version: 1.4.0
+Version: 1.5.0
 
 Updated: 2026-07-17
 
@@ -884,7 +884,13 @@ Compatibility-sensitive references: Mnemosyne design language
 ``df452a5535f378ccf2b856d8d040b0c2659559a7``, and Mnemosyne
 ``52810176bf95a170f93d74a6f5daa94da5c6640e``.
 
-## 1.4.0 — Light-touch automatic cache
+## 1.4.0 — Persistent site corpus
+
+Goal: make exact-origin import definitions durable actor data. XIMG-105
+delivered authenticated revisioned server persistence, conflict-safe Firefox
+synchronization, bounded deletion tombstones, and credential-free recovery.
+
+## 1.5.0 — Light-touch automatic cache
 
 Goal: reduce the Firefox interaction to defining an exact-origin import rule
 and browsing normally. The rule is standing capture consent: visible

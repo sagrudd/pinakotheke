@@ -65,7 +65,7 @@ release remains available from its historical
 with checksums, typed artifact manifest, CycloneDX SBOM, explicit limitations,
 and dual-architecture upgrade/rollback evidence.
 
-The `1.4.0` development workspace provides shared model and core boundaries, a `clap`
+The `1.5.0` development workspace provides shared model and core boundaries, a `clap`
 CLI, an Axum composition boundary, and a Yew client boundary. It compiles
 without enabling unconfigured source, storage, authentication, or media-payload
 integration. The first local monolith slice can now run a loopback Axum service

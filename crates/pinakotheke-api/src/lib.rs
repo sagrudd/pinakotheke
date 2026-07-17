@@ -318,6 +318,14 @@ struct PendingCapturePlansResponse {
     plans: Vec<CapturePlan>,
 }
 
+#[derive(Debug, Serialize)]
+struct CapturePlanStatusResponse {
+    schema_version: &'static str,
+    plan_id: String,
+    catalogue_id: String,
+    state: &'static str,
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct CaptureCompletionRequest {
@@ -766,6 +774,10 @@ pub fn monolith_router_with_gallery_web_delivery_and_capture_authority(
                 .route(
                     "/products/pinakotheke/api/internal/v1/capture-plans/{plan_id}/complete",
                     post(complete_capture_plan),
+                )
+                .route(
+                    "/products/pinakotheke/api/extension/v1/capture-plans/{plan_id}",
+                    get(capture_plan_state),
                 )
                 .layer(Extension(runtime));
         }
@@ -1424,6 +1436,39 @@ async fn capture_plan(
             .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     }
     Ok(Json(plan))
+}
+
+async fn capture_plan_state(
+    Path(plan_id): Path<String>,
+    Extension(context): Extension<AuthenticatedHostContext>,
+    Extension(runtime): Extension<Arc<CaptureCompletionRuntime>>,
+) -> Result<Json<CapturePlanStatusResponse>, StatusCode> {
+    if !context.permits(XIMG_ACCESS) {
+        return Err(StatusCode::FORBIDDEN);
+    }
+    let plans = runtime
+        .plans
+        .lock()
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let plan = plans
+        .pending(context.actor_id(), &plan_id)
+        .ok_or(StatusCode::NOT_FOUND)?;
+    let settled = plans.is_settled(context.actor_id(), &plan_id);
+    drop(plans);
+    let stored = settled
+        && runtime
+            .gallery
+            .lock()
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+            .items()
+            .iter()
+            .any(|item| item.catalogue_id == plan.catalogue_id);
+    Ok(Json(CapturePlanStatusResponse {
+        schema_version: "pinakotheke.capture-plan-status.v1",
+        plan_id,
+        catalogue_id: plan.catalogue_id,
+        state: if stored { "stored" } else { "pending" },
+    }))
 }
 
 fn schedule_capture_runtime(
@@ -3217,6 +3262,24 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(completed.status(), StatusCode::OK);
+        let stored = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .uri(format!(
+                        "/products/pinakotheke/api/extension/v1/capture-plans/{plan_id}"
+                    ))
+                    .header("x-monas-dispatch-token", dispatch)
+                    .header("x-monas-host-context", MONAS_CONTEXT)
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(stored.status(), StatusCode::OK);
+        let stored: serde_json::Value =
+            serde_json::from_slice(&to_bytes(stored.into_body(), 4096).await.unwrap()).unwrap();
+        assert_eq!(stored["state"], "stored");
         let catalogue = app
             .oneshot(
                 Request::builder()

@@ -17,6 +17,7 @@ browser.runtime.onInstalled.addListener(initializeStorage);
 browser.runtime.onStartup.addListener(syncExplicitOpenObservers);
 
 const EXPLICIT_OPEN_SCRIPT_ID = "pinakotheke-explicit-open-v1";
+const captureInFlight = new Set();
 
 function localRuleFromServer(rule) {
   return {
@@ -106,7 +107,7 @@ async function syncExplicitOpenObservers() {
   const { sites = [] } = await browser.storage.local.get(["sites"]);
   const eligible = [];
   for (const site of sites) {
-    if (!site.capture || !site.media?.includes("images")) continue;
+    if (!site.capture || !site.media?.some(kind => kind === "images" || kind === "videos")) continue;
     const adapter = await matchingAdapter(site.origin);
     if (adapter?.capabilities.explicit_original) eligible.push({ site, adapter });
   }
@@ -143,6 +144,32 @@ async function submitCapture(instanceUrl, pairId, origin, pageUrl, adapter, capt
       height: media.height,
     }),
   });
+}
+
+async function captureAndFrame(tabId, instanceUrl, pairId, origin, pageUrl, adapter, captureKind, media) {
+  const key = `${origin}|${captureKind}|${canonicalAlias(media.url)}`;
+  if (captureInFlight.has(key)) return { outcome: "in_flight" };
+  captureInFlight.add(key);
+  try {
+    const response = await submitCapture(instanceUrl, pairId, origin, pageUrl, adapter, captureKind, media);
+    if (!response.ok) return { outcome: "rejected" };
+    const plan = await response.json();
+    if (!plan.plan_id) return { outcome: "invalid" };
+    for (let attempt = 0; attempt < 15; attempt += 1) {
+      const status = await fetch(`${instanceUrl}/products/pinakotheke/api/extension/v1/capture-plans/${encodeURIComponent(plan.plan_id)}`, { cache: "no-store", headers: { "x-pinakotheke-pairing": pairId } });
+      if (status.ok) {
+        const state = await status.json();
+        if (state.schema_version === "pinakotheke.capture-plan-status.v1" && state.state === "stored") {
+          await browser.tabs.sendMessage(tabId, { command: "frame-stored", mediaUrl: media.url });
+          return { outcome: "stored" };
+        }
+      }
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+    return { outcome: "pending" };
+  } finally {
+    captureInFlight.delete(key);
+  }
 }
 
 function canonicalAlias(rawUrl) {
@@ -233,8 +260,8 @@ function displayedImages() {
       const rect = image.getBoundingClientRect();
       return image.complete
         && image.currentSrc
-        && image.naturalWidth > 0
-        && image.naturalHeight > 0
+        && image.naturalWidth >= 64
+        && image.naturalHeight >= 64
         && style.display !== "none"
         && style.visibility !== "hidden"
         && Number(style.opacity) > 0
@@ -255,7 +282,7 @@ function displayedImages() {
       }
       return { url: image.currentSrc, presentationUrl, width: image.naturalWidth, height: image.naturalHeight };
     })
-    .slice(0, 32);
+    .slice(0, 16);
 }
 
 function displayedVideos() {
@@ -415,17 +442,12 @@ async function runCacheForTab(tab) {
       : [];
     for (const observed of images) {
       if (rule.capture && adapter.capabilities.observed_thumbnail) {
-        const capture = await submitCapture(
-          instanceUrl, pairId, origin, tab.url, adapter, "observed_thumbnail", observed,
-        );
-        if (capture.ok) {
-          await recordSiteDiagnostic(origin, {
-            state: "Previously observed",
-            reason: "Visible thumbnail accepted for review",
-            previouslyObserved: true,
-            storedInObjectStore: false,
-          });
-        }
+        void captureAndFrame(
+          tab.id, instanceUrl, pairId, origin, tab.url, adapter, "observed_thumbnail", observed,
+        ).then(async capture => {
+          if (capture.outcome === "stored") await recordSiteDiagnostic(origin, { state: "Stored in ObjectStore", reason: "Visible thumbnail committed and admitted to the gallery", previouslyObserved: true, storedInObjectStore: true });
+          else if (capture.outcome === "pending") await recordSiteDiagnostic(origin, { state: "Capture pending", reason: "Visible thumbnail is awaiting ObjectStore completion", previouslyObserved: true, storedInObjectStore: false });
+        });
       }
       if (rule.substitution && adapter.capabilities.image_substitution) {
         const alias = canonicalAlias(observed.url);
@@ -526,7 +548,11 @@ browser.runtime.onMessage.addListener(async (message, sender) => {
     await runCacheForTab(tab);
     return { completed: true };
   }
-  if (message?.command !== "explicit-original-opened" || !sender?.tab?.id || !sender.tab.url) {
+  if (message?.command === "visible-media-changed" && sender?.tab) {
+    await runCacheForTab(sender.tab);
+    return { completed: true };
+  }
+  if (!["explicit-original-opened", "explicit-video-opened"].includes(message?.command) || !sender?.tab?.id || !sender.tab.url) {
     return undefined;
   }
   try {
@@ -535,28 +561,34 @@ browser.runtime.onMessage.addListener(async (message, sender) => {
       "instanceUrl", "pairId", "sites",
     ]);
     const rule = sites.find(site => site.origin === origin);
-    if (!instanceUrl || !pairId || !rule?.capture || !rule.media.includes("images")) return undefined;
+    const video = message.command === "explicit-video-opened";
+    if (!instanceUrl || !pairId || !rule?.capture || !rule.media.includes(video ? "videos" : "images")) return undefined;
     const adapter = await matchingAdapter(sender.tab.url);
-    if (!adapter?.capabilities.explicit_original) return undefined;
+    if (!adapter?.capabilities.explicit_original || video) {
+      if (video) {
+        await recordSiteDiagnostic(origin, { state: "Video observed", reason: "Opened video requires the normalized-video worker before ObjectStore admission", previouslyObserved: true, storedInObjectStore: false });
+      }
+      return { completed: false };
+    }
     const width = Number(message.width);
     const height = Number(message.height);
     if (!Number.isInteger(width) || !Number.isInteger(height)
       || width < 1 || height < 1 || width > 32768 || height > 32768) return undefined;
     const mediaUrl = canonicalAlias(String(message.mediaUrl));
     const presentationUrl = canonicalAlias(String(message.presentationUrl || message.mediaUrl));
-    const capture = await submitCapture(
-      instanceUrl, pairId, origin, sender.tab.url, adapter, "explicit_original",
+    const capture = await captureAndFrame(
+      sender.tab.id, instanceUrl, pairId, origin, sender.tab.url, adapter, "explicit_original",
       { url: mediaUrl, presentationUrl, width, height },
     );
-    if (capture.ok) {
+    if (capture.outcome === "stored") {
       await recordSiteDiagnostic(origin, {
-        state: "Original queued",
-        reason: "User-opened image accepted for ObjectStore acquisition",
+        state: "Stored in ObjectStore",
+        reason: "User-opened original committed and admitted to the gallery",
         previouslyObserved: true,
-        storedInObjectStore: false,
+        storedInObjectStore: true,
       });
     }
-    return { completed: capture.ok };
+    return { completed: capture.outcome === "stored" };
   } catch (_) {
     return { completed: false };
   }

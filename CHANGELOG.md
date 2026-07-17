@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Automatically observe eligible visible images on enabled pages, poll an
+  actor-scoped verified-capture status, and add a two-pixel green browser-only
+  frame only after the object is admitted to the live gallery.
 - Added an authenticated actor-scoped site corpus with persistent revisions,
   stale-write conflicts, first-pair migration, and Firefox startup/settings
   synchronization across extension upgrades and browser profiles.

@@ -1,6 +1,31 @@
 Viewed-media capture plans
 ==========================
 
+Automatic cache interaction
+---------------------------
+
+An enabled exact-origin rule is standing capture consent for its selected
+media classes. Firefox observes meaningful images currently displayed in the
+viewport after page load, scrolling, or DOM changes and submits them without a
+toolbar action. Images smaller than 64 by 64 pixels are excluded from the
+generic path to avoid incidental interface icons. Mutation notifications are
+debounced and identical in-flight media is coalesced.
+
+The plan response is not storage evidence. Firefox polls the actor-scoped
+``GET /products/pinakotheke/api/extension/v1/capture-plans/{plan_id}`` status.
+Only ``state: stored``—which requires a settled plan and matching live gallery
+record—adds the browser-only ``pinakotheke-stored-object`` class. That class
+draws a two-pixel green border with words retained in toolbar diagnostics; it
+never alters the downloaded or DASObjectStore-managed bytes. Pending,
+unavailable, rejected, and timeout states remain unframed and origin-served.
+
+Clicking an eligible linked image retains the stricter explicit-original path
+and uses the same verified status before framing. A trusted video ``play``
+gesture is now detected, but XIMG-104 remains open until that candidate is
+routed through the existing normalized-video worker, committed, admitted, and
+reported through an equivalent verified status. The image helper intentionally
+continues to reject video bytes.
+
 XIMG-064 adds the first server-side admission boundary for Firefox observed
 media. It is deliberately a **capture plan**, not a browser upload or a
 committed catalogue item. Durable bytes remain with DASObjectStore, and a plan
