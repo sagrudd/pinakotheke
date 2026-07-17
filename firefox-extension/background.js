@@ -175,7 +175,16 @@ async function captureAndFrame(tabId, instanceUrl, pairId, origin, pageUrl, adap
 function canonicalAlias(rawUrl) {
   const url = new URL(rawUrl);
   if (url.protocol !== "https:") throw new Error("only HTTPS aliases are eligible");
-  url.search = "";
+  if (url.hostname === "pbs.twimg.com") {
+    const safe = new URLSearchParams();
+    for (const key of ["format", "name"]) {
+      const value = url.searchParams.get(key);
+      if (value && /^[A-Za-z0-9_-]{1,32}$/.test(value)) safe.set(key, value);
+    }
+    url.search = safe.toString();
+  } else {
+    url.search = "";
+  }
   url.hash = "";
   return url.href;
 }
@@ -411,6 +420,10 @@ async function recordSiteDiagnostic(origin, update) {
   diagnostics[origin] = {
     state: update.state,
     reason: update.reason,
+    captureState: update.channel === "capture" ? update.state : existing?.captureState,
+    captureReason: update.channel === "capture" ? update.reason : existing?.captureReason,
+    substitutionState: update.channel === "substitution" ? update.state : existing?.substitutionState,
+    substitutionReason: update.channel === "substitution" ? update.reason : existing?.substitutionReason,
     previouslyObserved: Boolean(existing?.previouslyObserved || update.previouslyObserved),
     storedInObjectStore: Boolean(existing?.storedInObjectStore || update.storedInObjectStore),
   };
@@ -431,6 +444,7 @@ function segmentedMediaKind(rawUrl) {
 
 async function recordSegmentedOriginFallback(origin, kind) {
   await recordSiteDiagnostic(origin, {
+    channel: "substitution",
     state: "Origin served",
     reason: `${kind} substitution requires a proven site adapter`,
     previouslyObserved: true,
@@ -445,7 +459,7 @@ async function runCacheForTab(tab) {
     const { instanceUrl, instanceId, pairId, sites = [] } = await browser.storage.local.get(["instanceUrl", "instanceId", "pairId", "sites"]);
     const rule = sites.find(site => site.origin === origin);
     if (!rule || (!rule.capture && !rule.substitution)
-      || !instanceUrl || !instanceId || !pairId) return;
+      || !instanceUrl || !pairId) return;
     const adapter = await matchingAdapter(tab.url);
     if (!adapter) return;
     const displayed = rule.media.includes("images")
@@ -457,15 +471,16 @@ async function runCacheForTab(tab) {
         void captureAndFrame(
           tab.id, instanceUrl, pairId, origin, tab.url, adapter, "observed_thumbnail", observed,
         ).then(async capture => {
-          if (capture.outcome === "stored") await recordSiteDiagnostic(origin, { state: "Stored in ObjectStore", reason: "Visible thumbnail committed and admitted to the gallery", previouslyObserved: true, storedInObjectStore: true });
-          else if (capture.outcome === "pending") await recordSiteDiagnostic(origin, { state: "Capture pending", reason: "Visible thumbnail is awaiting ObjectStore completion", previouslyObserved: true, storedInObjectStore: false });
+          if (capture.outcome === "stored") await recordSiteDiagnostic(origin, { channel: "capture", state: "Stored in ObjectStore", reason: "Visible thumbnail committed and admitted to the gallery", previouslyObserved: true, storedInObjectStore: true });
+          else if (capture.outcome === "pending") await recordSiteDiagnostic(origin, { channel: "capture", state: "Capture pending", reason: "Visible thumbnail is awaiting ObjectStore completion", previouslyObserved: true, storedInObjectStore: false });
         });
       }
-      if (rule.substitution && adapter.capabilities.image_substitution) {
+      if (rule.substitution && instanceId && adapter.capabilities.image_substitution) {
         const alias = canonicalAlias(observed.url);
         const hit = await lookupAlias(instanceUrl, instanceId, pairId, origin, adapter, alias);
         if (!hit || hit.outcome !== "hit" || !hit.media_class?.endsWith("_image") || !hit.delivery_path) {
           await recordSiteDiagnostic(origin, {
+            channel: "substitution",
             state: "Origin served",
             reason: hit?.reason || hit?.outcome || "Cache lookup unavailable",
             previouslyObserved: true,
@@ -488,6 +503,7 @@ async function runCacheForTab(tab) {
         });
         const outcome = substitution[0]?.result;
         await recordSiteDiagnostic(origin, {
+          channel: "substitution",
           state: outcome?.outcome === "objectstore" ? "Cache hit" : "Origin served",
           reason: outcome?.outcome === "objectstore" ? "Image delivered from the reviewed ObjectStore" : "Image substitution failed open",
           previouslyObserved: hit.media_class === "thumbnail_image",
@@ -495,7 +511,7 @@ async function runCacheForTab(tab) {
         });
       }
     }
-    if (rule.substitution && rule.media.includes("videos") && adapter.capabilities.mp4_substitution) {
+    if (rule.substitution && instanceId && rule.media.includes("videos") && adapter.capabilities.mp4_substitution) {
       const videos = (await browser.scripting.executeScript({
         target: { tabId: tab.id }, func: displayedVideos,
       }))[0].result || [];
@@ -510,6 +526,7 @@ async function runCacheForTab(tab) {
         if (!hit || hit.outcome !== "hit" || hit.media_class !== "normalized_mp4"
           || hit.content_type !== "video/mp4" || !hit.delivery_path) {
           await recordSiteDiagnostic(origin, {
+            channel: "substitution",
             state: "Origin served",
             reason: hit?.reason || hit?.outcome || "Normalized video cache miss",
             previouslyObserved: true,
@@ -526,6 +543,7 @@ async function runCacheForTab(tab) {
         });
         const outcome = substitution[0]?.result;
         await recordSiteDiagnostic(origin, {
+          channel: "substitution",
           state: outcome?.outcome === "objectstore" ? "Cache hit" : "Origin served",
           reason: outcome?.outcome === "objectstore" ? "Normalized video delivered from the reviewed ObjectStore" : "Video substitution failed open",
           previouslyObserved: true,
@@ -578,7 +596,7 @@ browser.runtime.onMessage.addListener(async (message, sender) => {
     const adapter = await matchingAdapter(sender.tab.url);
     if (!adapter?.capabilities.explicit_original || video) {
       if (video) {
-        await recordSiteDiagnostic(origin, { state: "Video observed", reason: "Opened video requires the normalized-video worker before ObjectStore admission", previouslyObserved: true, storedInObjectStore: false });
+        await recordSiteDiagnostic(origin, { channel: "capture", state: "Video observed", reason: "Opened video requires the normalized-video worker before ObjectStore admission", previouslyObserved: true, storedInObjectStore: false });
       }
       return { completed: false };
     }
@@ -594,10 +612,19 @@ browser.runtime.onMessage.addListener(async (message, sender) => {
     );
     if (capture.outcome === "stored") {
       await recordSiteDiagnostic(origin, {
+        channel: "capture",
         state: "Stored in ObjectStore",
         reason: "User-opened original committed and admitted to the gallery",
         previouslyObserved: true,
         storedInObjectStore: true,
+      });
+    } else if (capture.outcome === "pending") {
+      await recordSiteDiagnostic(origin, {
+        channel: "capture",
+        state: "Capture pending",
+        reason: "User-opened original is awaiting ObjectStore completion",
+        previouslyObserved: true,
+        storedInObjectStore: false,
       });
     }
     return { completed: capture.outcome === "stored" };

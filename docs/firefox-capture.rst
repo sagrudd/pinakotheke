@@ -46,6 +46,14 @@ use ``sites/<site-id>/<capture-kind>/<sha256>``. These are DASObjectStore keys,
 not unmanaged local directories, and the checksum suffix preserves idempotent
 byte identity.
 
+X image CDN URLs require their public ``format`` and ``name`` variant
+parameters to resolve. Pinakotheke preserves only those two bounded
+alphanumeric parameters and discards every other query parameter. Generic
+media URLs continue to lose their complete query and fragment. Capture does
+not depend on the substitution-specific instance identifier, and Firefox
+reports capture and substitution results separately so an origin-served video
+does not overwrite image-ingress evidence.
+
 A trusted video ``play``
 gesture is now detected, but XIMG-104 remains open until that candidate is
 routed through the existing normalized-video worker, committed, admitted, and

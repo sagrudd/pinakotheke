@@ -2,7 +2,7 @@
 
 Status: dependency-ordered planning backlog
 
-Version: 1.6.0
+Version: 1.6.1
 
 Updated: 2026-07-17
 
@@ -1074,6 +1074,11 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   Mozilla signed extension 1.6.0, permanent Firefox installation, package
   upgrade, service restart, HTTPS health, and XPI delivery checks passed. The
   task remains open only for the normalized opened-video completion path.
+  Live 1.6.0 evidence then exposed two defects: X CDN query removal produced a
+  404 during helper acquisition, and a segmented-video substitution result
+  obscured capture status. Patch 1.6.1 preserves only the safe ``format`` and
+  ``name`` CDN variants, permits capture independently of legacy
+  ``instanceId`` state, and presents capture/substitution results separately.
   Image delivery landed in ``dc09fe6``: enabled pages debounce load, mutation,
   and scroll observations; meaningful visible images are submitted without a
   toolbar action; linked originals retain the trusted-click boundary; and an

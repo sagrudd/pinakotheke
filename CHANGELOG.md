@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Preserve X CDN ``format`` and ``name`` variants while continuing to discard
+  arbitrary query parameters, so DASObjectStore acquisition fetches the image
+  Firefox actually displayed instead of a queryless 404 URL.
+- Run automatic thumbnail capture even when legacy pairing state lacks an
+  instance identifier; only substitution needs that identifier. Separate
+  capture and substitution diagnostics so a segmented-video fallback cannot
+  hide image-ingress progress in the toolbar.
 - Add an authenticated, live ingress-status strip to the Pinakotheke library
   and distinguish observed thumbnails, explicitly opened images/videos,
   pending acquisitions, verified stores, and gallery admission.

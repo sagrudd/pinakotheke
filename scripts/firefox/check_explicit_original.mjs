@@ -74,6 +74,7 @@ const backgroundContext = vm.createContext({
   browser,
   fetch: fetchFixture,
   URL,
+  URLSearchParams,
   AbortController,
   Blob,
   setTimeout,
@@ -117,6 +118,7 @@ storage.sites.push({
   xIngress: true,
   media: ["images"],
 });
+storage.instanceId = "";
 backgroundContext.document.images = [{
   complete: true,
   currentSrc: "https://pbs.twimg.com/media/visible-thumbnail.jpg?format=jpg&name=small",
@@ -137,6 +139,12 @@ assert.equal(observedBody.media_url, "https://pbs.twimg.com/media/visible-thumbn
 assert.equal(observedBody.presentation_url, "https://x.com/FixtureArtist/status/42");
 captures.length = 0;
 storage.sites.pop();
+storage.instanceId = "instance-1";
+
+assert.equal(
+  vm.runInContext('canonicalAlias("https://pbs.twimg.com/media/fixture?name=small&format=jpg&token=drop")', backgroundContext),
+  "https://pbs.twimg.com/media/fixture?format=jpg&name=small",
+);
 
 const sync = await messageListener({ command: "sync-capture-observers" }, {});
 assert.equal(sync.registered, 1);

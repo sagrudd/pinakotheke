@@ -500,13 +500,51 @@ fn canonical_media_url(value: &str) -> Option<String> {
         return None;
     }
     let without_fragment = value.split('#').next()?;
-    let without_query = without_fragment.split('?').next()?;
+    let (without_query, query) = without_fragment
+        .split_once('?')
+        .map_or((without_fragment, None), |(base, query)| {
+            (base, Some(query))
+        });
     let host_and_path = without_query.strip_prefix("https://")?;
     let host = host_and_path.split('/').next()?;
     if host.is_empty() || host.contains(':') || host.contains('*') {
         return None;
     }
-    Some(without_query.to_owned())
+    let mut canonical = without_query.to_owned();
+    if host == "pbs.twimg.com" {
+        let mut format = None;
+        let mut name = None;
+        for pair in query
+            .unwrap_or_default()
+            .split('&')
+            .filter(|pair| !pair.is_empty())
+        {
+            let (key, value) = pair.split_once('=')?;
+            if value.is_empty()
+                || value.len() > 32
+                || !value
+                    .bytes()
+                    .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'_' | b'-'))
+            {
+                return None;
+            }
+            match key {
+                "format" if format.is_none() => format = Some(value),
+                "name" if name.is_none() => name = Some(value),
+                _ => {}
+            }
+        }
+        if let Some(value) = format {
+            canonical.push_str("?format=");
+            canonical.push_str(value);
+        }
+        if let Some(value) = name {
+            canonical.push(if format.is_some() { '&' } else { '?' });
+            canonical.push_str("name=");
+            canonical.push_str(value);
+        }
+    }
+    Some(canonical)
 }
 
 fn canonical_page_url(origin: &str, value: &str) -> Option<String> {
@@ -592,6 +630,24 @@ mod tests {
         assert_eq!(plan.capture_kind, CaptureKind::ObservedThumbnail);
         assert_eq!(plan.scheduler_job_id, "refresh-0");
         assert_eq!(plan.state, CapturePlanState::AwaitingApprovedAcquisition);
+    }
+
+    #[test]
+    fn x_cdn_variant_query_is_preserved_without_admitting_arbitrary_queries() {
+        assert_eq!(
+            canonical_media_url(
+                "https://pbs.twimg.com/media/fixture?name=small&format=jpg#fragment"
+            ),
+            Some("https://pbs.twimg.com/media/fixture?format=jpg&name=small".into())
+        );
+        assert_eq!(
+            canonical_media_url("https://pbs.twimg.com/media/fixture?token=secret"),
+            Some("https://pbs.twimg.com/media/fixture".into())
+        );
+        assert_eq!(
+            canonical_media_url("https://example.invalid/image.jpg?token=secret"),
+            Some("https://example.invalid/image.jpg".into())
+        );
     }
 
     #[test]
