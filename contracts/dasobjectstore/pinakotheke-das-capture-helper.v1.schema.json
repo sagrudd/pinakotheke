@@ -4,7 +4,7 @@
   "title": "Pinakotheke DASObjectStore capture helper configuration v1",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "endpoint_id", "curl_executable"],
+  "required": ["schema_version", "endpoint_id", "curl_executable", "submit_to_daemon"],
   "oneOf": [
     {
       "required": ["dasobjectstore_remote_executable", "dasobjectstore_remote_config", "daemon_socket"],
@@ -25,6 +25,7 @@
     "schema_version": {"const": "pinakotheke.das-capture-helper.v1"},
     "endpoint_id": {"type": "string", "minLength": 1, "maxLength": 128},
     "curl_executable": {"type": "string", "pattern": "^/", "maxLength": 4096},
+    "submit_to_daemon": {"const": true},
     "ffprobe_executable": {"type": "string", "pattern": "^/", "maxLength": 4096},
     "dasobjectstore_remote_executable": {"type": "string", "pattern": "^/", "maxLength": 4096},
     "dasobjectstore_remote_config": {"type": "string", "pattern": "^/", "maxLength": 4096},

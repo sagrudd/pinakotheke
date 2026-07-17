@@ -402,6 +402,7 @@ regular file rather than a symlink.
      "dasobjectstore_remote_executable": "/usr/local/bin/dasobjectstore-remote",
      "dasobjectstore_remote_config": "/Users/example/.config/dasobjectstore/remote.json",
      "daemon_socket": "/Users/example/.x-img/dasobjectstore/run/dasobjectstored.sock",
+     "submit_to_daemon": true,
      "max_image_bytes": 67108864,
      "max_video_bytes": 1073741824
    }
@@ -431,6 +432,7 @@ the private host configuration:
      "endpoint_id": "local-docker-example",
      "curl_executable": "/usr/bin/curl",
      "ffprobe_executable": "/usr/bin/ffprobe",
+     "submit_to_daemon": true,
      "container_execution": {
        "docker_executable": "/Applications/Docker.app/Contents/Resources/bin/docker",
        "compose_file": "/Users/example/.x-img/dasobjectstore/pinakotheke-local/compose.yml",
@@ -451,6 +453,14 @@ managed scratch roots, creates a private direct child, and translates that one
 descendant to the reviewed container mount. It copies the already-scoped remote
 configuration and AWS credential file into that job directory, passes only the
 credential *path* to Docker, and deletes the whole directory before returning.
+
+``submit_to_daemon`` is required and must be ``true``. Pinakotheke never accepts
+the legacy provider-only ``Upload complete`` response as a durable commit. The
+paired DASObjectStore remote client hashes each single-file source, attaches
+``dasobjectstore-sha256`` provider metadata, obtains the upload-scoped
+completion capability, and reports success only after the daemon independently
+verifies size/checksum, settles placement, and publishes the authoritative
+catalogue row.
 Neither the capture plan nor any browser request can select Docker, a compose
 file, a host/container path, or credentials.
 

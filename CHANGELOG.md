@@ -8,6 +8,9 @@
   Firefox H.264/AAC playback profile before DASObjectStore commit and immediate
   gallery admission.
 - Report opened-video activity separately from opened images.
+- Remove transfer-only capture success: every image/video upload must complete
+  through DASObjectStore daemon verification and authoritative catalogue
+  publication.
 
 ## Unreleased
 

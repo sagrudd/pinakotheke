@@ -165,6 +165,7 @@ fn load_config(path: &Path) -> Result<Config, Box<dyn std::error::Error>> {
         || config.max_image_bytes.unwrap_or(DEFAULT_MAX_BYTES) > 1024 * 1024 * 1024
         || config.max_video_bytes.unwrap_or(DEFAULT_MAX_VIDEO_BYTES) == 0
         || config.max_video_bytes.unwrap_or(DEFAULT_MAX_VIDEO_BYTES) > 8 * 1024 * 1024 * 1024
+        || !config.submit_to_daemon
         || config.object_store_bucket.as_ref().is_some_and(|bucket| {
             bucket.is_empty()
                 || bucket.len() > 63
@@ -204,11 +205,10 @@ fn load_config(path: &Path) -> Result<Config, Box<dyn std::error::Error>> {
                     .as_deref()
                     .ok_or("native DAS remote config is required")?,
             )?;
-            if config.submit_to_daemon
-                && !config
-                    .daemon_socket
-                    .as_deref()
-                    .is_some_and(Path::is_absolute)
+            if !config
+                .daemon_socket
+                .as_deref()
+                .is_some_and(Path::is_absolute)
             {
                 return Err("native DAS daemon socket must be absolute".into());
             }
@@ -329,9 +329,7 @@ fn acquire(request: &Request, config: &Config) -> Result<Committed, Box<dyn std:
             && line.contains("state=Complete")
             && line.contains("stage=remote_s3_transfer_complete")
     });
-    let direct_verified =
-        !config.submit_to_daemon && report.lines().any(|line| line == "Upload complete");
-    if !daemon_verified && !direct_verified {
+    if !daemon_verified {
         return Err("DASObjectStore did not report verified completion".into());
     }
     Ok(Committed {
@@ -429,14 +427,12 @@ fn upload_command(
         .arg("--content-type")
         .arg(content_type)
         .arg("--no-progress");
-    if config.submit_to_daemon {
-        command.args(["--submit-to-daemon", "--daemon-socket"]).arg(
-            config
-                .daemon_socket
-                .as_deref()
-                .ok_or("native DAS daemon socket is required")?,
-        );
-    }
+    command.args(["--submit-to-daemon", "--daemon-socket"]).arg(
+        config
+            .daemon_socket
+            .as_deref()
+            .ok_or("native DAS daemon socket is required")?,
+    );
     command.stderr(Stdio::null());
     Ok(command)
 }
@@ -783,6 +779,22 @@ mod tests {
         fs::remove_dir_all(root).unwrap();
     }
 
+    #[test]
+    fn transfer_only_configuration_is_rejected() {
+        let path = std::env::temp_dir().join(format!(
+            "pinakotheke-transfer-only-config-{}",
+            std::process::id()
+        ));
+        fs::write(
+            &path,
+            r#"{"schema_version":"pinakotheke.das-capture-helper.v1","endpoint_id":"endpoint-1","curl_executable":"/does/not/run","dasobjectstore_remote_executable":"/does/not/run","dasobjectstore_remote_config":"/does/not/read","daemon_socket":"/does/not/connect","submit_to_daemon":false}"#,
+        )
+        .unwrap();
+        fs::set_permissions(&path, fs::Permissions::from_mode(0o600)).unwrap();
+        assert!(load_config(&path).is_err());
+        fs::remove_file(path).unwrap();
+    }
+
     fn executable(path: &Path, body: &str) {
         fs::write(path, body).unwrap();
         fs::set_permissions(path, fs::Permissions::from_mode(0o700)).unwrap();
@@ -809,7 +821,7 @@ mod tests {
         let remote_config = root.join("remote.json");
         fs::write(&remote_config, "{}").unwrap();
         fs::set_permissions(&remote_config, fs::Permissions::from_mode(0o600)).unwrap();
-        let mut config = Config {
+        let config = Config {
             schema_version: CONFIG_SCHEMA.into(),
             endpoint_id: "endpoint-1".into(),
             object_store_bucket: Some("dos-store-1".into()),
@@ -870,17 +882,6 @@ mod tests {
             })
             .collect();
         assert_eq!(before.len(), after.len());
-        executable(
-            config
-                .dasobjectstore_remote_executable
-                .as_deref()
-                .expect("remote fixture"),
-            "#!/bin/sh\nprintf '%s' \"$*\" | grep -q -- '--no-progress' || exit 9\nprintf '%s' \"$*\" | grep -q -- '--submit-to-daemon' && exit 10\nprintf 'Upload complete\\n'\n",
-        );
-        config.submit_to_daemon = false;
-        config.daemon_socket = None;
-        let direct = acquire(&request, &config).expect("scoped direct DAS upload completes");
-        assert_eq!(direct.object_store_id, "store-1");
         let _ = fs::remove_dir_all(root);
     }
 

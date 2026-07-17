@@ -978,6 +978,13 @@ profile with ``ffprobe``, commits it through DASObjectStore, and immediately
 admits a playable video card. Autoplay, synthetic events, blob-only and
 segmented/MSE playback, non-X media hosts, and unsupported codecs fail open with
 an explicit diagnostic rather than being misrepresented as stored.
+The release also closes the capture authority split exposed on the DASServer:
+provider transfer acknowledgement is never commit evidence. Every new capture
+must use DASObjectStore's checksum-bearing daemon completion, placement
+settlement, and authoritative catalogue publication. A guarded live repair on
+2026-07-17 recovered 38 previously uncatalogued Garage objects into 76 verified
+HDD placements with no missing payload, size mismatch, hash mismatch, or
+unverified placement.
 
 ## Post-1.0 candidates
 

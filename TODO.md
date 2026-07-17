@@ -1221,6 +1221,24 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   verification, a signed extension, DASServer deployment, and a live X video
   commit/playback proof.
 
+- [ ] **XIMG-109 P0 — Require authoritative DASObjectStore capture completion.**
+  Remove the transfer-only success path from the first-party helper. A capture
+  configuration must set ``submit_to_daemon`` to ``true`` and provide the
+  reviewed daemon socket; the paired DASObjectStore remote client must attach
+  SHA-256 metadata and report the terminal
+  ``remote_s3_transfer_complete`` state only after provider verification,
+  two-copy placement settlement, and catalogue publication. The DASServer
+  writer was paused on 2026-07-17 and guarded ``--reconcile-s3`` recovered 38
+  provider objects (3,793,683 source bytes) through normal SSD-first ingest.
+  Follow-up verification scanned 38 catalogue objects and 76 placements with
+  zero missing payloads, size mismatches, hash mismatches, or unverified
+  placements. The host's broken distro AWS CLI was replaced by the official
+  self-contained v2.36.1 executable after its Python 3.14 build failed before
+  listing Garage. Complete this item after the fail-closed helper is deployed,
+  the writer is restarted, and one fresh browser capture proves catalogue
+  growth rather than provider-only growth. Compatibility was checked against
+  DASObjectStore ``2e1e1669ff0bccc05324b3b74785300e00f53d90``.
+
 - [x] **XIMG-090 P0 — Scaffold the runnable Pinakotheke monolith.** Completed
   in ``2cfa1e1``. ``pinakotheke serve`` now resolves ``$HOME/.x-img`` by
   default, requires an absolute non-symlink root, creates only private
