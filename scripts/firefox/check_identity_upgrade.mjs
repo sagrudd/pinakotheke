@@ -21,8 +21,11 @@ assert.deepEqual(candidate.permissions, current.permissions);
 assert.deepEqual(candidate.optional_host_permissions, current.optional_host_permissions);
 assert.deepEqual(candidate.content_security_policy, current.content_security_policy);
 assert.deepEqual(current.background.scripts, ["background.js"]);
-assert.equal(current.background.service_worker, "background.js");
 assert.deepEqual(candidate.background, current.background);
+assert.deepEqual(
+  current.browser_specific_settings.gecko.data_collection_permissions.required,
+  ["browsingActivity", "websiteContent", "websiteActivity"],
+);
 
 let installed;
 let startup;

@@ -41,6 +41,7 @@ Configuration
    instagram-media-discovery
    account-refresh
    firefox-extension
+   firefox-signing
    lan-https
    firefox-toolbar
    firefox-capture

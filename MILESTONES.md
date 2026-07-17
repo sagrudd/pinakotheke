@@ -834,6 +834,14 @@ the configured instance URL, a leaf certificate containing the exact LAN IP or
 hostname, a loopback-only Monas upstream, no CA private key on the server, and
 real Firefox verification with insecure-certificate overrides disabled.
 
+Legitimate Firefox distribution uses Mozilla's unlisted signing channel. The
+stable Gecko ID, accurate built-in data-transmission consent, pinned local
+``web-ext`` validation, environment-only publisher credentials, returned-XPI
+signature verification, and ordinary-profile installation are release gates.
+Unsigned XPIs remain development artifacts and temporary installation is not
+production acceptance. XIMG-100 tracks the one-time AMO publisher submission
+and installed signed-build proof.
+
 ## Post-1.0 candidates
 
 - Synoptikon catalogue/plugin integration through the preserved host adapter

@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- Add an AMO-compatible unlisted Firefox signing workflow with pinned Mozilla
+  validation, environment-only credentials, and signed-XPI identity checks.
+- Correct the Firefox manifest's background and permission declarations and
+  disclose the user-directed browsing, website-content, and save-action data
+  transmitted to the configured Pinakotheke service.
+
 All notable changes to Pinakotheke will be documented in this file. The project uses
 [Semantic Versioning](https://semver.org/).
 

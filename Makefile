@@ -8,7 +8,7 @@ BASELINE_DIST ?=
 BASELINE_VERSION ?=
 PRODUCT ?= pinakotheke
 
-.PHONY: help all packages web firefox-gallery-check firefox-capture-check linux linux-x86_64 linux-arm64 linux-deb linux-rpm \
+.PHONY: help all packages web firefox-gallery-check firefox-capture-check firefox-lint firefox-sign linux linux-x86_64 linux-arm64 linux-deb linux-rpm \
 	linux-deb-x86_64 linux-deb-arm64 linux-rpm-x86_64 linux-rpm-arm64 \
 	macos-pkg macos-pkg-x86_64 macos-pkg-arm64 firefox firefox-macos-x86_64 \
 	firefox-macos-arm64 firefox-windows-x86_64 firefox-windows-arm64 \
@@ -23,6 +23,8 @@ help:
 	@echo "  make linux                 Build DEB and RPM for Linux x86_64 and arm64"
 	@echo "  make macos-pkg             Build macOS PKG for x86_64 and arm64 (macOS only)"
 	@echo "  make firefox               Build labelled XPIs for macOS/Windows/Linux x86_64/arm64"
+	@echo "  make firefox-lint          Run Mozilla's pinned AMO validator locally"
+	@echo "  make firefox-sign          Request an unlisted Mozilla-signed XPI (credentials in environment)"
 	@echo "  make verify                Verify produced package structure and checksums"
 	@echo "  make sbom                  Generate the deterministic CycloneDX release SBOM"
 	@echo "  make upgrade-rollback BASELINE_DIST=... BASELINE_VERSION=..."
@@ -45,6 +47,18 @@ firefox-gallery-check: web
 
 firefox-capture-check:
 	node scripts/firefox/check_installed_capture.mjs
+
+firefox-lint:
+	npx --yes web-ext@10.5.0 lint --source-dir firefox-extension --warnings-as-errors
+
+firefox-sign: firefox-lint
+	@test -n "$$WEB_EXT_API_KEY" || { echo "WEB_EXT_API_KEY is required" >&2; exit 2; }
+	@test -n "$$WEB_EXT_API_SECRET" || { echo "WEB_EXT_API_SECRET is required" >&2; exit 2; }
+	@mkdir -p "$(DIST)/firefox/signed"
+	npx --yes web-ext@10.5.0 sign --channel=unlisted --source-dir firefox-extension \
+		--artifacts-dir "$(DIST)/firefox/signed"
+	python3 scripts/firefox/verify_signed_xpi.py --directory "$(DIST)/firefox/signed" \
+		--extension-id x-img@example.invalid --version $(VERSION)
 
 linux: linux-x86_64 linux-arm64
 linux-deb: linux-deb-x86_64 linux-deb-arm64

@@ -26,7 +26,7 @@ signature evidence. Firefox temporary extension installation is provided by
 the `WebDriver BiDi extension commands
 <https://firefox-source-docs.mozilla.org/remote/webdriver-bidi/Extensions.html>`_.
 The shipped manifest declares both ``background.scripts`` and
-``background.service_worker`` because Firefox uses the former; see the
+``background.scripts`` because Firefox uses that Firefox-compatible form; see the
 `Firefox background manifest reference
 <https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/background>`_.
 

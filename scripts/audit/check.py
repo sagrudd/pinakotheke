@@ -58,11 +58,16 @@ def privacy(files: list[pathlib.Path]) -> None:
 
 def security() -> None:
     manifest = json.loads((ROOT / "firefox-extension/manifest.json").read_text())
-    allowed = {"storage", "activeTab", "scripting", "permissions"}
+    allowed = {"storage", "activeTab", "scripting"}
     if set(manifest.get("permissions", [])) != allowed:
         fail("Firefox required permissions differ from the reviewed least-privilege set")
     if manifest.get("optional_host_permissions") != ["https://*/*"]:
         fail("Firefox origins must remain optional HTTPS permissions")
+    collected = manifest.get("browser_specific_settings", {}).get("gecko", {}).get(
+        "data_collection_permissions", {}
+    ).get("required")
+    if collected != ["browsingActivity", "websiteContent", "websiteActivity"]:
+        fail("Firefox data transmission declaration differs from reviewed behavior")
     csp = manifest.get("content_security_policy", {}).get("extension_pages", "")
     if "script-src 'self'" not in csp or "object-src 'none'" not in csp:
         fail("Firefox extension CSP must restrict scripts and objects")

@@ -1001,6 +1001,19 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   failed because that module is unavailable, so no non-functional DNS-01 or
   external-service dependency was introduced.
 
+- [ ] **XIMG-100 P0 — Obtain and verify Mozilla's unlisted production
+  signature.** The repository is AMO-ready: its Firefox manifest uses only
+  valid permissions and Firefox background declarations, preserves the stable
+  Gecko ID, and accurately declares required browsing activity, website
+  content, and website activity transmission. ``make firefox-lint`` runs the
+  pinned Mozilla validator with warnings as errors; ``make firefox-sign`` uses
+  environment-only AMO credentials, requests the unlisted channel, and verifies
+  the returned signature envelope, identity, and workspace version. Complete
+  this item after the publisher creates AMO API credentials, Mozilla returns
+  the first signed XPI, and it passes ordinary-profile install, upgrade,
+  pairing, capture, and fail-open acceptance. No developer-mode artifact is
+  release evidence.
+
 - [x] **XIMG-090 P0 — Scaffold the runnable Pinakotheke monolith.** Completed
   in ``2cfa1e1``. ``pinakotheke serve`` now resolves ``$HOME/.x-img`` by
   default, requires an absolute non-symlink root, creates only private
