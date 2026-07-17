@@ -23,6 +23,7 @@ pub fn run() {
 const GALLERY_API: &str = "/products/pinakotheke/api/gallery/v1/catalogue";
 const OBJECT_STORE_API: &str = "/products/dasobjectstore/api/v1/dashboard/object-stores";
 const EXTENSION_ONBOARDING_API: &str = "/products/pinakotheke/api/extension/v1/onboarding";
+const INGESTION_STATUS_API: &str = "/products/pinakotheke/api/ingestion/v1/status";
 const GALLERY_PAGE_SIZE: usize = 100;
 const GALLERY_WINDOW_ROWS: usize = 8;
 const GALLERY_OVERSCAN_ROWS: usize = 2;
@@ -134,6 +135,40 @@ enum GalleryLoadState {
     PermissionDenied,
     TransportError,
     InvalidResponse,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct IngestionStatus {
+    schema_version: String,
+    observed_assets: usize,
+    observed_thumbnails: usize,
+    opened_originals: usize,
+    opened_videos: usize,
+    pending: usize,
+    stored: usize,
+    gallery_items: usize,
+    last_observed_at_epoch_seconds: Option<u64>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum IngestionStatusState {
+    Loading,
+    Ready(IngestionStatus),
+    Unavailable,
+}
+
+async fn fetch_ingestion_status() -> IngestionStatusState {
+    match Request::get(INGESTION_STATUS_API).send().await {
+        Ok(response) if response.ok() => response
+            .json::<IngestionStatus>()
+            .await
+            .ok()
+            .filter(|status| status.schema_version == "pinakotheke.ingestion-status.v1")
+            .map(IngestionStatusState::Ready)
+            .unwrap_or(IngestionStatusState::Unavailable),
+        Ok(_) | Err(_) => IngestionStatusState::Unavailable,
+    }
 }
 
 fn media_label(item: &GalleryItem) -> &'static str {
@@ -255,6 +290,39 @@ pub fn app() -> Html {
     let object_stores = use_state(|| ObjectStoreLoadState::Loading);
     let selected_object_store = use_state(String::new);
     let extension_onboarding = use_state(|| ExtensionOnboardingState::Loading);
+    let ingestion_status = use_state(|| IngestionStatusState::Loading);
+
+    {
+        let ingestion_status = ingestion_status.clone();
+        use_effect_with((), move |()| {
+            let refresh = {
+                let ingestion_status = ingestion_status.clone();
+                move || {
+                    let ingestion_status = ingestion_status.clone();
+                    spawn_local(async move {
+                        ingestion_status.set(fetch_ingestion_status().await);
+                    });
+                }
+            };
+            refresh();
+            let callback = Closure::<dyn FnMut()>::new(refresh);
+            let interval = web_sys::window().and_then(|window| {
+                window
+                    .set_interval_with_callback_and_timeout_and_arguments_0(
+                        callback.as_ref().unchecked_ref(),
+                        3_000,
+                    )
+                    .ok()
+                    .map(|id| (window, id))
+            });
+            move || {
+                if let Some((window, id)) = interval {
+                    window.clear_interval_with_handle(id);
+                }
+                drop(callback);
+            }
+        });
+    }
 
     {
         let extension_onboarding = extension_onboarding.clone();
@@ -425,8 +493,38 @@ pub fn app() -> Html {
             </header>
             <main id="main" class="mn-app-main ximg-shell__main" tabindex="-1">
                 <p class="ximg-shell__eyebrow">{ "Media workspace" }</p>
-                <h1>{ "x-img library" }</h1>
+                <h1>{ "Pinakotheke library" }</h1>
                 <p>{ "Review committed media from configured sources." }</p>
+
+                <section class="ximg-ingestion-status" aria-labelledby="ingestion-status-title" aria-live="polite">
+                    <h2 id="ingestion-status-title">{ "Ingress status" }</h2>
+                    { match &*ingestion_status {
+                        IngestionStatusState::Loading => html! { <p role="status">{ "Loading observed-media activity…" }</p> },
+                        IngestionStatusState::Unavailable => html! { <p role="alert">{ "Ingress activity is unavailable. Captures may continue; reload or check the Pinakotheke service." }</p> },
+                        IngestionStatusState::Ready(status) => html! {
+                            <>
+                                <dl class="ximg-ingestion-status__metrics">
+                                    <div><dt>{ "Observed" }</dt><dd>{ status.observed_assets }</dd></div>
+                                    <div><dt>{ "Thumbnails" }</dt><dd>{ status.observed_thumbnails }</dd></div>
+                                    <div><dt>{ "Opened images" }</dt><dd>{ status.opened_originals }</dd></div>
+                                    <div><dt>{ "Opened videos" }</dt><dd>{ status.opened_videos }</dd></div>
+                                    <div><dt>{ "Pending" }</dt><dd>{ status.pending }</dd></div>
+                                    <div><dt>{ "Stored" }</dt><dd>{ status.stored }</dd></div>
+                                    <div><dt>{ "Gallery items" }</dt><dd>{ status.gallery_items }</dd></div>
+                                </dl>
+                                <p>{
+                                    if status.observed_assets == 0 {
+                                        "No media has been observed for this user.".to_owned()
+                                    } else if status.pending > 0 {
+                                        format!("{} asset(s) are awaiting acquisition or ObjectStore verification.", status.pending)
+                                    } else {
+                                        "All observed assets have reached a terminal stored state.".to_owned()
+                                    }
+                                }</p>
+                            </>
+                        },
+                    }}
+                </section>
 
                 <section class="ximg-destination" aria-labelledby="firefox-setup-title">
                     <h2 id="firefox-setup-title">{ "Connect Firefox" }</h2>

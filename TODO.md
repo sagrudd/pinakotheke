@@ -2,7 +2,7 @@
 
 Status: dependency-ordered planning backlog
 
-Version: 1.5.1
+Version: 1.6.0
 
 Updated: 2026-07-17
 
@@ -1058,6 +1058,18 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   changed.
 
 - [ ] **XIMG-104 P0 — Replace capture approval with automatic site caching.**
+  Pinakotheke 1.6.0 adds a three-second live, actor-scoped ingress status strip
+  with observed thumbnail/opened image/opened video, pending, verified stored,
+  and gallery counts. It also corrects X linked-image handling: Firefox now
+  submits the rendered image URL as the byte source and retains the enclosing
+  X status URL only as presentation provenance. This resolves the live defect
+  in which trusted clicks reached the server but remained pending because the
+  acquisition helper received HTML rather than image content.
+  The first-party DAS helper now uses the account-bearing presentation URL to
+  commit keys under ``x.com/<canonical-account>/<capture-kind>/<sha256>``;
+  unassignable X CDN media is quarantined under ``_unattributed`` rather than
+  misattributed. A synthetic extension contract proves an opted-in X thumbnail
+  is submitted from viewport observation without any click.
   Image delivery landed in ``dc09fe6``: enabled pages debounce load, mutation,
   and scroll observations; meaningful visible images are submitted without a
   toolbar action; linked originals retain the trusted-click boundary; and an

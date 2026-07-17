@@ -2,7 +2,7 @@
 
 Status: 1.0 stable release
 
-Version: 1.5.1
+Version: 1.6.0
 
 Updated: 2026-07-17
 
@@ -910,6 +910,17 @@ observation, provenance, and review state remain actor-specific. X objects use
 the logical namespace and gallery grouping ``x.com/<canonical-account>/...``;
 this is not permission to bypass DASObjectStore with filesystem subfolders.
 XIMG-104 and XIMG-105 are release gates for this simplified metaphor.
+
+## 1.6.0 — Observable automatic ingress
+
+Goal: make ordinary browsing capture immediately understandable and repair the
+linked-image acquisition boundary. The authenticated Pinakotheke library shows
+live counts for observed thumbnails, explicitly opened images/videos, pending
+plans, verified ObjectStore commits, and admitted gallery cards. Linked X
+images use the bytes Firefox rendered while retaining the status-page URL only
+as provenance, so successful image commits can flow directly into the gallery.
+XIMG-104 remains open until opened video completes the equivalent normalized
+ObjectStore and gallery path.
 
 ## Post-1.0 candidates
 

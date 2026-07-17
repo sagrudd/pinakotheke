@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Add an authenticated, live ingress-status strip to the Pinakotheke library
+  and distinguish observed thumbnails, explicitly opened images/videos,
+  pending acquisitions, verified stores, and gallery admission.
+- Submit the image bytes rendered by Firefox when a user opens an X image,
+  retaining the enclosing status link only as presentation provenance instead
+  of incorrectly attempting to ingest the HTML page as image content.
+- Store captured images in logical DASObjectStore namespaces grouped as
+  ``x.com/<account>/<capture-kind>/<sha256>`` (or an honest unattributed
+  quarantine) and prove that visible, unclicked X thumbnails submit automatic
+  capture plans with their account-bearing presentation provenance.
 - Show the manifest-derived Firefox extension version in the toolbar popup and
   use the canonical Pinakotheke product name there.
 - Automatically observe eligible visible images on enabled pages, poll an

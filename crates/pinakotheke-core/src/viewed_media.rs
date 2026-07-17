@@ -77,6 +77,15 @@ pub enum CapturePlanState {
     AwaitingApprovedAcquisition,
 }
 
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize)]
+pub struct CaptureActivitySummary {
+    pub observed_thumbnails: usize,
+    pub opened_originals: usize,
+    pub pending: usize,
+    pub stored: usize,
+    pub last_observed_at_epoch_seconds: Option<u64>,
+}
+
 /// A Monas-issued pairing reference bound to one actor.  The reference is an
 /// opaque correlation value, not a credential: the host context is still
 /// mandatory for every request.
@@ -149,6 +158,34 @@ pub struct CapturePlanService {
 }
 
 impl CapturePlanService {
+    #[must_use]
+    pub fn activity_for_actor(&self, actor_id: &str) -> CaptureActivitySummary {
+        let mut summary = CaptureActivitySummary::default();
+        for pending in self
+            .accepted
+            .iter()
+            .filter(|pending| pending.actor_id == actor_id)
+        {
+            match pending.plan.capture_kind {
+                CaptureKind::ObservedThumbnail => summary.observed_thumbnails += 1,
+                CaptureKind::ExplicitOriginal => summary.opened_originals += 1,
+            }
+            if pending.settled {
+                summary.stored += 1;
+            } else {
+                summary.pending += 1;
+            }
+            summary.last_observed_at_epoch_seconds = Some(
+                summary
+                    .last_observed_at_epoch_seconds
+                    .map_or(pending.admitted_at_epoch_seconds, |current| {
+                        current.max(pending.admitted_at_epoch_seconds)
+                    }),
+            );
+        }
+        summary
+    }
+
     /// Returns the active pairing reference owned by an authenticated actor.
     #[must_use]
     pub fn active_pairing_id(&self, actor_id: &str, now: u64) -> Option<String> {
@@ -555,6 +592,51 @@ mod tests {
         assert_eq!(plan.capture_kind, CaptureKind::ObservedThumbnail);
         assert_eq!(plan.scheduler_job_id, "refresh-0");
         assert_eq!(plan.state, CapturePlanState::AwaitingApprovedAcquisition);
+    }
+
+    #[test]
+    fn activity_summary_is_actor_scoped_and_distinguishes_capture_kinds() {
+        let mut planner = CapturePlanService::new(
+            [CapturePairing {
+                pairing_id: "pair-0".into(),
+                actor_id: "actor".into(),
+                expires_at: 100,
+                revoked: false,
+            }],
+            [SiteCapturePolicy {
+                site_id: "site".into(),
+                origin: "https://example.invalid".into(),
+                capture_enabled: true,
+                adapter_kind: AdapterKind::ExperimentalGeneric,
+                adapter_version: "1.0.0".into(),
+                allow_observed_thumbnails: true,
+                allow_explicit_originals: true,
+                max_candidates_per_page: 4,
+            }],
+        );
+        let thumbnail = planner.plan("actor", 7, request()).expect("thumbnail");
+        let mut original = request();
+        original.capture_kind = CaptureKind::ExplicitOriginal;
+        original.media_url = "https://example.invalid/media/original.webp".into();
+        planner.plan("actor", 9, original).expect("original");
+        planner
+            .settle("actor", &thumbnail.plan_id)
+            .expect("settle thumbnail");
+
+        assert_eq!(
+            planner.activity_for_actor("actor"),
+            CaptureActivitySummary {
+                observed_thumbnails: 1,
+                opened_originals: 1,
+                pending: 1,
+                stored: 1,
+                last_observed_at_epoch_seconds: Some(9),
+            }
+        );
+        assert_eq!(
+            planner.activity_for_actor("different-actor"),
+            CaptureActivitySummary::default()
+        );
     }
 
     #[test]

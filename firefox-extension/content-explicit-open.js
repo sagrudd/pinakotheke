@@ -35,7 +35,11 @@ if (!globalThis.__pinakothekeExplicitOpenObserver) {
     if (!image || !image.currentSrc || image.naturalWidth < 1 || image.naturalHeight < 1) return;
     const link = image.closest("a[href]");
     if (!link && !document.contentType?.startsWith("image/")) return;
-    const mediaUrl = link?.href || image.currentSrc;
+    // The enclosing link is presentation provenance (for example an X status
+    // page), not necessarily the image payload. Always submit the bytes that
+    // Firefox actually rendered as the media candidate.
+    const mediaUrl = image.currentSrc;
+    const presentationUrl = link?.href || mediaUrl;
     try {
       if (new URL(mediaUrl).protocol !== "https:") return;
     } catch (_) {
@@ -44,7 +48,7 @@ if (!globalThis.__pinakothekeExplicitOpenObserver) {
     void browser.runtime.sendMessage({
       command: "explicit-original-opened",
       mediaUrl,
-      presentationUrl: mediaUrl,
+      presentationUrl,
       width: image.naturalWidth,
       height: image.naturalHeight,
     });

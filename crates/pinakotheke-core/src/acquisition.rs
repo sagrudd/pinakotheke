@@ -110,11 +110,15 @@ impl VerifiedObject {
         for (field, value) in [
             ("endpoint_id", self.endpoint_id.as_str()),
             ("object_store_id", self.object_store_id.as_str()),
-            ("object_reference_id", self.object_reference_id.as_str()),
         ] {
             if !is_identifier(value) {
                 return Err(AcquisitionError::InvalidEvidence { field });
             }
+        }
+        if !is_object_key(&self.object_reference_id) {
+            return Err(AcquisitionError::InvalidEvidence {
+                field: "object_reference_id",
+            });
         }
         if self.checksum_sha256.len() != 64
             || !self
@@ -361,6 +365,21 @@ fn is_identifier(value: &str) -> bool {
             character.is_ascii_lowercase()
                 || character.is_ascii_digit()
                 || matches!(character, '.' | '_' | ':' | '-')
+        })
+}
+
+fn is_object_key(value: &str) -> bool {
+    !value.is_empty()
+        && value.len() <= 1024
+        && !value.starts_with('/')
+        && !value.ends_with('/')
+        && value.split('/').all(|segment| {
+            !segment.is_empty()
+                && segment != "."
+                && segment != ".."
+                && segment.bytes().all(|byte| {
+                    byte.is_ascii_alphanumeric() || matches!(byte, b'.' | b'_' | b':' | b'-')
+                })
         })
 }
 

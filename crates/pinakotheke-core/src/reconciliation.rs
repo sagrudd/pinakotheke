@@ -315,7 +315,7 @@ fn validate_object(object: &VerifiedObject) -> Result<(), ReconciliationError> {
             field: "object_store_id",
         });
     }
-    if !is_safe_identity(&object.object_reference_id) {
+    if !is_safe_object_key(&object.object_reference_id) {
         return Err(ReconciliationError::InvalidMetadata {
             field: "object_reference_id",
         });
@@ -336,6 +336,21 @@ fn is_safe_identity(value: &str) -> bool {
             character.is_ascii_lowercase()
                 || character.is_ascii_digit()
                 || matches!(character, '.' | '_' | ':' | '-')
+        })
+}
+
+fn is_safe_object_key(value: &str) -> bool {
+    !value.is_empty()
+        && value.len() <= 1024
+        && !value.starts_with('/')
+        && !value.ends_with('/')
+        && value.split('/').all(|segment| {
+            !segment.is_empty()
+                && segment != "."
+                && segment != ".."
+                && segment.bytes().all(|byte| {
+                    byte.is_ascii_alphanumeric() || matches!(byte, b'.' | b'_' | b':' | b'-')
+                })
         })
 }
 

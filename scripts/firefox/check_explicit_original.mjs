@@ -12,6 +12,7 @@ const captures = [];
 let registeredScripts = [];
 const storage = {
   instanceUrl: "https://pinakotheke.example.invalid",
+  instanceId: "instance-1",
   pairId: "pair-1",
   sites: [{
     origin: "https://art.example.invalid:8443",
@@ -52,7 +53,7 @@ const browser = {
   },
   tabs: { async query() { return []; }, async sendMessage() {} },
   scripting: {
-    async executeScript() { return []; },
+    async executeScript({ func }) { return [{ result: func() }]; },
     async getRegisteredContentScripts() { return registeredScripts; },
     async unregisterContentScripts() { registeredScripts = []; },
     async registerContentScripts(scripts) { registeredScripts = scripts; },
@@ -108,6 +109,34 @@ const genericObserved = vm.runInContext(`eligibleObservedImages("https://art.exa
   { url: "https://media.example.invalid/synthetic.jpg" }
 ])`, backgroundContext);
 assert.equal(genericObserved.length, 1);
+
+storage.sites.push({
+  origin: "https://x.com",
+  capture: true,
+  substitution: false,
+  xIngress: true,
+  media: ["images"],
+});
+backgroundContext.document.images = [{
+  complete: true,
+  currentSrc: "https://pbs.twimg.com/media/visible-thumbnail.jpg?format=jpg&name=small",
+  naturalWidth: 640,
+  naturalHeight: 480,
+  closest(selector) { return selector === "a[href]" ? { href: "https://x.com/FixtureArtist/status/42" } : null; },
+  getBoundingClientRect() { return { width: 640, height: 480, top: 0, left: 0, bottom: 480, right: 640 }; },
+}];
+await messageListener(
+  { command: "visible-media-changed" },
+  { tab: { id: 8, url: "https://x.com/home" } },
+);
+await new Promise(resolve => setImmediate(resolve));
+assert.equal(captures.length, 1, "a merely visible opted-in X thumbnail must be submitted");
+const observedBody = JSON.parse(captures[0].options.body);
+assert.equal(observedBody.capture_kind, "observed_thumbnail");
+assert.equal(observedBody.media_url, "https://pbs.twimg.com/media/visible-thumbnail.jpg?format=jpg&name=small");
+assert.equal(observedBody.presentation_url, "https://x.com/FixtureArtist/status/42");
+captures.length = 0;
+storage.sites.pop();
 
 const sync = await messageListener({ command: "sync-capture-observers" }, {});
 assert.equal(sync.registered, 1);
@@ -165,6 +194,7 @@ assert.equal(contentMessages.length, 0, "synthetic clicks must be ignored");
 clickListener({ isTrusted: true, button: 0, target: openedImage });
 assert.equal(contentMessages.length, 1);
 assert.equal(contentMessages[0].command, "explicit-original-opened");
+assert.equal(contentMessages[0].mediaUrl, "https://media.example.invalid/thumb.jpg");
 assert.equal(contentMessages[0].presentationUrl, "https://media.example.invalid/open.jpg?signed=drop");
 assert.equal(contentMessages[0].width, 2048);
 

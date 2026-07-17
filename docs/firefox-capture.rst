@@ -20,7 +20,33 @@ never alters the downloaded or DASObjectStore-managed bytes. Pending,
 unavailable, rejected, and timeout states remain unframed and origin-served.
 
 Clicking an eligible linked image retains the stricter explicit-original path
-and uses the same verified status before framing. A trusted video ``play``
+and uses the same verified status before framing. Firefox sends the rendered
+image URL as the byte source and records an enclosing link, such as an X status
+page, only as presentation provenance. This prevents an HTML page from being
+mistaken for image content.
+
+The authenticated library page polls
+``GET /products/pinakotheke/api/ingestion/v1/status`` every three seconds. Its
+Ingress status strip reports actor-scoped observed thumbnails, explicitly
+opened images and videos, pending acquisitions, verified stores, and the live
+gallery size. ``Pending`` means that a plan has been durably accepted but has
+not yet passed ObjectStore commit verification and gallery admission; it is
+not evidence that bytes were stored.
+
+ObjectStore layout
+------------------
+
+The acquisition helper commits X image objects under the logical key
+``x.com/<account>/<capture-kind>/<sha256>``. The account is taken from the
+canonical X status-page presentation URL, not guessed from the image CDN URL.
+Handles are normalized to lowercase. If an observed CDN image has no account
+link, Pinakotheke uses the explicit ``x.com/_unattributed/...`` quarantine
+prefix rather than assigning it to the wrong creator. Generic enabled sites
+use ``sites/<site-id>/<capture-kind>/<sha256>``. These are DASObjectStore keys,
+not unmanaged local directories, and the checksum suffix preserves idempotent
+byte identity.
+
+A trusted video ``play``
 gesture is now detected, but XIMG-104 remains open until that candidate is
 routed through the existing normalized-video worker, committed, admitted, and
 reported through an equivalent verified status. The image helper intentionally

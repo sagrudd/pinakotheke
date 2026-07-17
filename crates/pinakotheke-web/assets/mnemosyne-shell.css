@@ -10,6 +10,11 @@
 .ximg-shell__eyebrow { color: var(--mn-color-text-secondary); font-size: 0.875rem; }
 :where(a, button, input, [tabindex]):focus-visible { outline: 2px solid var(--mn-color-action-primary-default); outline-offset: 2px; }
 .ximg-shell__empty { background: var(--mn-color-surface-raised); border: 1px solid var(--mn-color-border-subtle); margin-top: var(--mn-space-6); padding: var(--mn-space-4); }
+.ximg-ingestion-status { background:var(--mn-color-surface-raised); border:1px solid var(--mn-color-border-subtle); margin-top:var(--mn-space-6); padding:var(--mn-space-4); }
+.ximg-ingestion-status__metrics { display:grid; gap:var(--mn-space-2); grid-template-columns:repeat(auto-fit,minmax(7rem,1fr)); margin:var(--mn-space-3) 0; }
+.ximg-ingestion-status__metrics div { border-left:3px solid var(--mn-color-action-primary-default); padding:var(--mn-space-2) var(--mn-space-3); }
+.ximg-ingestion-status__metrics dt { color:var(--mn-color-text-secondary); font-size:.875rem; }
+.ximg-ingestion-status__metrics dd { font-size:1.5rem; font-weight:700; margin:var(--mn-space-1) 0 0; }
 .ximg-source-nav { margin-top: var(--mn-space-6); }
 .ximg-refresh { background:var(--mn-color-surface-raised); border:1px solid var(--mn-color-border-subtle); margin-top:var(--mn-space-6); padding:var(--mn-space-4); }
 .ximg-destination { background:var(--mn-color-surface-raised); border:1px solid var(--mn-color-border-subtle); margin-top:var(--mn-space-6); padding:var(--mn-space-4); }

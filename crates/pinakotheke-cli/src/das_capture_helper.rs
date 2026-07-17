@@ -24,6 +24,7 @@ struct Request {
     origin: String,
     canonical_page_url: String,
     canonical_media_url: String,
+    canonical_presentation_url: String,
     capture_kind: String,
     width: u32,
     height: u32,
@@ -243,7 +244,7 @@ fn acquire(request: &Request, config: &Config) -> Result<Committed, Box<dyn std:
         return Err("retrieved image payload is invalid".into());
     }
     let checksum = sha256_file(&payload)?;
-    let object_key = format!("media-{checksum}");
+    let object_key = object_key(request, &checksum);
     let version = u64::from_str_radix(&checksum[..16], 16).unwrap_or(1).max(1);
     let mut upload = upload_command(
         config,
@@ -408,6 +409,51 @@ fn catalogue_id(request: &Request) -> String {
     format!("website-{}-{}", request.site_id, &digest[..24])
 }
 
+fn object_key(request: &Request, checksum: &str) -> String {
+    if request.origin == "https://x.com" {
+        let account = x_account(&request.canonical_presentation_url)
+            .or_else(|| x_account(&request.canonical_page_url))
+            .unwrap_or_else(|| "_unattributed".into());
+        return format!(
+            "x.com/{}/{}/{checksum}",
+            account.to_ascii_lowercase(),
+            request.capture_kind
+        );
+    }
+    format!(
+        "sites/{}/{}/{checksum}",
+        request.site_id, request.capture_kind
+    )
+}
+
+fn x_account(url: &str) -> Option<String> {
+    let uri = url.parse::<axum::http::Uri>().ok()?;
+    if uri.scheme_str() != Some("https") || uri.authority()?.host() != "x.com" {
+        return None;
+    }
+    let account = uri.path().split('/').find(|segment| !segment.is_empty())?;
+    const RESERVED: &[&str] = &[
+        "compose",
+        "explore",
+        "home",
+        "i",
+        "intent",
+        "messages",
+        "notifications",
+        "search",
+        "settings",
+    ];
+    if RESERVED.contains(&account)
+        || account.len() > 15
+        || !account
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || byte == b'_')
+    {
+        return None;
+    }
+    Some(account.into())
+}
+
 fn validate_request(request: &Request, config: &Config) -> Result<(), Box<dyn std::error::Error>> {
     if request.schema_version != REQUEST_SCHEMA
         || request.endpoint_id != config.endpoint_id
@@ -437,9 +483,13 @@ fn validate_request(request: &Request, config: &Config) -> Result<(), Box<dyn st
     let origin = request.origin.parse::<axum::http::Uri>()?;
     let page = request.canonical_page_url.parse::<axum::http::Uri>()?;
     let media = request.canonical_media_url.parse::<axum::http::Uri>()?;
+    let presentation = request
+        .canonical_presentation_url
+        .parse::<axum::http::Uri>()?;
     if origin.scheme_str() != Some("https")
         || page.scheme_str() != Some("https")
         || media.scheme_str() != Some("https")
+        || presentation.scheme_str() != Some("https")
         || page.authority() != origin.authority()
         || origin
             .authority()
@@ -448,6 +498,9 @@ fn validate_request(request: &Request, config: &Config) -> Result<(), Box<dyn st
             .authority()
             .is_some_and(|value| value.as_str().contains('@'))
         || media
+            .authority()
+            .is_some_and(|value| value.as_str().contains('@'))
+        || presentation
             .authority()
             .is_some_and(|value| value.as_str().contains('@'))
     {
@@ -615,7 +668,7 @@ mod tests {
         );
         executable(
             &remote,
-            "#!/bin/sh\nprintf '%s' \"$*\" | grep -q -- '--config .* upload dos-store-1 --source .* --key media-.* --content-type image/png --no-progress --submit-to-daemon --daemon-socket' || exit 9\nprintf 'Daemon remote upload job submitted\\nFinal: job state=Complete stage=remote_s3_transfer_complete\\n'\n",
+            "#!/bin/sh\nprintf '%s' \"$*\" | grep -q -- '--config .* upload dos-store-1 --source .* --key sites/site-1/observed_thumbnail/.* --content-type image/png --no-progress --submit-to-daemon --daemon-socket' || exit 9\nprintf 'Daemon remote upload job submitted\\nFinal: job state=Complete stage=remote_s3_transfer_complete\\n'\n",
         );
         let remote_config = root.join("remote.json");
         fs::write(&remote_config, "{}").unwrap();
@@ -639,6 +692,7 @@ mod tests {
             origin: "https://example.invalid".into(),
             canonical_page_url: "https://example.invalid/gallery".into(),
             canonical_media_url: "https://media.invalid/image.png".into(),
+            canonical_presentation_url: "https://example.invalid/artists/example/status/1".into(),
             capture_kind: "observed_thumbnail".into(),
             width: 10,
             height: 10,
@@ -659,7 +713,11 @@ mod tests {
         assert_eq!(receipt.content_length, 7);
         assert_eq!(receipt.content_type, "image/png");
         assert_eq!(receipt.object_store_id, "store-1");
-        assert!(receipt.object_key.starts_with("media-"));
+        assert!(
+            receipt
+                .object_key
+                .starts_with("sites/site-1/observed_thumbnail/")
+        );
         assert!(receipt.object_version > 0);
         assert_eq!(receipt.catalogue_id, catalogue_id(&request));
         request.canonical_media_url = "https://media.invalid/second.png".into();
@@ -697,6 +755,7 @@ mod tests {
             origin: "https://example.invalid".into(),
             canonical_page_url: "https://example.invalid/gallery".into(),
             canonical_media_url: "https://media.invalid/image.png".into(),
+            canonical_presentation_url: "https://example.invalid/artists/example/status/1".into(),
             capture_kind: "explicit_original".into(),
             width: 10,
             height: 10,
@@ -736,6 +795,29 @@ mod tests {
         };
         let encoded = serde_json::to_value(receipt).unwrap();
         assert_eq!(encoded["outcome"], "committed");
+    }
+
+    #[test]
+    fn x_object_keys_use_the_post_author_and_capture_class() {
+        let request = Request {
+            schema_version: REQUEST_SCHEMA.into(),
+            plan_id: "plan-1".into(),
+            site_id: "x-com".into(),
+            origin: "https://x.com".into(),
+            canonical_page_url: "https://x.com/home".into(),
+            canonical_media_url: "https://pbs.twimg.com/media/image".into(),
+            canonical_presentation_url: "https://x.com/Example_Artist/status/42".into(),
+            capture_kind: "observed_thumbnail".into(),
+            width: 640,
+            height: 480,
+            adapter_version: "1.0.0".into(),
+            endpoint_id: "endpoint-1".into(),
+            object_store_id: "store-1".into(),
+        };
+        assert_eq!(
+            object_key(&request, "abc123"),
+            "x.com/example_artist/observed_thumbnail/abc123"
+        );
     }
 
     #[test]
@@ -799,6 +881,7 @@ mod tests {
             origin: "https://example.invalid".into(),
             canonical_page_url: "https://example.invalid/gallery".into(),
             canonical_media_url: "https://media.invalid/image.png".into(),
+            canonical_presentation_url: "https://example.invalid/artists/example/status/1".into(),
             capture_kind: "explicit_original".into(),
             width: 10,
             height: 10,

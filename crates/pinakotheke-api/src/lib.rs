@@ -326,6 +326,19 @@ struct CapturePlanStatusResponse {
     state: &'static str,
 }
 
+#[derive(Debug, Serialize)]
+struct IngestionStatusResponse {
+    schema_version: &'static str,
+    observed_assets: usize,
+    observed_thumbnails: usize,
+    opened_originals: usize,
+    opened_videos: usize,
+    pending: usize,
+    stored: usize,
+    gallery_items: usize,
+    last_observed_at_epoch_seconds: Option<u64>,
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct CaptureCompletionRequest {
@@ -778,6 +791,10 @@ pub fn monolith_router_with_gallery_web_delivery_and_capture_authority(
                 .route(
                     "/products/pinakotheke/api/extension/v1/capture-plans/{plan_id}",
                     get(capture_plan_state),
+                )
+                .route(
+                    "/products/pinakotheke/api/ingestion/v1/status",
+                    get(ingestion_status),
                 )
                 .layer(Extension(runtime));
         }
@@ -1468,6 +1485,37 @@ async fn capture_plan_state(
         plan_id,
         catalogue_id: plan.catalogue_id,
         state: if stored { "stored" } else { "pending" },
+    }))
+}
+
+async fn ingestion_status(
+    Extension(context): Extension<AuthenticatedHostContext>,
+    Extension(runtime): Extension<Arc<CaptureCompletionRuntime>>,
+) -> Result<Json<IngestionStatusResponse>, StatusCode> {
+    if !context.permits(XIMG_ACCESS) {
+        return Err(StatusCode::FORBIDDEN);
+    }
+    let activity = runtime
+        .plans
+        .lock()
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .activity_for_actor(context.actor_id());
+    let gallery_items = runtime
+        .gallery
+        .lock()
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .items()
+        .len();
+    Ok(Json(IngestionStatusResponse {
+        schema_version: "pinakotheke.ingestion-status.v1",
+        observed_assets: activity.observed_thumbnails + activity.opened_originals,
+        observed_thumbnails: activity.observed_thumbnails,
+        opened_originals: activity.opened_originals,
+        opened_videos: 0,
+        pending: activity.pending,
+        stored: activity.stored,
+        gallery_items,
+        last_observed_at_epoch_seconds: activity.last_observed_at_epoch_seconds,
     }))
 }
 
@@ -3194,6 +3242,25 @@ mod tests {
             serde_json::from_slice(&to_bytes(planned.into_body(), 16 * 1024).await.unwrap())
                 .unwrap();
         let plan_id = plan["plan_id"].as_str().unwrap();
+        let pending_status = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .uri("/products/pinakotheke/api/ingestion/v1/status")
+                    .header("x-monas-dispatch-token", dispatch)
+                    .header("x-monas-host-context", MONAS_CONTEXT)
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(pending_status.status(), StatusCode::OK);
+        let pending_status: serde_json::Value =
+            serde_json::from_slice(&to_bytes(pending_status.into_body(), 4096).await.unwrap())
+                .unwrap();
+        assert_eq!(pending_status["observed_thumbnails"], 1);
+        assert_eq!(pending_status["pending"], 1);
+        assert_eq!(pending_status["stored"], 0);
         let completion = serde_json::json!({
             "schema_version": "pinakotheke.capture-completion.v1",
             "catalogue_id": "website-card-1",
@@ -3202,7 +3269,7 @@ mod tests {
             "content_length": 12,
             "endpoint_id": "synthetic-endpoint",
             "object_store_id": "synthetic-store",
-            "object_key": "image-1",
+            "object_key": "x.com/fixtureartist/observed_thumbnail/image-1",
             "object_version": 1,
             "checksum_sha256": CHECKSUM.strip_prefix("sha256:").unwrap(),
             "verified_at_epoch_seconds": 42
@@ -3281,6 +3348,7 @@ mod tests {
             serde_json::from_slice(&to_bytes(stored.into_body(), 4096).await.unwrap()).unwrap();
         assert_eq!(stored["state"], "stored");
         let catalogue = app
+            .clone()
             .oneshot(
                 Request::builder()
                     .uri("/products/pinakotheke/api/gallery/v1/catalogue")
@@ -3295,6 +3363,23 @@ mod tests {
             serde_json::from_slice(&to_bytes(catalogue.into_body(), 16 * 1024).await.unwrap())
                 .unwrap();
         assert_eq!(catalogue["items"].as_array().unwrap().len(), 1);
+        let stored_status = app
+            .oneshot(
+                Request::builder()
+                    .uri("/products/pinakotheke/api/ingestion/v1/status")
+                    .header("x-monas-dispatch-token", dispatch)
+                    .header("x-monas-host-context", MONAS_CONTEXT)
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        let stored_status: serde_json::Value =
+            serde_json::from_slice(&to_bytes(stored_status.into_body(), 4096).await.unwrap())
+                .unwrap();
+        assert_eq!(stored_status["pending"], 0);
+        assert_eq!(stored_status["stored"], 1);
+        assert_eq!(stored_status["gallery_items"], 1);
         let _ = std::fs::remove_dir_all(root);
     }
 
