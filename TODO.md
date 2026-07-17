@@ -2,7 +2,7 @@
 
 Status: dependency-ordered planning backlog
 
-Version: 1.7.3
+Version: 1.8.0
 
 Updated: 2026-07-17
 
@@ -1192,6 +1192,16 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   images totalling 1,344,774 bytes completed in 1.913 seconds concurrently,
   versus 9.632 seconds sequentially; unchanged repeat browser views use the
   private cache instead of retrieving the objects again.
+
+- [ ] **XIMG-107 P1 — Add latest-download and artist-folder browsing.**
+  Make the default graphical gallery the newest 20 downloads. Add a strict
+  authenticated folder projection with root and breadcrumb navigation,
+  immediate child counts, latest-capture times, and exact object-prefix
+  filtering. Present ``x.com/<artist>/<capture-class>`` as browsable catalogue
+  folders while keeping generic-site prefixes honest. Never expose filesystem
+  paths or broaden access to unrelated DASObjectStore objects. Preserve folder,
+  source, and text context when loading the next 20 cards. Follow the sibling
+  DASObjectStore Yew browser pattern and Mnemosyne semantic-token requirements.
 
 - [x] **XIMG-090 P0 — Scaffold the runnable Pinakotheke monolith.** Completed
   in ``2cfa1e1``. ``pinakotheke serve`` now resolves ``$HOME/.x-img`` by

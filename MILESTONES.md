@@ -2,7 +2,7 @@
 
 Status: 1.0 stable release
 
-Version: 1.7.3
+Version: 1.8.0
 
 Updated: 2026-07-17
 
@@ -956,6 +956,14 @@ capture copy, while new X admissions preserve their account classification.
 Delivered in ``6ae7bd9`` and deployed to the x86_64 DASServer on 2026-07-17.
 The 15-object cold-read probe improved from 9.632 seconds sequentially to 1.913
 seconds through the pool; repeat browser views reuse the private cache.
+
+## 1.8.0 — Latest downloads and artist-folder browsing
+
+Goal: lead with the latest 20 graphical downloads and provide an authenticated
+DASObjectStore-inspired folder browser over catalogue object prefixes. Root,
+``x.com``, artist, and capture-class selections expose breadcrumbs, immediate
+children, counts, and latest-capture times, then filter the same authorized
+gallery without exposing filesystem paths or unscoped ObjectStore contents.
 
 ## Post-1.0 candidates
 

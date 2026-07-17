@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Add an authenticated, prefix-bounded gallery-folder projection with
+  breadcrumbs, immediate child folders, item counts, and latest-capture times.
+- Make the library landing view a graphical list of the latest 20 downloads;
+  folder selection filters cards through the server across
+  ``x.com/<artist>/<capture-class>`` without exposing host filesystem paths.
 - Replace the serialized gallery read boundary with a 128-slot, backpressured
   Axum delivery pool; provider lookup, object retrieval, and checksum
   verification run on Tokio's blocking workers rather than request threads.

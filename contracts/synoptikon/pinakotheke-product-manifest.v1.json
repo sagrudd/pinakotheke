@@ -1,6 +1,6 @@
 {
   "schema_version": "mnemosyne.product.manifest.v1",
-  "product": {"id": "pinakotheke", "name": "Pinakotheke", "version": "1.7.3"},
+  "product": {"id": "pinakotheke", "name": "Pinakotheke", "version": "1.8.0"},
   "compatibility": {"min_synoptikon_version": "0.2.0", "max_synoptikon_version": null},
   "modes": {"standalone": true, "synoptikon_integrated": true},
   "support": {

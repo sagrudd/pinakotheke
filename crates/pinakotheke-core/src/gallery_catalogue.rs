@@ -18,6 +18,7 @@ use crate::{
 };
 
 pub const GALLERY_CATALOGUE_SCHEMA: &str = "pinakotheke.gallery-catalogue.v1";
+pub const GALLERY_FOLDERS_SCHEMA: &str = "pinakotheke.gallery-folders.v1";
 pub const MAX_GALLERY_PAGE_SIZE: usize = 200;
 pub const GALLERY_STORE_SCHEMA: &str = "pinakotheke.gallery-store.v1";
 const MAX_GALLERY_ITEMS: usize = 100_000;
@@ -109,6 +110,29 @@ pub struct GalleryPage {
     pub total_items: usize,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct GalleryFolderPage {
+    pub schema_version: &'static str,
+    pub prefix: String,
+    pub breadcrumbs: Vec<GalleryFolderBreadcrumb>,
+    pub folders: Vec<GalleryFolderEntry>,
+    pub matched_items: usize,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct GalleryFolderBreadcrumb {
+    pub name: String,
+    pub prefix: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct GalleryFolderEntry {
+    pub name: String,
+    pub prefix: String,
+    pub item_count: usize,
+    pub latest_at_epoch_seconds: u64,
+}
+
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct GalleryCatalogueFilter {
     pub source_kind: Option<GallerySourceKind>,
@@ -118,6 +142,7 @@ pub struct GalleryCatalogueFilter {
     pub discovered_from_epoch_seconds: Option<u64>,
     pub discovered_to_epoch_seconds: Option<u64>,
     pub text: Option<String>,
+    pub object_prefix: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -352,6 +377,7 @@ impl GalleryCatalogue {
             return Err(GalleryCatalogueError::InvalidPageSize);
         }
         let normalized_text = validate_filter(filter)?;
+        let object_prefix = validate_object_prefix(filter.object_prefix.as_deref())?;
         let matches = self.items.iter().filter(|item| {
             filter
                 .source_kind
@@ -380,6 +406,13 @@ impl GalleryCatalogue {
                         || item.source_label.to_lowercase().contains(text)
                         || item.catalogue_id.to_lowercase().contains(text)
                 })
+                && object_prefix.as_ref().is_none_or(|prefix| {
+                    key_in_prefix(&item.thumbnail.object_key, prefix)
+                        || item
+                            .preview
+                            .as_ref()
+                            .is_some_and(|preview| key_in_prefix(&preview.object_key, prefix))
+                })
         });
         let matched_items = matches.clone().count();
         let items = matches
@@ -394,6 +427,73 @@ impl GalleryCatalogue {
             next_offset,
             matched_items,
             total_items: self.items.len(),
+        })
+    }
+
+    pub fn folder_page(
+        &self,
+        context: &AuthenticatedHostContext,
+        prefix: Option<&str>,
+    ) -> Result<GalleryFolderPage, GalleryCatalogueError> {
+        if context.host_mode() != HostMode::MonasStandalone || !context.permits(XIMG_ACCESS) {
+            return Err(GalleryCatalogueError::Unauthorized);
+        }
+        let prefix = validate_object_prefix(prefix)?.unwrap_or_default();
+        let mut children = std::collections::BTreeMap::<String, (usize, u64)>::new();
+        let mut matched_items = 0usize;
+        for item in &self.items {
+            let key = &item.thumbnail.object_key;
+            if !prefix.is_empty() && !key_in_prefix(key, &prefix) {
+                continue;
+            }
+            matched_items += 1;
+            let remainder = key.strip_prefix(&prefix).unwrap_or(key);
+            let remainder = remainder.strip_prefix('/').unwrap_or(remainder);
+            let Some(name) = remainder.split('/').next().filter(|name| !name.is_empty()) else {
+                continue;
+            };
+            if !remainder.contains('/') {
+                continue;
+            }
+            let child_prefix = if prefix.is_empty() {
+                name.to_owned()
+            } else {
+                format!("{prefix}/{name}")
+            };
+            let entry = children.entry(child_prefix).or_default();
+            entry.0 += 1;
+            entry.1 = entry.1.max(item.discovered_at_epoch_seconds);
+        }
+        let breadcrumbs = prefix
+            .split('/')
+            .filter(|part| !part.is_empty())
+            .scan(String::new(), |path, name| {
+                if !path.is_empty() {
+                    path.push('/');
+                }
+                path.push_str(name);
+                Some(GalleryFolderBreadcrumb {
+                    name: name.to_owned(),
+                    prefix: path.clone(),
+                })
+            })
+            .collect();
+        Ok(GalleryFolderPage {
+            schema_version: GALLERY_FOLDERS_SCHEMA,
+            prefix,
+            breadcrumbs,
+            folders: children
+                .into_iter()
+                .map(
+                    |(prefix, (item_count, latest_at_epoch_seconds))| GalleryFolderEntry {
+                        name: prefix.rsplit('/').next().unwrap_or(&prefix).to_owned(),
+                        prefix,
+                        item_count,
+                        latest_at_epoch_seconds,
+                    },
+                )
+                .collect(),
+            matched_items,
         })
     }
 
@@ -523,6 +623,35 @@ fn validate_filter(
     Ok(Some(text.to_lowercase()))
 }
 
+fn validate_object_prefix(prefix: Option<&str>) -> Result<Option<String>, GalleryCatalogueError> {
+    let Some(prefix) = prefix.map(str::trim).filter(|prefix| !prefix.is_empty()) else {
+        return Ok(None);
+    };
+    if prefix.len() > 512
+        || prefix.starts_with('/')
+        || prefix.ends_with('/')
+        || prefix.split('/').any(|part| {
+            part.is_empty()
+                || part == "."
+                || part == ".."
+                || part.len() > 128
+                || part
+                    .bytes()
+                    .any(|byte| byte.is_ascii_control() || byte == b'\\')
+        })
+    {
+        return Err(GalleryCatalogueError::InvalidFilter);
+    }
+    Ok(Some(prefix.to_owned()))
+}
+
+fn key_in_prefix(key: &str, prefix: &str) -> bool {
+    key == prefix
+        || key
+            .strip_prefix(prefix)
+            .is_some_and(|remainder| remainder.starts_with('/'))
+}
+
 fn validate_item(item: &GalleryItem) -> Result<(), GalleryCatalogueError> {
     if item.catalogue_id.is_empty() || item.title.is_empty() || item.width == 0 || item.height == 0
     {
@@ -643,6 +772,47 @@ mod tests {
         assert_eq!(page.next_offset, Some(1));
         assert_eq!(page.matched_items, 2);
         assert_eq!(page.total_items, 2);
+    }
+
+    #[test]
+    fn folder_pages_browse_immediate_children_and_filter_exact_prefixes() {
+        let context = MonasHostContextAdapter
+            .authenticate(include_bytes!(
+                "../../../fixtures/host-context/v1/monas-valid.json"
+            ))
+            .unwrap();
+        let mut first = item("first", 10);
+        first.thumbnail.object_key = "x.com/artist_one/observed_thumbnail/first".into();
+        let mut second = item("second", 20);
+        second.thumbnail.object_key = "x.com/artist_two/explicit_original/second".into();
+        let mut prefix_collision = item("collision", 30);
+        prefix_collision.thumbnail.object_key =
+            "x.com/artist_two_extra/observed_thumbnail/collision".into();
+        let catalogue = GalleryCatalogue::new(vec![first, second, prefix_collision]).unwrap();
+
+        let root = catalogue.folder_page(&context, None).unwrap();
+        assert_eq!(root.folders[0].prefix, "x.com");
+        assert_eq!(root.folders[0].item_count, 3);
+        let artists = catalogue.folder_page(&context, Some("x.com")).unwrap();
+        assert_eq!(artists.folders.len(), 3);
+        assert_eq!(artists.breadcrumbs[0].name, "x.com");
+        let page = catalogue
+            .filtered_page(
+                &context,
+                0,
+                20,
+                &GalleryCatalogueFilter {
+                    object_prefix: Some("x.com/artist_two".into()),
+                    ..GalleryCatalogueFilter::default()
+                },
+            )
+            .unwrap();
+        assert_eq!(page.matched_items, 1);
+        assert_eq!(page.items[0].catalogue_id, "second");
+        assert_eq!(
+            catalogue.folder_page(&context, Some("../unsafe")),
+            Err(GalleryCatalogueError::InvalidFilter)
+        );
     }
 
     #[test]

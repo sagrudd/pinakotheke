@@ -99,6 +99,25 @@ render in the keyboard-accessible preview pane. The web client requests
 source-filtered pages using the returned X-account or website classification.
 Instagram capture remains part of the normal website class.
 
+The default graphical view requests the 20 newest matching catalogue records.
+The adjacent folder browser follows the DASObjectStore Yew interaction pattern:
+an explicit root, clickable breadcrumbs, immediate child folders, counts, and
+the latest capture time. Pinakotheke projects only its authorized catalogue
+keys—it does not expose a host filesystem path or turn the browser into an
+unscoped ObjectStore listing. X media naturally appears as
+``x.com/<artist>/<capture-class>``. Selecting any level supplies a strictly
+validated ``object_prefix`` filter to the catalogue endpoint; similarly named
+artists cannot bleed into one another. **Load next 20 records** extends the
+current folder without losing its prefix, source, or text filters.
+
+The folder endpoint is
+``GET /products/pinakotheke/api/gallery/v1/folders?prefix=...`` and uses
+``pinakotheke.gallery-folders.v1``. It returns breadcrumbs and immediate child
+folders computed across the complete authorized catalogue, independently of
+the 20-card graphical page size. This slice was checked against DASObjectStore
+commit ``2e1e1669ff0bccc05324b3b74785300e00f53d90`` and Mnemosyne design-language
+commit ``fbfa28e55d1c8111ef95a139d83927c231534b5f``.
+
 Cards lead with the source account when it can be proven from X capture
 provenance, followed by the UTC capture time and the media/object/review state.
 Older records whose source label predates account-aware admission recover the

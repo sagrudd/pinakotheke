@@ -8,8 +8,8 @@ use wasm_bindgen::closure::Closure;
 use wasm_bindgen_futures::spawn_local;
 use web_sys::{Event, HtmlElement, HtmlInputElement, HtmlSelectElement, KeyboardEvent};
 use x_img_core::gallery_catalogue::{
-    GALLERY_CATALOGUE_SCHEMA, GalleryItem, GalleryMediaKind, GalleryObjectAvailability,
-    GalleryRepresentation, GalleryReviewState, GallerySourceKind,
+    GALLERY_CATALOGUE_SCHEMA, GALLERY_FOLDERS_SCHEMA, GalleryItem, GalleryMediaKind,
+    GalleryObjectAvailability, GalleryRepresentation, GalleryReviewState, GallerySourceKind,
 };
 use yew::prelude::*;
 
@@ -21,10 +21,11 @@ pub fn run() {
 }
 
 const GALLERY_API: &str = "/products/pinakotheke/api/gallery/v1/catalogue";
+const GALLERY_FOLDERS_API: &str = "/products/pinakotheke/api/gallery/v1/folders";
 const OBJECT_STORE_API: &str = "/products/dasobjectstore/api/v1/dashboard/object-stores";
 const EXTENSION_ONBOARDING_API: &str = "/products/pinakotheke/api/extension/v1/onboarding";
 const INGESTION_STATUS_API: &str = "/products/pinakotheke/api/ingestion/v1/status";
-const GALLERY_PAGE_SIZE: usize = 100;
+const GALLERY_PAGE_SIZE: usize = 20;
 const GALLERY_WINDOW_ROWS: usize = 8;
 const GALLERY_OVERSCAN_ROWS: usize = 2;
 const COMPACT_ROW_HEIGHT: usize = 224;
@@ -74,6 +75,40 @@ struct GalleryPageResponse {
     next_offset: Option<usize>,
     matched_items: usize,
     total_items: usize,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct GalleryFolderPageResponse {
+    schema_version: String,
+    prefix: String,
+    breadcrumbs: Vec<GalleryFolderBreadcrumbResponse>,
+    folders: Vec<GalleryFolderEntryResponse>,
+    matched_items: usize,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct GalleryFolderBreadcrumbResponse {
+    name: String,
+    prefix: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct GalleryFolderEntryResponse {
+    name: String,
+    prefix: String,
+    item_count: usize,
+    latest_at_epoch_seconds: u64,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum GalleryFolderLoadState {
+    Loading,
+    Ready(GalleryFolderPageResponse),
+    PermissionDenied,
+    Unavailable,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -271,7 +306,7 @@ fn encode_query(value: &str) -> String {
     encoded
 }
 
-fn gallery_url(offset: usize, selected: &str, text: &str) -> String {
+fn gallery_url(offset: usize, selected: &str, text: &str, object_prefix: &str) -> String {
     let mut url = format!("{GALLERY_API}?offset={offset}&limit={GALLERY_PAGE_SIZE}");
     match selected {
         "x" => url.push_str("&source_kind=x_account"),
@@ -282,7 +317,19 @@ fn gallery_url(offset: usize, selected: &str, text: &str) -> String {
         url.push_str("&text=");
         url.push_str(&encode_query(text.trim()));
     }
+    if !object_prefix.is_empty() {
+        url.push_str("&object_prefix=");
+        url.push_str(&encode_query(object_prefix));
+    }
     url
+}
+
+fn gallery_folders_url(prefix: &str) -> String {
+    if prefix.is_empty() {
+        GALLERY_FOLDERS_API.to_owned()
+    } else {
+        format!("{GALLERY_FOLDERS_API}?prefix={}", encode_query(prefix))
+    }
 }
 
 fn initial_viewport_width() -> usize {
@@ -335,6 +382,8 @@ pub fn app() -> Html {
     let object_view = use_state(|| true);
     let filter = use_state(String::new);
     let gallery = use_state(|| GalleryLoadState::Loading);
+    let folder_prefix = use_state(String::new);
+    let gallery_folders = use_state(|| GalleryFolderLoadState::Loading);
     let request_generation = use_mut_ref(|| 0_u64);
     let gallery_scroll_top = use_state(|| 0_usize);
     let gallery_viewport_width = use_state(initial_viewport_width);
@@ -443,14 +492,43 @@ pub fn app() -> Html {
     }
 
     {
+        let gallery_folders = gallery_folders.clone();
+        use_effect_with((*folder_prefix).clone(), move |prefix| {
+            let url = gallery_folders_url(prefix);
+            gallery_folders.set(GalleryFolderLoadState::Loading);
+            spawn_local(async move {
+                let state = match Request::get(&url).send().await {
+                    Ok(response) if matches!(response.status(), 401 | 403) => {
+                        GalleryFolderLoadState::PermissionDenied
+                    }
+                    Ok(response) if response.ok() => response
+                        .json::<GalleryFolderPageResponse>()
+                        .await
+                        .ok()
+                        .filter(|page| page.schema_version == GALLERY_FOLDERS_SCHEMA)
+                        .map(GalleryFolderLoadState::Ready)
+                        .unwrap_or(GalleryFolderLoadState::Unavailable),
+                    Ok(_) | Err(_) => GalleryFolderLoadState::Unavailable,
+                };
+                gallery_folders.set(state);
+            });
+            || ()
+        });
+    }
+
+    {
         let gallery = gallery.clone();
         let active_card = active_card.clone();
         let request_generation = request_generation.clone();
         let gallery_scroll_top_effect = gallery_scroll_top.clone();
         use_effect_with(
-            ((*selected).clone(), (*filter).clone()),
-            move |(selected, filter)| {
-                let url = gallery_url(0, selected, filter);
+            (
+                (*selected).clone(),
+                (*filter).clone(),
+                (*folder_prefix).clone(),
+            ),
+            move |(selected, filter, prefix)| {
+                let url = gallery_url(0, selected, filter, prefix);
                 let generation = {
                     let mut current = request_generation.borrow_mut();
                     *current += 1;
@@ -713,6 +791,62 @@ pub fn app() -> Html {
                     }}>{ "Undo batch action" }</button>
                 </section>
 
+                <section class="ximg-folders" aria-labelledby="folder-browser-title">
+                    <div class="ximg-folders__heading">
+                        <div>
+                            <p class="ximg-shell__eyebrow">{ "ObjectStore catalogue paths" }</p>
+                            <h2 id="folder-browser-title">{ "Browse by folder" }</h2>
+                        </div>
+                        <p>{ "Select a folder to focus the graphical gallery. Media remains authorized and delivered through Pinakotheke." }</p>
+                    </div>
+                    { match &*gallery_folders {
+                        GalleryFolderLoadState::Loading => html! { <p role="status">{ "Loading folders…" }</p> },
+                        GalleryFolderLoadState::PermissionDenied => html! { <p role="alert">{ "Monas did not authorize folder browsing." }</p> },
+                        GalleryFolderLoadState::Unavailable => html! { <p role="alert">{ "Folder information is unavailable. The latest-download gallery remains usable." }</p> },
+                        GalleryFolderLoadState::Ready(page) => html! {
+                            <>
+                                <nav class="ximg-folders__breadcrumbs" aria-label="Pinakotheke folder path">
+                                    <button type="button" aria-current={page.prefix.is_empty().then_some("page")} onclick={{
+                                        let folder_prefix = folder_prefix.clone();
+                                        Callback::from(move |_| folder_prefix.set(String::new()))
+                                    }}>{ "Latest downloads" }</button>
+                                    { for page.breadcrumbs.iter().map(|breadcrumb| {
+                                        let prefix = breadcrumb.prefix.clone();
+                                        let folder_prefix = folder_prefix.clone();
+                                        html! {
+                                            <button type="button" aria-current={(breadcrumb.prefix == page.prefix).then_some("page")} onclick={Callback::from(move |_| folder_prefix.set(prefix.clone()))}>
+                                                { breadcrumb.name.clone() }
+                                            </button>
+                                        }
+                                    }) }
+                                </nav>
+                                <p class="ximg-folders__summary">{ format!("{} media item(s) in this folder · {} child folder(s)", page.matched_items, page.folders.len()) }</p>
+                                { if page.folders.is_empty() {
+                                    html! { <p>{ "No child folders. The gallery below shows media in this selection." }</p> }
+                                } else {
+                                    html! {
+                                        <ul class="ximg-folders__list">
+                                            { for page.folders.iter().map(|folder| {
+                                                let prefix = folder.prefix.clone();
+                                                let folder_prefix = folder_prefix.clone();
+                                                html! {
+                                                    <li>
+                                                        <button type="button" onclick={Callback::from(move |_| folder_prefix.set(prefix.clone()))}>
+                                                            <strong>{ folder.name.clone() }</strong>
+                                                            <span>{ format!("{} item(s)", folder.item_count) }</span>
+                                                            <small>{ format!("Latest {}", captured_at_label(folder.latest_at_epoch_seconds)) }</small>
+                                                        </button>
+                                                    </li>
+                                                }
+                                            }) }
+                                        </ul>
+                                    }
+                                } }
+                            </>
+                        },
+                    } }
+                </section>
+
                 <section class="ximg-source-nav" aria-labelledby="source-context">
                     <h2 id="source-context">{ "Sources" }</h2>
                     <p>{ format!("Selected context: {}", sources.iter().find(|source| source.0 == (*selected).as_str()).map(|source| source.1).unwrap_or("All sources")) }</p>
@@ -736,7 +870,13 @@ pub fn app() -> Html {
 
                 <section class="ximg-gallery" aria-labelledby="gallery-title">
                     <div class="ximg-gallery__toolbar">
-                        <h2 id="gallery-title">{ "Thumbnail browser" }</h2>
+                        <h2 id="gallery-title">{
+                            if folder_prefix.is_empty() {
+                                "Latest 20 downloads".to_owned()
+                            } else {
+                                format!("Folder · {}", *folder_prefix)
+                            }
+                        }</h2>
                         <button onclick={{
                             let density = density.clone();
                             Callback::from(move |_| density.set(if *density == "compact" { "comfortable".to_owned() } else { "compact".to_owned() }))
@@ -869,7 +1009,8 @@ pub fn app() -> Html {
                                 html! {
                                     <button class="ximg-gallery__more" onclick={Callback::from(move |_| {
                                         let gallery = gallery.clone();
-                                        let url = gallery_url(offset, &selected, &filter);
+                                        let prefix = (*folder_prefix).clone();
+                                        let url = gallery_url(offset, &selected, &filter, &prefix);
                                         let request_generation = request_generation.clone();
                                         let generation = *request_generation.borrow();
                                         spawn_local(async move {
@@ -888,7 +1029,7 @@ pub fn app() -> Html {
                                                 });
                                             }
                                         });
-                                    })}>{ "Load next 100 records" }</button>
+                                    })}>{ "Load next 20 records" }</button>
                                 }
                             } else { Html::default() } }
                             </>
@@ -1083,12 +1224,17 @@ mod tests {
     #[test]
     fn catalogue_queries_preserve_bounded_server_filters_across_pages() {
         assert_eq!(
-            gallery_url(100, "websites", " calm ocean & film "),
-            "/products/pinakotheke/api/gallery/v1/catalogue?offset=100&limit=100&source_kind=website&text=calm%20ocean%20%26%20film"
+            gallery_url(20, "websites", " calm ocean & film ", "x.com/artist_one"),
+            "/products/pinakotheke/api/gallery/v1/catalogue?offset=20&limit=20&source_kind=website&text=calm%20ocean%20%26%20film&object_prefix=x.com%2Fartist_one"
         );
         assert_eq!(
-            gallery_url(0, "x", ""),
-            "/products/pinakotheke/api/gallery/v1/catalogue?offset=0&limit=100&source_kind=x_account"
+            gallery_url(0, "x", "", ""),
+            "/products/pinakotheke/api/gallery/v1/catalogue?offset=0&limit=20&source_kind=x_account"
+        );
+        assert_eq!(gallery_folders_url(""), GALLERY_FOLDERS_API);
+        assert_eq!(
+            gallery_folders_url("x.com/artist_one"),
+            "/products/pinakotheke/api/gallery/v1/folders?prefix=x.com%2Fartist_one"
         );
     }
 

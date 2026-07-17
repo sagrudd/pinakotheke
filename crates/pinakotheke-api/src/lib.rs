@@ -35,8 +35,8 @@ use x_img_core::{
     },
     gallery_catalogue::{
         GalleryCatalogue, GalleryCatalogueError, GalleryCatalogueFilter, GalleryCatalogueStore,
-        GalleryImageResolveError, GalleryImageRole, GalleryMediaKind, GalleryObjectAvailability,
-        GalleryPage, GalleryReviewState, GallerySourceKind,
+        GalleryFolderPage, GalleryImageResolveError, GalleryImageRole, GalleryMediaKind,
+        GalleryObjectAvailability, GalleryPage, GalleryReviewState, GallerySourceKind,
     },
     host_context::{
         AuthenticatedHostContext, HostContextAdapter, MonasHostContextAdapter, XIMG_ACCESS,
@@ -667,6 +667,10 @@ pub fn monolith_router_with_gallery_and_web_authority(
             "/products/pinakotheke/api/gallery/v1/catalogue",
             get(gallery_catalogue),
         )
+        .route(
+            "/products/pinakotheke/api/gallery/v1/folders",
+            get(gallery_folders),
+        )
         .layer(Extension(Arc::new(Mutex::new(gallery))));
     if let Some(web_root) = web_root {
         protected = protected.nest_service(
@@ -704,6 +708,10 @@ pub fn monolith_router_with_gallery_web_and_capture_authority(
         .route(
             "/products/pinakotheke/api/gallery/v1/catalogue",
             get(gallery_catalogue),
+        )
+        .route(
+            "/products/pinakotheke/api/gallery/v1/folders",
+            get(gallery_folders),
         )
         .route(
             "/products/pinakotheke/api/extension/v1/capture-plans",
@@ -783,6 +791,10 @@ pub fn monolith_router_with_gallery_web_delivery_and_capture_authority(
         .route(
             "/products/pinakotheke/api/gallery/v1/catalogue",
             get(gallery_catalogue),
+        )
+        .route(
+            "/products/pinakotheke/api/gallery/v1/folders",
+            get(gallery_folders),
         )
         .route(
             "/products/pinakotheke/api/gallery/v1/objects/{catalogue_id}/{role}",
@@ -1092,9 +1104,14 @@ pub fn router_with_gallery_catalogue(catalogue: GalleryCatalogue) -> Router {
     Router::new()
         .route("/health", get(health))
         .route("/api/gallery/v1/catalogue", get(gallery_catalogue))
+        .route("/api/gallery/v1/folders", get(gallery_folders))
         .route(
             "/products/pinakotheke/api/gallery/v1/catalogue",
             get(gallery_catalogue),
+        )
+        .route(
+            "/products/pinakotheke/api/gallery/v1/folders",
+            get(gallery_folders),
         )
         .layer(Extension(Arc::new(Mutex::new(catalogue))))
 }
@@ -1109,6 +1126,10 @@ pub fn router_with_gallery_delivery(
         .route(
             "/products/pinakotheke/api/gallery/v1/catalogue",
             get(gallery_catalogue),
+        )
+        .route(
+            "/products/pinakotheke/api/gallery/v1/folders",
+            get(gallery_folders),
         )
         .route(
             "/products/pinakotheke/api/gallery/v1/objects/{catalogue_id}/{role}",
@@ -1145,6 +1166,13 @@ struct GalleryCatalogueQuery {
     discovered_from_epoch_seconds: Option<u64>,
     discovered_to_epoch_seconds: Option<u64>,
     text: Option<String>,
+    object_prefix: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct GalleryFoldersQuery {
+    prefix: Option<String>,
 }
 
 const fn default_catalogue_limit() -> usize {
@@ -1190,6 +1218,7 @@ async fn gallery_catalogue(
                 discovered_from_epoch_seconds: query.discovered_from_epoch_seconds,
                 discovered_to_epoch_seconds: query.discovered_to_epoch_seconds,
                 text: query.text,
+                object_prefix: query.object_prefix,
             },
         )
         .map(Json)
@@ -1197,6 +1226,27 @@ async fn gallery_catalogue(
             GalleryCatalogueError::Unauthorized => StatusCode::FORBIDDEN,
             GalleryCatalogueError::InvalidPageSize => StatusCode::BAD_REQUEST,
             GalleryCatalogueError::InvalidFilter => StatusCode::BAD_REQUEST,
+            GalleryCatalogueError::InvalidItem(_) => StatusCode::INTERNAL_SERVER_ERROR,
+        })
+}
+
+async fn gallery_folders(
+    context: Option<Extension<AuthenticatedHostContext>>,
+    catalogue: Option<Extension<MonasGalleryCatalogue>>,
+    Query(query): Query<GalleryFoldersQuery>,
+) -> Result<Json<GalleryFolderPage>, StatusCode> {
+    let context = context.ok_or(StatusCode::UNAUTHORIZED)?.0;
+    let catalogue = catalogue.ok_or(StatusCode::SERVICE_UNAVAILABLE)?.0;
+    catalogue
+        .lock()
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .folder_page(&context, query.prefix.as_deref())
+        .map(Json)
+        .map_err(|error| match error {
+            GalleryCatalogueError::Unauthorized => StatusCode::FORBIDDEN,
+            GalleryCatalogueError::InvalidFilter | GalleryCatalogueError::InvalidPageSize => {
+                StatusCode::BAD_REQUEST
+            }
             GalleryCatalogueError::InvalidItem(_) => StatusCode::INTERNAL_SERVER_ERROR,
         })
 }
@@ -2662,6 +2712,26 @@ mod tests {
         let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
         assert_eq!(json["matched_items"], 1);
         assert_eq!(json["items"][0]["catalogue_id"], "media-1");
+
+        let context = MonasHostContextAdapter
+            .authenticate(MONAS_CONTEXT.as_bytes())
+            .unwrap();
+        let folders = router_with_gallery_catalogue(gallery_catalogue())
+            .layer(Extension(context))
+            .oneshot(
+                Request::builder()
+                    .uri("/products/pinakotheke/api/gallery/v1/folders")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(folders.status(), StatusCode::OK);
+        let body = to_bytes(folders.into_body(), 8192).await.unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        assert_eq!(json["schema_version"], "pinakotheke.gallery-folders.v1");
+        assert_eq!(json["folders"][0]["name"], "objects");
+        assert_eq!(json["folders"][0]["item_count"], 1);
 
         let context = MonasHostContextAdapter
             .authenticate(MONAS_CONTEXT.as_bytes())
