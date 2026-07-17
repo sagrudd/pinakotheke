@@ -842,6 +842,12 @@ Unsigned XPIs remain development artifacts and temporary installation is not
 production acceptance. XIMG-100 tracks the one-time AMO publisher submission
 and installed signed-build proof.
 
+XIMG-100 completed on 2026-07-17: Mozilla approved the unlisted ``1.2.1`` XPI,
+the returned signature, identity, and version verified, and Firefox accepted
+it as a permanent extension in an isolated ordinary profile. The live
+trusted-HTTPS DASServer download is checksum-identical and uses the required
+XPI media type.
+
 The Monas-owned sign-on is part of the Pinakotheke user experience and must be
 product-aware without transferring authentication authority. A validated
 Pinakotheke return path selects the archive purpose, product sign-in label, and

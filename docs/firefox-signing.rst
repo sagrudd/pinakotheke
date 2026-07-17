@@ -63,3 +63,25 @@ the process arguments. Before distribution, install the signed XPI in an
 ordinary supported Firefox profile and repeat the pairing, opted-in capture,
 fail-open, and upgrade checks described in :doc:`firefox-extension` and
 :doc:`firefox-capture`.
+
+First signed release evidence
+-----------------------------
+
+Mozilla approved the first unlisted Pinakotheke ``1.2.1`` submission on
+2026-07-17. The returned XPI has SHA-256
+``1e32a642c576503b89f4e2c2131e1916dfc03cb5561ecf60ffc2e31b6207f229``.
+The checked-in ``.amo-upload-uuid`` is non-secret AMO submission-continuity
+metadata; it contains no API issuer or secret and remains aligned with the
+stable manifest ID for later version submissions.
+
+Run permanent-install acceptance in a disposable Firefox profile with::
+
+   make firefox-signed-install-check XPI=dist/firefox/signed/d9ed59c61b424a64a821-1.2.1.xpi
+
+Firefox ``152.0.6`` accepted that artifact with ``moz:permanent=true`` and
+reported the stable ``x-img@example.invalid`` identity. This mode requires a
+signed extension; the test deletes its isolated profile afterward. The live
+DASServer copy is served from
+``https://192.168.1.192:8731/downloads/pinakotheke-1.2.1.xpi`` with
+``application/x-xpinstall``, ``nosniff``, and ``private, no-store`` headers;
+the downloaded checksum matches the approved artifact.

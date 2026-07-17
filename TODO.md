@@ -1001,18 +1001,22 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   failed because that module is unavailable, so no non-functional DNS-01 or
   external-service dependency was introduced.
 
-- [ ] **XIMG-100 P0 — Obtain and verify Mozilla's unlisted production
+- [x] **XIMG-100 P0 — Obtain and verify Mozilla's unlisted production
   signature.** The repository is AMO-ready: its Firefox manifest uses only
   valid permissions and Firefox background declarations, preserves the stable
   Gecko ID, and accurately declares required browsing activity, website
   content, and website activity transmission. ``make firefox-lint`` runs the
   pinned Mozilla validator with warnings as errors; ``make firefox-sign`` uses
   environment-only AMO credentials, requests the unlisted channel, and verifies
-  the returned signature envelope, identity, and workspace version. Complete
-  this item after the publisher creates AMO API credentials, Mozilla returns
-  the first signed XPI, and it passes ordinary-profile install, upgrade,
-  pairing, capture, and fail-open acceptance. No developer-mode artifact is
-  release evidence.
+  the returned signature envelope, identity, and workspace version. Mozilla
+  approved the first unlisted ``1.2.1`` XPI on 2026-07-17. Its SHA-256 is
+  ``1e32a642c576503b89f4e2c2131e1916dfc03cb5561ecf60ffc2e31b6207f229``;
+  Firefox ``152.0.6`` accepted it as a permanent add-on in an isolated ordinary
+  profile. Stable-identity upgrade, paired opted-in capture, and substitution
+  fail-open acceptance passed against the exact signed source. The trusted
+  DASServer download uses ``application/x-xpinstall`` and matches the approved
+  checksum. Completed by ``6406ac2`` and ``414ab49``; no developer-mode
+  artifact is release evidence.
 
 - [x] **XIMG-101 P0 — Correct Pinakotheke sign-on branding in Monas.** Monas
   now selects a product-aware Pinakotheke presentation only from the validated
