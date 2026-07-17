@@ -1058,6 +1058,17 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   changed.
 
 - [ ] **XIMG-104 P0 — Replace capture approval with automatic site caching.**
+  Image delivery landed in ``dc09fe6``: enabled pages debounce load, mutation,
+  and scroll observations; meaningful visible images are submitted without a
+  toolbar action; linked originals retain the trusted-click boundary; and an
+  actor-scoped status reports ``stored`` only after verified settlement plus
+  live gallery admission. Firefox then applies a browser-only two-pixel green
+  border. Full workspace tests, strict clippy, wasm, zero-warning extension
+  lint, quality checks, and the pinned Sphinx container build/run pass. The
+  task remains open: trusted video play is detected and honestly reported, but
+  must next be composed with the normalized-video worker and equivalent
+  verified gallery/status path. Live DASServer image proof also requires the
+  capture helper authority and a Mozilla-signed 1.5.0 extension.
   Treat an enabled exact-origin site rule as the user's standing consent to
   cache the selected media classes. Cache displayed thumbnails immediately;
   cache an image original only after the user opens it, and cache video only

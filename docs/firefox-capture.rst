@@ -317,6 +317,7 @@ regular file rather than a symlink.
    {
      "schema_version": "pinakotheke.das-capture-helper.v1",
      "endpoint_id": "local-docker-example",
+     "object_store_bucket": "dos-pinakotheke-media",
      "curl_executable": "/usr/bin/curl",
      "dasobjectstore_remote_executable": "/usr/local/bin/dasobjectstore-remote",
      "dasobjectstore_remote_config": "/Users/example/.config/dasobjectstore/remote.json",
@@ -330,6 +331,12 @@ scoped, expiring ObjectStore session and must itself be mode ``0600``. Pair and
 select the exact ObjectStore with DASObjectStore before starting Pinakotheke;
 the helper cannot infer a first store, change the endpoint selected by the
 capture authority, or prompt for a password in the background.
+
+``object_store_bucket`` is a reviewed transport alias, not the logical
+ObjectStore identity. It is needed when the stable logical ID contains
+characters that the S3 provider forbids in bucket names. The completion
+receipt and gallery provenance retain the logical ``object_store_id``; the
+strict lowercase bucket alias is used only in the remote upload command.
 
 On macOS Docker Desktop, use the authority container rather than a
 container-created socket path on the host. DASObjectStore commit ``01a8c385``

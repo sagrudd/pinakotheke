@@ -37,6 +37,8 @@ struct Request {
 struct Config {
     schema_version: String,
     endpoint_id: String,
+    #[serde(default)]
+    object_store_bucket: Option<String>,
     curl_executable: PathBuf,
     #[serde(default)]
     dasobjectstore_remote_executable: Option<PathBuf>,
@@ -111,6 +113,15 @@ fn load_config(path: &Path) -> Result<Config, Box<dyn std::error::Error>> {
             .all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.'))
         || config.max_image_bytes.unwrap_or(DEFAULT_MAX_BYTES) == 0
         || config.max_image_bytes.unwrap_or(DEFAULT_MAX_BYTES) > 1024 * 1024 * 1024
+        || config.object_store_bucket.as_ref().is_some_and(|bucket| {
+            bucket.is_empty()
+                || bucket.len() > 63
+                || !bucket.bytes().all(|byte| {
+                    byte.is_ascii_lowercase()
+                        || byte.is_ascii_digit()
+                        || matches!(byte, b'.' | b'-')
+                })
+        })
     {
         return Err("DAS capture helper config is invalid".into());
     }
@@ -293,7 +304,12 @@ fn upload_command(
             .arg("--config")
             .arg(container_config)
             .arg("upload")
-            .arg(&request.object_store_id)
+            .arg(
+                config
+                    .object_store_bucket
+                    .as_deref()
+                    .unwrap_or(&request.object_store_id),
+            )
             .arg("--source")
             .arg(container_payload)
             .arg("--key")
@@ -320,7 +336,12 @@ fn upload_command(
                 .ok_or("native DAS remote config is required")?,
         )
         .arg("upload")
-        .arg(&request.object_store_id)
+        .arg(
+            config
+                .object_store_bucket
+                .as_deref()
+                .unwrap_or(&request.object_store_id),
+        )
         .arg("--source")
         .arg(payload)
         .arg("--key")
@@ -582,7 +603,7 @@ mod tests {
         );
         executable(
             &remote,
-            "#!/bin/sh\nprintf '%s' \"$*\" | grep -q -- '--config .* upload store-1 --source .* --key media/.* --content-type image/png --no-progress --submit-to-daemon --daemon-socket' || exit 9\nprintf 'Daemon remote upload job submitted\\nFinal: job state=Complete stage=remote_s3_transfer_complete\\n'\n",
+            "#!/bin/sh\nprintf '%s' \"$*\" | grep -q -- '--config .* upload dos-store-1 --source .* --key media/.* --content-type image/png --no-progress --submit-to-daemon --daemon-socket' || exit 9\nprintf 'Daemon remote upload job submitted\\nFinal: job state=Complete stage=remote_s3_transfer_complete\\n'\n",
         );
         let remote_config = root.join("remote.json");
         fs::write(&remote_config, "{}").unwrap();
@@ -590,6 +611,7 @@ mod tests {
         let config = Config {
             schema_version: CONFIG_SCHEMA.into(),
             endpoint_id: "endpoint-1".into(),
+            object_store_bucket: Some("dos-store-1".into()),
             curl_executable: curl,
             dasobjectstore_remote_executable: Some(remote),
             dasobjectstore_remote_config: Some(remote_config),
@@ -661,6 +683,7 @@ mod tests {
         let config = Config {
             schema_version: CONFIG_SCHEMA.into(),
             endpoint_id: "endpoint-1".into(),
+            object_store_bucket: None,
             curl_executable: PathBuf::from("/does/not/run"),
             dasobjectstore_remote_executable: Some(PathBuf::from("/does/not/run")),
             dasobjectstore_remote_config: Some(PathBuf::from("/does/not/read")),
@@ -726,6 +749,7 @@ mod tests {
         let config = Config {
             schema_version: CONFIG_SCHEMA.into(),
             endpoint_id: "endpoint-1".into(),
+            object_store_bucket: None,
             curl_executable: curl,
             dasobjectstore_remote_executable: None,
             dasobjectstore_remote_config: None,
