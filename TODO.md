@@ -1079,6 +1079,11 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   obscured capture status. Patch 1.6.1 preserves only the safe ``format`` and
   ``name`` CDN variants, permits capture independently of legacy
   ``instanceId`` state, and presents capture/substitution results separately.
+  Delivered in ``822aa82`` and deployed to the x86_64 DASServer on 2026-07-17.
+  Mozilla signing, stable-identity permanent installation, DEB upgrade, service
+  health, and live XPI delivery passed for 1.6.1. Fresh browsing is required to
+  create query-preserving plans; the four earlier queryless plans remain
+  honestly pending and cannot be repaired without their discarded variants.
   Image delivery landed in ``dc09fe6``: enabled pages debounce load, mutation,
   and scroll observations; meaningful visible images are submitted without a
   toolbar action; linked originals retain the trusted-click boundary; and an

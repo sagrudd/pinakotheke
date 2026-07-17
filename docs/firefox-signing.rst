@@ -124,6 +124,18 @@ versioned path from authenticated onboarding, and the signature-identical live
 copy is served at
 ``https://192.168.1.192:8731/downloads/pinakotheke-1.5.1.xpi`` with
 ``application/x-xpinstall``, ``nosniff``, and ``private, no-store`` headers.
+
+Live X CDN repair evidence
+--------------------------
+
+Mozilla approved Pinakotheke ``1.6.1`` as an unlisted signed extension on
+2026-07-17. Its SHA-256 is
+``41a71d65e3fa8d8f3ef08274791773617c249cb247d9a305216a6e8f02586ee6``.
+Permanent installation retained the stable ``x-img@example.invalid`` identity.
+The x86_64 DASServer package and service report 1.6.1, and the checksum-identical
+XPI is served from
+``https://192.168.1.192:8731/downloads/pinakotheke-1.6.1.xpi`` with the required
+Firefox installation content type and private no-cache headers.
 The AMO issuer and secret are held in access-controlled macOS Keychain entries
 for signing only; they are not present in the repository, artefact, config,
 documentation, command history, or service host.
