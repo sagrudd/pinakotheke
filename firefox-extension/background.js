@@ -68,7 +68,7 @@ async function submitCapture(instanceUrl, pairId, origin, pageUrl, adapter, capt
   return fetch(`${instanceUrl}/products/pinakotheke/api/extension/v1/capture-plans`, {
     method: "POST",
     credentials: "include",
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": "application/json", "x-pinakotheke-pairing": pairId },
     body: JSON.stringify({
       schema_version: "x-img.capture-request.v1",
       pairing_id: pairId,
@@ -289,7 +289,7 @@ async function lookupAlias(instanceUrl, instanceId, pairId, origin, adapter, ali
     method: "POST",
     credentials: "include",
     cache: "no-store",
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": "application/json", "x-pinakotheke-pairing": pairId },
     body: JSON.stringify({
       schema_version: "x-img.cache-alias-lookup.v1",
       pairing_id: pairId,

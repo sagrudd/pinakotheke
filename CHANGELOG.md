@@ -4,6 +4,8 @@
 
 - Added Monas-authenticated, DASObjectStore-gated Firefox download and pairing
   onboarding with live server verification and explicit X-ingress intent.
+- Use a narrow revocable Monas pairing credential for extension requests so
+  browser SameSite cookie protections remain intact.
 
 - Replace Firefox's generic puzzle-piece fallback with correctly scaled,
   black-and-white Mnemosyne Biosciences icons for toolbar and add-on surfaces.

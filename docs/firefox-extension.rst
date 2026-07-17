@@ -26,15 +26,18 @@ inventing values in the extension settings. The ordered prerequisites are:
 #. the **Connect Firefox** task pane reports ``DASObjectStore: Ready`` and
    presents the signed extension download, instance identifier, and
    actor-bound pairing reference; and
-#. Firefox verifies those values against the same authenticated HTTPS server
-   before saving them.
+#. Firefox presents the actor-bound, scoped pairing to Monas and verifies the
+   returned server/destination identity before saving it.
 
 In the extension settings, enter the exact Pinakotheke origin (for example
 ``https://192.168.1.192:8731``) and the two values shown by **Connect
 Firefox**, then choose **Pair**. A logged-out session, unavailable
 DASObjectStore, expired/revoked pairing, or changed value fails without saving
-the relationship. The pairing record contains stable endpoint and ObjectStore
-identifiers but no DAS credentials, site cookies, or passwords.
+the relationship. The pairing is a narrow revocable product credential: Monas
+maps it to the original actor, strips it before forwarding, and injects host
+context. Pinakotheke never receives the user's Monas cookie. The record
+contains stable endpoint and ObjectStore identifiers but no DAS credentials,
+site cookies, or passwords.
 
 Enable each website separately using its exact HTTPS origin. Select Images
 and/or Videos and explicitly check **This site is intended for X ingress** when
