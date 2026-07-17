@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Adopt the product-aware, Mnemosyne-compliant Pinakotheke sign-on delivered by
+  Monas 0.6.2 while preserving Monas/Prosopikon authentication ownership.
 - Add an AMO-compatible unlisted Firefox signing workflow with pinned Mozilla
   validation, environment-only credentials, and signed-XPI identity checks.
 - Correct the Firefox manifest's background and permission declarations and

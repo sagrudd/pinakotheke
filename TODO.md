@@ -1014,6 +1014,16 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   pairing, capture, and fail-open acceptance. No developer-mode artifact is
   release evidence.
 
+- [x] **XIMG-101 P0 — Correct Pinakotheke sign-on branding in Monas.** Monas
+  now selects a product-aware Pinakotheke presentation only from the validated
+  same-origin return path. The page follows the DASObjectStore reference with a
+  restrained Mnemosyne wordmark, archive-purpose context, focused sign-in
+  panel, explicit Monas session ownership, and compliant provenance footer;
+  Pinakotheke still receives no credentials and implements no session issuer.
+  Monas tests, WebAssembly checks, rendered desktop review, trusted-HTTPS
+  inspection, and live DASServer deployment passed. Completed in sibling Monas
+  commit ``114ef95`` on 2026-07-17.
+
 - [x] **XIMG-090 P0 — Scaffold the runnable Pinakotheke monolith.** Completed
   in ``2cfa1e1``. ``pinakotheke serve`` now resolves ``$HOME/.x-img`` by
   default, requires an absolute non-symlink root, creates only private

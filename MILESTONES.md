@@ -842,6 +842,13 @@ Unsigned XPIs remain development artifacts and temporary installation is not
 production acceptance. XIMG-100 tracks the one-time AMO publisher submission
 and installed signed-build proof.
 
+The Monas-owned sign-on is part of the Pinakotheke user experience and must be
+product-aware without transferring authentication authority. A validated
+Pinakotheke return path selects the archive purpose, product sign-in label, and
+product-plus-Monas footer identity inside the common Mnemosyne shell. Unknown
+or unsafe destinations retain generic Monas presentation. XIMG-101 completed
+this gate in Monas ``0.6.2`` (``114ef95``) and the DASServer deployment.
+
 ## Post-1.0 candidates
 
 - Synoptikon catalogue/plugin integration through the preserved host adapter
