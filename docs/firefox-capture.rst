@@ -414,11 +414,10 @@ select the exact ObjectStore with DASObjectStore before starting Pinakotheke;
 the helper cannot infer a first store, change the endpoint selected by the
 capture authority, or prompt for a password in the background.
 
-``object_store_bucket`` is a reviewed transport alias, not the logical
-ObjectStore identity. It is needed when the stable logical ID contains
-characters that the S3 provider forbids in bucket names. The completion
-receipt and gallery provenance retain the logical ``object_store_id``; the
-strict lowercase bucket alias is used only in the remote upload command.
+``object_store_bucket`` is retained only for compatibility with older private
+configurations. Authoritative daemon submission deliberately ignores it and
+passes the reviewed logical ``object_store_id``; DASObjectStore alone resolves
+the logical store to its current Garage bucket binding.
 
 On macOS Docker Desktop, use the authority container rather than a
 container-created socket path on the host. DASObjectStore commit ``01a8c385``
