@@ -7,6 +7,14 @@ application, the versioned Monas product-bootstrap contract, and MPL-2.0
 license. They do not install Monas, DASObjectStore, user media, or credentials;
 those authority and payload boundaries remain separate.
 
+DASObjectStore is nevertheless a required, separately installed runtime
+product. The DEB declares ``Depends: dasobjectstore`` and the RPM declares
+``Requires: dasobjectstore`` so native package managers can resolve the
+published dependency. The macOS PKG checks for an independently installed
+``dasobjectstore`` executable and stops with an actionable prerequisite message
+when it is absent. Install or upgrade DASObjectStore independently before
+Pinakotheke; removing Pinakotheke does not remove ObjectStore data.
+
 The packaging contract was checked against sibling Monas commit
 ``3d21b0bc7b83fa8408d01b93347a56f43f3a96b7``. Public builds consume only the
 checked-in bootstrap contract and have no sibling path dependency.

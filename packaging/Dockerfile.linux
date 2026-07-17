@@ -33,7 +33,7 @@ RUN set -eu; \
     install -m 0644 "$bootstrap" "/tmp/deb/usr/share/$PRODUCT_NAME/monas/product-bootstrap.json"; \
     cp -a web-assets/. "/tmp/deb/usr/share/$PRODUCT_NAME/web/"; \
     install -m 0644 LICENSE "/tmp/deb/usr/share/doc/$PRODUCT_NAME/LICENSE"; \
-    printf 'Package: %s\nVersion: %s\nSection: utils\nPriority: optional\nArchitecture: %s\nMaintainer: Pinakotheke maintainers\nDescription: %s metadata CLI and Monas product contract\n' "$PRODUCT_NAME" "$VERSION" "$DEB_ARCH" "$PRODUCT_NAME" > /tmp/deb/DEBIAN/control; \
+    printf 'Package: %s\nVersion: %s\nSection: utils\nPriority: optional\nArchitecture: %s\nMaintainer: Pinakotheke maintainers\nDepends: dasobjectstore\nDescription: %s metadata CLI and Monas product contract\n' "$PRODUCT_NAME" "$VERSION" "$DEB_ARCH" "$PRODUCT_NAME" > /tmp/deb/DEBIAN/control; \
     if [ "$PRODUCT_NAME" = pinakotheke ]; then printf 'Provides: x-img\nConflicts: x-img\nReplaces: x-img\n' >> /tmp/deb/DEBIAN/control; fi; \
     dpkg-deb --root-owner-group --build /tmp/deb "/out/${PRODUCT_NAME}-${VERSION}-linux-${DEB_ARCH}.deb"; \
     mkdir -p /tmp/rpmbuild/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}; \

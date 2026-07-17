@@ -1,0 +1,15 @@
+#!/bin/sh
+# SPDX-License-Identifier: MPL-2.0
+set -eu
+
+# DASObjectStore remains a separately installed product and is never copied
+# into the Pinakotheke package payload.
+for executable in /usr/local/bin/dasobjectstore /opt/homebrew/bin/dasobjectstore /usr/bin/dasobjectstore; do
+  if [ -x "$executable" ]; then
+    exit 0
+  fi
+done
+
+echo "Pinakotheke requires a separate DASObjectStore installation." >&2
+echo "Install DASObjectStore, then run this installer again." >&2
+exit 1

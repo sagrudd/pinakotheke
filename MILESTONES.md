@@ -2,9 +2,9 @@
 
 Status: 1.0 stable release
 
-Version: 1.2.0
+Version: 1.2.1
 
-Updated: 2026-07-15
+Updated: 2026-07-17
 
 Product identity: Pinakotheke is canonical from v1.0.0 at
 `sagrudd/pinakotheke`; `x-img` remains only where documented compatibility or
@@ -801,7 +801,7 @@ Exit criteria:
   one synthetic ingest/read/restart reconciliation, and clean shutdown without
   root privileges or hosted CI.
 
-## 1.2.0 — Runnable normalized-video authority path
+## 1.2.1 — Runnable normalized-video authority path and package dependency
 
 Goal: close the remaining XIMG-096 production-video gap by carrying one
 confirmed user-selected video through a reviewed normalization worker, the
@@ -811,6 +811,12 @@ stdin-streaming authority helper. The remaining release evidence must use a
 registered digest-pinned image and live selected ObjectStore, then prove poster
 rendering, play, seek, pause/resume, restart persistence, and unavailable or
 partial-failure behavior without origin fallback.
+
+Pinakotheke native packages require a separately installed DASObjectStore.
+DEB/RPM express that relationship through native dependency metadata and macOS
+PKG through an explicit installation prerequisite. No Pinakotheke artifact may
+embed DASObjectStore binaries, services, configuration, credentials, or object
+data; DASObjectStore retains its independent lifecycle and storage authority.
 
 ## Post-1.0 candidates
 

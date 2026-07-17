@@ -250,7 +250,7 @@ mod tests {
 
     #[test]
     fn summary_contains_the_workspace_version() {
-        assert_eq!(build_info().summary(), "Pinakotheke 1.2.0");
+        assert_eq!(build_info().summary(), "Pinakotheke 1.2.1");
     }
 
     #[test]

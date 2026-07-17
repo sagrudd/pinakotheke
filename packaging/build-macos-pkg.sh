@@ -21,8 +21,10 @@ web="$dist/web"
 PINAKOTHEKE_DEFAULT_WEB_ROOT="/usr/local/share/$product/web" \
   cargo +1.97.0 build --locked --release -p pinakotheke-cli --target "$target"
 root="target/package-macos/$arch/root"
+scripts="target/package-macos/$arch/scripts"
 rm -rf "$root"
-mkdir -p "$root/usr/local/bin" "$root/usr/local/share/$product/monas" "$root/usr/local/share/$product/web" "$root/usr/local/share/doc/$product" "$dist/macos/$arch"
+rm -rf "$scripts"
+mkdir -p "$root/usr/local/bin" "$root/usr/local/share/$product/monas" "$root/usr/local/share/$product/web" "$root/usr/local/share/doc/$product" "$dist/macos/$arch" "$scripts"
 bootstrap=contracts/monas/x-img-product-bootstrap.v1.json
 if [ "$product" = pinakotheke ]; then
   bootstrap=contracts/monas/x-img-product-bootstrap.v1.json
@@ -34,5 +36,6 @@ fi
 install -m 0644 "$bootstrap" "$root/usr/local/share/$product/monas/product-bootstrap.json"
 cp -a "$web/." "$root/usr/local/share/$product/web/"
 install -m 0644 LICENSE "$root/usr/local/share/doc/$product/LICENSE"
+install -m 0755 packaging/macos/preinstall "$scripts/preinstall"
 COPYFILE_DISABLE=1 pkgbuild --root "$root" --identifier "com.github.sagrudd.$product" --version "$version" \
-  --install-location / "$dist/macos/$arch/$product-$version-macos-$arch.pkg"
+  --scripts "$scripts" --install-location / "$dist/macos/$arch/$product-$version-macos-$arch.pkg"

@@ -7,6 +7,10 @@ All notable changes to Pinakotheke will be documented in this file. The project 
 
 ### Fixed
 
+- Declare DASObjectStore as an external DEB/RPM dependency and macOS PKG
+  prerequisite while explicitly keeping its executables, configuration,
+  credentials, services, and object data out of Pinakotheke package payloads.
+
 - Make the hardened FFmpeg bind mount valid on Linux Docker Engine by using
   the ``--mount`` key/value form and run the capability-free container as the
   private scratch directory's numeric owner, preserving mode-0700/0600 access

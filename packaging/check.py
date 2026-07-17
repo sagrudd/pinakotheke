@@ -43,9 +43,18 @@ def check_sources(version: str, product: str) -> None:
     dockerfile = (ROOT / "packaging/Dockerfile.linux").read_text()
     assert "COPY --from=web-assets" in dockerfile
     assert "PINAKOTHEKE_DEFAULT_WEB_ROOT" in dockerfile
+    assert "Depends: dasobjectstore" in dockerfile
+    assert "Requires: dasobjectstore" in (ROOT / "packaging/x-img.spec").read_text()
     macos_builder = (ROOT / "packaging/build-macos-pkg.sh").read_text()
     assert "PINAKOTHEKE_DEFAULT_WEB_ROOT" in macos_builder
     assert 'cp -a "$web/."' in macos_builder
+    assert '--scripts "$scripts"' in macos_builder
+    macos_preinstall = (ROOT / "packaging/macos/preinstall").read_text()
+    assert "requires a separate DASObjectStore installation" in macos_preinstall
+    assert "dasobjectstore-server" not in dockerfile
+    assert "dasobjectstored" not in dockerfile
+    assert "dasobjectstore-server" not in macos_builder
+    assert "dasobjectstored" not in macos_builder
 
 
 def artifact_record(path: pathlib.Path, dist: pathlib.Path) -> dict[str, object]:

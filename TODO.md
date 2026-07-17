@@ -2,9 +2,9 @@
 
 Status: dependency-ordered planning backlog
 
-Version: 1.2.0
+Version: 1.2.1
 
-Updated: 2026-07-14
+Updated: 2026-07-17
 
 ## How to use this backlog
 
@@ -968,6 +968,14 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   artifacts, tag, and release notes remains before this item can close.
 
 ## Post-1.0
+
+- [ ] **XIMG-097 P1 — Make DASObjectStore an external native-package dependency.**
+  DEB and RPM metadata must require the separately published ``dasobjectstore``
+  package, while the macOS PKG must refuse installation with an actionable
+  prerequisite message unless DASObjectStore is independently installed.
+  Pinakotheke packages must not bundle DASObjectStore executables, services,
+  configuration, credentials, or object data. Package-source checks and Sphinx
+  user documentation must enforce and explain this boundary.
 
 - [x] **XIMG-090 P0 — Scaffold the runnable Pinakotheke monolith.** Completed
   in ``2cfa1e1``. ``pinakotheke serve`` now resolves ``$HOME/.x-img`` by
