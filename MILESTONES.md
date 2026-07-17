@@ -817,6 +817,8 @@ DEB/RPM express that relationship through native dependency metadata and macOS
 PKG through an explicit installation prerequisite. No Pinakotheke artifact may
 embed DASObjectStore binaries, services, configuration, credentials, or object
 data; DASObjectStore retains its independent lifecycle and storage authority.
+XIMG-097 completed this boundary in ``c32241a`` with inspected DEB, RPM, and
+macOS PKG evidence.
 
 ## Post-1.0 candidates
 

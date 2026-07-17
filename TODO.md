@@ -969,13 +969,15 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
 
 ## Post-1.0
 
-- [ ] **XIMG-097 P1 — Make DASObjectStore an external native-package dependency.**
+- [x] **XIMG-097 P1 — Make DASObjectStore an external native-package dependency.**
   DEB and RPM metadata must require the separately published ``dasobjectstore``
   package, while the macOS PKG must refuse installation with an actionable
   prerequisite message unless DASObjectStore is independently installed.
   Pinakotheke packages must not bundle DASObjectStore executables, services,
   configuration, credentials, or object data. Package-source checks and Sphinx
-  user documentation must enforce and explain this boundary.
+  user documentation must enforce and explain this boundary. Completed in
+  ``c32241a``; real x86_64 DEB/RPM metadata and an arm64 macOS PKG prerequisite
+  were inspected, with no DASObjectStore payload found.
 
 - [x] **XIMG-090 P0 — Scaffold the runnable Pinakotheke monolith.** Completed
   in ``2cfa1e1``. ``pinakotheke serve`` now resolves ``$HOME/.x-img`` by
