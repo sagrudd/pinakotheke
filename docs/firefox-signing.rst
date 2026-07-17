@@ -100,3 +100,14 @@ The verified DASServer copy is available at
 ``https://192.168.1.192:8731/downloads/pinakotheke-1.2.2.xpi`` with the XPI
 media type and no-store headers. Its downloaded checksum is identical to the
 Mozilla-returned artifact.
+
+Authenticated onboarding release evidence
+-----------------------------------------
+
+Mozilla approved Pinakotheke ``1.3.1`` on 2026-07-17. Its SHA-256 is
+``0190e24319bd0e6d8e755b04b55aebf0b622ff120a241db16f50840177e10393``.
+Firefox accepted it as a permanent add-on. The authenticated Connect Firefox
+panel binds its scoped pairing payload to named ObjectStore
+``pinakotheke_media``; the live endpoint accepted the exact credential and
+rejected a changed credential with HTTP 401. The checksum-identical XPI is at
+``https://192.168.1.192:8731/downloads/pinakotheke-1.3.1.xpi``.

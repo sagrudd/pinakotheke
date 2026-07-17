@@ -1041,7 +1041,12 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   XPI, Firefox accepted it as a permanent add-on, and the checksum-identical
   DASServer deployment is available over trusted HTTPS.
 
-- [ ] **XIMG-103 P0 — Deliver server-led Firefox onboarding.** The
+- [x] **XIMG-103 P0 — Deliver server-led Firefox onboarding.** Completed in
+  ``57d7a02`` and ``77a2c01`` with scoped Monas pairing support in sibling
+  commit ``817d956``. The live DASServer proof on 2026-07-17 configured named
+  ObjectStore ``pinakotheke_media``, returned authenticated onboarding over
+  HTTPS, rejected a changed pairing with HTTP 401, served the Mozilla-signed
+  1.3.1 XPI, and passed permanent Firefox installation. The
   Monas-authenticated Pinakotheke web UI must expose the current signed XPI and
   an actor-bound pairing payload only when a reviewed named DASObjectStore is
   configured. Firefox must validate the instance, pairing, and Ready

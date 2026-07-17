@@ -38,9 +38,9 @@ Verify the exact address without disabling certificate checks:
    curl --cacert "$(mkcert -CAROOT)/rootCA.pem" \
      https://192.168.1.192:8731/
 
-Mozilla has signed the branded unlisted Pinakotheke ``1.2.2`` XPI. Install the
+Mozilla has signed the authenticated Pinakotheke ``1.3.1`` XPI. Install the
 signed artifact from
-``https://192.168.1.192:8731/downloads/pinakotheke-1.2.2.xpi``;
+``https://192.168.1.192:8731/downloads/pinakotheke-1.3.1.xpi``;
 unsigned platform builds below ``dist/firefox/`` remain temporary development
 artifacts. Pair the extension with ``https://192.168.1.192:8731`` only after
 the page loads without a certificate warning.
