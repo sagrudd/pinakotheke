@@ -639,6 +639,11 @@ pub fn monolith_router_with_authorities(
     )
 }
 
+/// Mounts reviewed Firefox packages on the same direct application listener.
+pub fn with_firefox_downloads(router: Router, downloads_root: PathBuf) -> Router {
+    router.nest_service("/downloads", ServeDir::new(downloads_root))
+}
+
 /// Returns the Monas-admitted monolith with a host-supplied gallery projection.
 pub fn monolith_router_with_gallery_authority(
     dasobjectstore_ready: bool,

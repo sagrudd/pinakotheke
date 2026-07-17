@@ -44,6 +44,9 @@ pub(crate) struct ServeArgs {
     /// Built Trunk output; defaults to ROOT/web, then packaged assets.
     #[arg(long)]
     web_root: Option<PathBuf>,
+    /// Directory containing reviewed signed Firefox XPI packages.
+    #[arg(long)]
+    firefox_downloads_root: Option<PathBuf>,
     /// Absolute executable implementing the scoped object-read helper v1 protocol.
     #[arg(long)]
     object_read_helper: Option<PathBuf>,
@@ -324,6 +327,26 @@ fn resolve_web_root(
     Ok(Some(candidate))
 }
 
+fn resolve_downloads_root(requested: Option<PathBuf>) -> io::Result<Option<PathBuf>> {
+    let Some(path) = requested else {
+        return Ok(None);
+    };
+    if !path.is_absolute() {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "Firefox downloads root must be absolute",
+        ));
+    }
+    let metadata = std::fs::symlink_metadata(&path)?;
+    if metadata.file_type().is_symlink() || !metadata.is_dir() {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "Firefox downloads root must be a real directory",
+        ));
+    }
+    Ok(Some(path))
+}
+
 fn validate_web_tree(path: &Path, files: &mut usize, bytes: &mut u64) -> io::Result<()> {
     let metadata = std::fs::symlink_metadata(path)?;
     if metadata.file_type().is_symlink() {
@@ -366,6 +389,7 @@ pub(crate) fn serve(arguments: ServeArgs) -> Result<(), Box<dyn std::error::Erro
         &layout.root,
         option_env!("PINAKOTHEKE_DEFAULT_WEB_ROOT"),
     )?;
+    let downloads_root = resolve_downloads_root(arguments.firefox_downloads_root)?;
     let object_read_backend = arguments
         .object_read_helper
         .as_deref()
@@ -529,6 +553,10 @@ pub(crate) fn serve(arguments: ServeArgs) -> Result<(), Box<dyn std::error::Erro
                 gallery,
                 web_root,
             ),
+        };
+        let router = match downloads_root {
+            Some(root) => x_img_api::with_firefox_downloads(router, root),
+            None => router,
         };
         if let Some((certificate, key)) = tls {
             let config = RustlsConfig::from_pem_file(certificate, key).await?;
@@ -772,6 +800,7 @@ mod tests {
             allow_non_loopback_without_authentication: false,
             monas_dispatch_token_file: None,
             web_root: None,
+            firefox_downloads_root: None,
             object_read_helper: None,
             capture_authority_file: None,
             capture_completion_token_file: None,
@@ -813,6 +842,7 @@ mod tests {
             allow_non_loopback_without_authentication: false,
             monas_dispatch_token_file: None,
             web_root: None,
+            firefox_downloads_root: None,
             object_read_helper: None,
             capture_authority_file: None,
             capture_completion_token_file: None,

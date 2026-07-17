@@ -6,6 +6,8 @@
   explicit certificate-chain/private-key pair; nginx is no longer required.
 - Add an authoritative root-level deployment guide for trusted local and public
   certificates, direct Axum HTTPS, rotation, verification, and proxy removal.
+- Serve reviewed signed Firefox packages from the direct Axum listener so
+  removing the proxy does not remove extension installation downloads.
 
 ## 1.10.0 - 2026-07-17
 

@@ -18,7 +18,8 @@ pinakotheke serve \
   --port 8731 \
   --allow-non-loopback-without-authentication \
   --tls-certificate-chain /home/example/.x-img/tls/server.crt \
-  --tls-private-key /home/example/.x-img/tls/server.key
+  --tls-private-key /home/example/.x-img/tls/server.key \
+  --firefox-downloads-root /usr/local/share/pinakotheke/firefox
 ```
 
 Both TLS arguments are required together. Paths must be absolute, non-empty
@@ -102,7 +103,8 @@ credentials, or move session issuance into Pinakotheke.
    readable only by the Pinakotheke service account.
 2. Stop the reverse proxy listener on the selected port.
 3. Change the Pinakotheke service from an HTTP loopback port to the intended
-   network address and HTTPS port, adding both TLS arguments.
+   network address and HTTPS port, adding both TLS arguments and the reviewed
+   signed-XPI directory when extension downloads are offered.
 4. Start Pinakotheke and verify `/ready`, the Monas login flow, the Yew app,
    object range delivery, and Firefox extension downloads over HTTPS.
 5. Disable the obsolete proxy site permanently. The proxy package may remain
