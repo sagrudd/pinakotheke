@@ -1070,6 +1070,10 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   unassignable X CDN media is quarantined under ``_unattributed`` rather than
   misattributed. A synthetic extension contract proves an opted-in X thumbnail
   is submitted from viewport observation without any click.
+  Delivered in ``91c96a8`` and deployed to the x86_64 DASServer on 2026-07-17.
+  Mozilla signed extension 1.6.0, permanent Firefox installation, package
+  upgrade, service restart, HTTPS health, and XPI delivery checks passed. The
+  task remains open only for the normalized opened-video completion path.
   Image delivery landed in ``dc09fe6``: enabled pages debounce load, mutation,
   and scroll observations; meaningful visible images are submitted without a
   toolbar action; linked originals retain the trusted-click boundary; and an

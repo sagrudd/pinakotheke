@@ -127,3 +127,14 @@ copy is served at
 The AMO issuer and secret are held in access-controlled macOS Keychain entries
 for signing only; they are not present in the repository, artefact, config,
 documentation, command history, or service host.
+
+Observable-ingress release evidence
+-----------------------------------
+
+Mozilla approved Pinakotheke ``1.6.0`` as an unlisted signed extension on
+2026-07-17. Its SHA-256 is
+``c24fd4ac7425e8c1bebf5f0ec2c4971f93819f188508376714a5f031af68d0da``.
+The stable-identity permanent-install check passed. The x86_64 DASServer was
+upgraded to Pinakotheke 1.6.0 and serves the signed XPI at
+``https://192.168.1.192:8731/downloads/pinakotheke-1.6.0.xpi`` with the expected
+``application/x-xpinstall``, ``nosniff``, and ``private, no-store`` headers.
