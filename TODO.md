@@ -990,7 +990,8 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   fallback. Monas forwarding fix: pushed sibling commit ``51d90d2``.
 
 - [x] **XIMG-099 P0 — Establish trusted local HTTPS for Firefox.** Completed
-  on 2026-07-17. The DASServer deployment now terminates TLS 1.3 on port 8731,
+  in ``61d91d7`` on 2026-07-17. The DASServer deployment now terminates TLS
+  1.3 on port 8731,
   forwards to a loopback-only Monas listener, and uses a narrow leaf certificate
   containing ``192.168.1.192`` signed by a Mac-local ``mkcert`` CA. The CA key
   never left the Mac and the leaf key is private below ``~/.x-img/tls``. Curl
