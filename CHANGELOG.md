@@ -10,6 +10,8 @@
   removing the proxy does not remove extension installation downloads.
 - Preserve graceful SIGTERM shutdown for direct TLS and local HTTP listeners so
   service restarts release the capture-worker lease cleanly.
+- Deploy the no-nginx topology with Monas/Rustls owning public HTTPS and
+  Pinakotheke remaining the authenticated loopback product backend.
 
 ## 1.10.0 - 2026-07-17
 

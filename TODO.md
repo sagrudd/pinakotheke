@@ -1285,7 +1285,9 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   seeking, missing-object behavior, and that the viewer never contacts the
   source website.
 
-- [ ] **XIMG-114 P0 — Terminate trusted HTTPS directly in Axum.**
+- [x] **XIMG-114 P0 — Terminate trusted HTTPS directly in Axum.** Completed in
+  ``e61699f``, ``d2fdfc2``, and ``65ba25b`` with Monas host support in
+  ``74aa66a`` and ``799484e``.
   Add paired certificate-chain/private-key CLI arguments and a Rustls listener.
   Reject partial pairs, relative paths, symlinks, empty assets, and group/other
   readable private keys before binding. Preserve HTTP only as an explicit local
@@ -1294,6 +1296,12 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   to DASServer on port 8731 with nginx absent from the request path and prove
   `/ready`, Monas/Yew application access, and extension download over trusted
   HTTPS.
+  DASServer deployment now binds Monas/Rustls directly to ``0.0.0.0:8731`` and
+  keeps Pinakotheke's authenticated product backend on loopback ``8732``.
+  The Pinakotheke nginx site is disabled. A trusted client proved the Monas
+  login page, HTTP/2 XPI delivery with ``application/x-xpinstall``, and both
+  services active. A restart proof also confirmed graceful Pinakotheke shutdown
+  releases and reacquires the capture-worker lease without manual cleanup.
 
 - [x] **XIMG-090 P0 — Scaffold the runnable Pinakotheke monolith.** Completed
   in ``2cfa1e1``. ``pinakotheke serve`` now resolves ``$HOME/.x-img`` by

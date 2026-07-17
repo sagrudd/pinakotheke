@@ -1017,8 +1017,16 @@ DASObjectStore range delivery share the same direct HTTPS listener.
 deployment summary for private-CA and public-CA trust, SAN identity, key
 permissions, verification, rotation, service management, proxy removal, and
 rollback. DASServer acceptance requires stopping nginx on port 8731, binding
-Pinakotheke directly there, and proving the trusted `/ready`, app, and download
-routes.
+the Monas Axum host directly there, retaining Pinakotheke on a loopback product
+boundary, and proving the trusted health, app, and download routes.
+
+Delivered through the correct host boundary: Monas ``0.7.1`` terminates Rustls
+on public port 8731 and forwards authenticated product traffic to Pinakotheke
+``1.11.2`` on loopback port 8732. The obsolete nginx Pinakotheke site is absent.
+Live trusted probes returned the branded Monas login page and the signed XPI
+with ``application/x-xpinstall``; process ownership showed Monas—not nginx—on
+8731. Pinakotheke restart testing proved its runtime lease is released during
+graceful SIGTERM and immediately reacquired on startup.
 
 ## Post-1.0 candidates
 

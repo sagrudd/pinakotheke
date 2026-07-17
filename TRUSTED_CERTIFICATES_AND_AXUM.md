@@ -5,11 +5,19 @@ Pinakotheke and a reference pattern for other Mnemosyne web products.
 
 ## Decision
 
-The product's Rust process terminates HTTPS directly. Axum supplies the router;
-`axum-server` and Rustls own the listener and TLS handshake. A reverse proxy is
-not required for TLS, routing, downloads, or application authentication.
+The public Mnemosyne host's Rust process terminates HTTPS directly. Axum
+supplies the router; `axum-server` and Rustls own the listener and TLS
+handshake. A reverse proxy is not required for TLS, routing, downloads, or
+application authentication.
 
-Pinakotheke accepts a PEM certificate chain and matching PEM private key:
+When Monas hosts a product, Monas owns the public Rustls listener because it
+also owns login and sessions. Product services such as Pinakotheke remain on a
+loopback HTTP port and accept only Monas-authenticated dispatch. A standalone
+service without Monas may use its own direct TLS listener, but must not bypass a
+required Monas authentication boundary merely to remove a proxy.
+
+Pinakotheke accepts a PEM certificate chain and matching PEM private key for a
+standalone direct listener:
 
 ```console
 pinakotheke serve \
@@ -89,9 +97,11 @@ only in a protected rollback location. Monitor expiry and renew before the
 certificate reaches its operational threshold.
 
 Use a service manager (`systemd` for system installations or `launchd` for
-per-user macOS installations) to restart Pinakotheke and report failures. It
-must invoke the Rust binary directly, bind the intended HTTPS port, and pass the
-certificate paths. Do not configure a second process to own the same port.
+per-user macOS installations) to restart the host and product services and
+report failures. It must invoke the Rust binaries directly. The Monas host
+binds the intended HTTPS port and receives the certificate paths; Pinakotheke
+binds only its reviewed loopback upstream. Do not configure a second process to
+own the public port.
 
 Application authentication is still owned by Monas. Direct TLS changes the
 transport boundary only; it does not authorize anonymous access, expose DAS
@@ -100,17 +110,18 @@ credentials, or move session issuance into Pinakotheke.
 ## Migration from a reverse proxy
 
 1. Issue or retain a certificate with the correct SANs and make the chain/key
-   readable only by the Pinakotheke service account.
+   readable only by the public host service account.
 2. Stop the reverse proxy listener on the selected port.
-3. Change the Pinakotheke service from an HTTP loopback port to the intended
-   network address and HTTPS port, adding both TLS arguments and the reviewed
-   signed-XPI directory when extension downloads are offered.
-4. Start Pinakotheke and verify `/ready`, the Monas login flow, the Yew app,
-   object range delivery, and Firefox extension downloads over HTTPS.
+3. Configure Monas with `MONAS_BIND_ADDR`, `MONAS_TLS_CERTIFICATE_CHAIN`, and
+   `MONAS_TLS_PRIVATE_KEY`. Keep Pinakotheke on its loopback upstream and mount
+   its reviewed signed-XPI directory there for narrow Monas forwarding.
+4. Start Pinakotheke, then Monas, and verify host health, the Monas login flow,
+   the Yew app, object range delivery, and Firefox extension downloads over
+   HTTPS.
 5. Disable the obsolete proxy site permanently. The proxy package may remain
    for unrelated services, but it is no longer in Pinakotheke's request path.
 
-Rollback means stopping Pinakotheke, restoring its prior bind arguments, and
+Rollback means stopping Monas, restoring its prior loopback bind, and
 re-enabling the reviewed proxy configuration. Never leave both listeners
 competing for the same port.
 
