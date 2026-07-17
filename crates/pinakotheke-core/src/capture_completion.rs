@@ -232,7 +232,7 @@ mod tests {
                     adapter_kind: AdapterKind::ExperimentalGeneric,
                     adapter_version: "1.0.0".into(),
                     capture_kind: CaptureKind::ExplicitOriginal,
-                    media_url: "https://media.example.invalid/original.jpg?rotated=token".into(),
+                    media_url: "https://pbs.twimg.com/media/fixture?name=medium&format=jpg".into(),
                     presentation_url: Some(
                         "https://media.example.invalid/original.jpg?different=token".into(),
                     ),

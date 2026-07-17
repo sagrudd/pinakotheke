@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Accept the already-canonical X image ``format``/``name`` variant as a safe
+  reconciliation alias, allowing a verified DASObjectStore commit to settle
+  into the gallery while continuing to reject arbitrary or signed queries.
+- Apply that same canonical rule when reopening the capture-plan journal so a
+  safe X variant remains restart-recoverable.
 - Add a bounded, credential-free Firefox diagnostic event ring with visible
   recent events and JSON export, covering observer registration, viewport
   scans, eligibility counts, plan HTTP outcomes, and stored/pending status.

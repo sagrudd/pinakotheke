@@ -492,7 +492,7 @@ pub fn capture_catalogue_id(site_id: &str, page_url: &str, presentation_url: &st
     format!("website-{site_id}-{}", &digest[..24])
 }
 
-fn canonical_media_url(value: &str) -> Option<String> {
+pub(crate) fn canonical_media_url(value: &str) -> Option<String> {
     if value.len() > 2_048
         || !value.starts_with("https://")
         || value.contains([' ', '\n', '\r', '@'])

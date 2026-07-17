@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::viewed_media::{
     AdapterKind, CAPTURE_PLAN_SCHEMA_VERSION, CaptureKind, CapturePlan, CapturePlanState,
-    capture_catalogue_id,
+    canonical_media_url, capture_catalogue_id,
 };
 
 const JOURNAL_SCHEMA: &str = "pinakotheke.capture-plan-journal.v1";
@@ -252,8 +252,10 @@ impl StoredCapturePlan {
             || self.state != CapturePlanState::AwaitingApprovedAcquisition
             || !https_origin(&self.origin)
             || !https_url(&self.canonical_page_url)
-            || !https_url(&self.canonical_media_url)
-            || !https_url(&canonical_presentation_url)
+            || canonical_media_url(&self.canonical_media_url).as_deref()
+                != Some(self.canonical_media_url.as_str())
+            || canonical_media_url(&canonical_presentation_url).as_deref()
+                != Some(canonical_presentation_url.as_str())
             || !(self.canonical_page_url == self.origin
                 || self
                     .canonical_page_url

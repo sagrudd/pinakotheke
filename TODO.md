@@ -2,7 +2,7 @@
 
 Status: dependency-ordered planning backlog
 
-Version: 1.7.0
+Version: 1.7.1
 
 Updated: 2026-07-17
 
@@ -1096,6 +1096,11 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   Delivered in ``1e16178`` and ``cb3e15d`` and deployed to the x86_64
   DASServer as 1.7.0. Mozilla signature verification, public XPI delivery,
   service restart, and bounded legacy-plan failure logging passed.
+  Live 1.7.0 capture then proved download and DASObjectStore commit but exposed
+  a settlement mismatch: reconciliation rejected the safe canonical X
+  ``format``/``name`` alias. Version 1.7.1 reuses the admission canonicalizer
+  for alias validation and adds an exact regression test while retaining
+  fail-closed rejection of arbitrary and signed query parameters.
   Image delivery landed in ``dc09fe6``: enabled pages debounce load, mutation,
   and scroll observations; meaningful visible images are submitted without a
   toolbar action; linked originals retain the trusted-click boundary; and an

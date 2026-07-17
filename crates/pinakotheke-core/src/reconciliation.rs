@@ -362,13 +362,7 @@ fn is_sha256(value: &str) -> bool {
 }
 
 fn is_safe_alias(value: &str) -> bool {
-    let Some(host_and_path) = value.strip_prefix("https://") else {
-        return false;
-    };
-    !host_and_path.is_empty()
-        && value.len() <= 2048
-        && !host_and_path.contains(['@', '?', '#', ' ', '\n', '\r'])
-        && !host_and_path.starts_with('/')
+    crate::viewed_media::canonical_media_url(value).as_deref() == Some(value)
 }
 
 #[cfg(test)]
@@ -537,5 +531,32 @@ mod tests {
             )
             .is_err()
         );
+    }
+
+    #[test]
+    fn accepts_only_canonical_safe_x_image_variants_as_aliases() {
+        assert!(
+            ReconciliationRequest::new(
+                "x:fixture-account:post-1:media-1",
+                CHECKSUM_A,
+                ["https://pbs.twimg.com/media/fixture?format=jpg&name=medium".to_owned()],
+            )
+            .is_ok()
+        );
+        for unsafe_alias in [
+            "https://pbs.twimg.com/media/fixture?token=secret",
+            "https://pbs.twimg.com/media/fixture?name=medium&format=jpg",
+            "https://example.invalid/image.jpg?format=jpg&name=medium",
+        ] {
+            assert!(
+                ReconciliationRequest::new(
+                    "x:fixture-account:post-1:media-1",
+                    CHECKSUM_A,
+                    [unsafe_alias.to_owned()],
+                )
+                .is_err(),
+                "{unsafe_alias}"
+            );
+        }
     }
 }

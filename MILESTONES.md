@@ -2,7 +2,7 @@
 
 Status: 1.0 stable release
 
-Version: 1.7.0
+Version: 1.7.1
 
 Updated: 2026-07-17
 
@@ -930,6 +930,13 @@ The extension provides a bounded redacted event log and JSON export; the
 service journal records plan admission and terminal worker outcomes without
 source URLs or secrets. A live failure must identify its exact stage rather
 than remaining indefinitely and opaquely ``pending``.
+
+## 1.7.1 — Safe X variant reconciliation
+
+Goal: settle an acquired X image whose canonical ``pbs.twimg.com`` alias keeps
+the strictly validated ``format`` and ``name`` variant. Reconciliation reuses
+the admission canonicalizer and continues to reject arbitrary queries, signed
+parameters, fragments, credentials, and non-canonical parameter ordering.
 
 ## Post-1.0 candidates
 
