@@ -979,6 +979,11 @@ profile with ``ffprobe``, commits it through DASObjectStore, and immediately
 admits a playable video card. Autoplay, synthetic events, blob-only and
 segmented/MSE playback, non-X media hosts, and unsupported codecs fail open with
 an explicit diagnostic rather than being misrepresented as stored.
+The later user-approved XIMG-110 contract supersedes the source-host restriction
+with a stronger site-neutral boundary: exact HTTPS origin opt-in and recent
+trusted activation are mandatory, while X retains account-folder provenance.
+XIMG-108 is closed through the assembled installed-Firefox, native authority,
+normalization, persistent-gallery, and playback evidence in ``f7dadb1``.
 The release also closes the capture authority split exposed on the DASServer:
 provider transfer acknowledgement is never commit evidence. Every new capture
 must use DASObjectStore's checksum-bearing daemon completion, placement

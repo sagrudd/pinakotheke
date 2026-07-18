@@ -1231,7 +1231,7 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   DASObjectStore ``2e1e1669ff0bccc05324b3b74785300e00f53d90`` and design
   language ``fbfa28e55d1c8111ef95a139d83927c231534b5f``.
 
-- [ ] **XIMG-108 P0 — Capture trusted-click X progressive video.**
+- [x] **XIMG-108 P0 — Capture trusted-click X progressive video.**
   Detect only a recent trusted pointer/keyboard activation followed by playback,
   select a concrete HTTPS MP4 exposed by Firefox from ``video.twimg.com``, and
   submit an ``explicit_video`` plan. The first-party worker must retrieve it
@@ -1243,6 +1243,17 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   diagnostic. Acceptance requires native/extension tests, local documentation
   verification, a signed extension, DASServer deployment, and a live X video
   commit/playback proof.
+  Completed by the assembled path in ``f7dadb1`` together with XIMG-110,
+  XIMG-111, and XIMG-113. The user-approved XIMG-110 site-neutral policy
+  deliberately supersedes the original ``video.twimg.com``/non-X-host split:
+  eligibility is now exact-origin opt-in plus recent trusted activation, while
+  X presentation provenance still produces its account folder. Native tests
+  prove credential-free bounded MP4 retrieval, H.264/AAC probing, verified DAS
+  completion, and immediate ``New`` admission; signed-extension/DASServer runs
+  established the deployed path. The installed-Firefox gate now proves trusted
+  progressive submission and stored framing, and the normalized playback gate
+  proves metadata load, range seek, pause/resume, concurrent/conditional reads,
+  cancellation, and unavailable-object recovery without origin fallback.
 
 - [ ] **XIMG-109 P0 — Require authoritative DASObjectStore capture completion.**
   Remove the transfer-only success path from the first-party helper. A capture
