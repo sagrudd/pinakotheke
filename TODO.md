@@ -2,7 +2,7 @@
 
 Status: dependency-ordered planning backlog
 
-Version: 1.18.0
+Version: 1.19.0
 
 Updated: 2026-07-18
 
@@ -1651,3 +1651,8 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
 - [ ] **XIMG-202 P3 — Add perceptual duplicate grouping.**
 - [ ] **XIMG-203 P3 — Add collections, tags, and saved searches.**
 - [ ] **XIMG-204 P3 — Add provenance-linked derivatives/transcodes.**
+- [x] **XIMG-205 P0 — Consume audience-bound Prosopikon host identity.**
+  Pinakotheke accepts the additive Monas v1 canonical identity group only when
+  authority, principal, session, and exact ``pinakotheke`` audience are all
+  present and valid. Legacy ``actor_id`` remains compatibility-only for
+  extension pairing; no credential or local identity/session issuer was added.

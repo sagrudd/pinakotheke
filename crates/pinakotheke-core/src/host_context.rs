@@ -23,9 +23,12 @@ pub enum HostMode {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AuthenticatedHostContext {
     actor_id: String,
+    authority_id: Option<String>,
     authorizations: BTreeSet<String>,
     correlation_id: String,
     host_mode: HostMode,
+    principal_id: Option<String>,
+    session_id: Option<String>,
     synoptikon_scope: Option<SynoptikonScope>,
 }
 
@@ -57,12 +60,24 @@ impl AuthenticatedHostContext {
         &self.actor_id
     }
 
+    pub fn authority_id(&self) -> Option<&str> {
+        self.authority_id.as_deref()
+    }
+
     pub fn correlation_id(&self) -> &str {
         &self.correlation_id
     }
 
     pub const fn host_mode(&self) -> HostMode {
         self.host_mode
+    }
+
+    pub fn principal_id(&self) -> Option<&str> {
+        self.principal_id.as_deref()
+    }
+
+    pub fn session_id(&self) -> Option<&str> {
+        self.session_id.as_deref()
     }
 
     pub fn permits(&self, authorization: &str) -> bool {
@@ -144,6 +159,10 @@ fn parse_verified_context(
         "host",
         "host_mode",
         "actor_id",
+        "authority_id",
+        "audience",
+        "principal_id",
+        "session_id",
         "authorizations",
         "correlation_id",
         "tenant_id",
@@ -168,6 +187,7 @@ fn parse_verified_context(
         },
     )?;
     let actor_id = required_identifier(object, "actor_id")?;
+    let canonical_identity = parse_canonical_identity(object)?;
     let correlation_id = required_identifier(object, "correlation_id")?;
     let authorizations = object
         .get("authorizations")
@@ -211,11 +231,65 @@ fn parse_verified_context(
     }
     Ok(AuthenticatedHostContext {
         actor_id,
+        authority_id: canonical_identity
+            .as_ref()
+            .map(|identity| identity.0.clone()),
         authorizations,
         correlation_id,
         host_mode,
+        principal_id: canonical_identity
+            .as_ref()
+            .map(|identity| identity.1.clone()),
+        session_id: canonical_identity.map(|identity| identity.2),
         synoptikon_scope,
     })
+}
+
+fn parse_canonical_identity(
+    object: &serde_json::Map<String, Value>,
+) -> Result<Option<(String, String, String)>, HostContextError> {
+    const FIELDS: [&str; 4] = ["authority_id", "audience", "principal_id", "session_id"];
+    let present = FIELDS
+        .iter()
+        .filter(|key| object.contains_key(**key))
+        .count();
+    if present == 0 {
+        // Explicit compatibility for extension pairings that still emit the
+        // original host-context v1 shape during the coordinated rollout.
+        return Ok(None);
+    }
+    if present != FIELDS.len() {
+        return Err(HostContextError::Invalid(
+            "canonical identity fields must be supplied together".to_owned(),
+        ));
+    }
+
+    let authority_id = required_uuid(object, "authority_id")?;
+    require_string(object, "audience", "pinakotheke")?;
+    let principal_id = required_uuid(object, "principal_id")?;
+    let session_id = required_uuid(object, "session_id")?;
+    Ok(Some((authority_id, principal_id, session_id)))
+}
+
+fn required_uuid(
+    object: &serde_json::Map<String, Value>,
+    key: &str,
+) -> Result<String, HostContextError> {
+    object
+        .get(key)
+        .and_then(Value::as_str)
+        .filter(|value| is_uuid(value))
+        .map(ToOwned::to_owned)
+        .ok_or_else(|| HostContextError::Invalid(format!("`{key}` must be a UUID")))
+}
+
+fn is_uuid(value: &str) -> bool {
+    value.len() == 36
+        && value != "00000000-0000-0000-0000-000000000000"
+        && value.bytes().enumerate().all(|(index, byte)| match index {
+            8 | 13 | 18 | 23 => byte == b'-',
+            _ => byte.is_ascii_digit() || matches!(byte, b'a'..=b'f'),
+        })
 }
 
 fn require_string(
@@ -298,5 +372,80 @@ mod tests {
             .expect_err("host context requires x-img access");
 
         assert_eq!(error, HostContextError::Unauthorized);
+    }
+
+    #[test]
+    fn canonical_prosopikon_identity_is_accepted() {
+        let context = MonasHostContextAdapter
+            .authenticate(
+                br#"{
+                    "schema_version":"x-img.host-context.v1",
+                    "host":"monas",
+                    "host_mode":"monas_standalone",
+                    "actor_id":"synthetic-monas-user",
+                    "authority_id":"8f61b404-9b83-4d7f-9f55-30dc8705ce95",
+                    "audience":"pinakotheke",
+                    "principal_id":"c45a4b5c-6ec8-4e47-9ea5-446a0741f650",
+                    "session_id":"a48c2f17-8df7-40af-a018-e5022d6bc21f",
+                    "authorizations":["ximg.access"],
+                    "correlation_id":"canonical-context-test"
+                }"#,
+            )
+            .expect("canonical Prosopikon identity must be accepted");
+
+        assert_eq!(
+            context.authority_id(),
+            Some("8f61b404-9b83-4d7f-9f55-30dc8705ce95")
+        );
+        assert_eq!(
+            context.principal_id(),
+            Some("c45a4b5c-6ec8-4e47-9ea5-446a0741f650")
+        );
+        assert_eq!(
+            context.session_id(),
+            Some("a48c2f17-8df7-40af-a018-e5022d6bc21f")
+        );
+    }
+
+    #[test]
+    fn canonical_identity_rejects_wrong_audience_partial_fields_and_invalid_uuids() {
+        let base = r#"{
+            "schema_version":"x-img.host-context.v1",
+            "host":"monas",
+            "host_mode":"monas_standalone",
+            "actor_id":"synthetic-monas-user",
+            "authority_id":"8f61b404-9b83-4d7f-9f55-30dc8705ce95",
+            "audience":"AUDIENCE",
+            "principal_id":"c45a4b5c-6ec8-4e47-9ea5-446a0741f650",
+            "session_id":"a48c2f17-8df7-40af-a018-e5022d6bc21f",
+            "authorizations":["ximg.access"],
+            "correlation_id":"canonical-context-test"
+        }"#;
+
+        for (document, expected) in [
+            (
+                base.replace("AUDIENCE", "pinakotheke").replace(
+                    "8f61b404-9b83-4d7f-9f55-30dc8705ce95",
+                    "00000000-0000-0000-0000-000000000000",
+                ),
+                "`authority_id` must be a UUID",
+            ),
+            (
+                base.replace("AUDIENCE", "x-img"),
+                "`audience` must be `pinakotheke`",
+            ),
+            (
+                base.replace("AUDIENCE", "pinakotheke").replace(
+                    ",\n            \"session_id\":\"a48c2f17-8df7-40af-a018-e5022d6bc21f\"",
+                    "",
+                ),
+                "canonical identity fields must be supplied together",
+            ),
+        ] {
+            let error = MonasHostContextAdapter
+                .authenticate(document.as_bytes())
+                .expect_err("invalid canonical identity must fail closed");
+            assert!(error.to_string().contains(expected), "{error}");
+        }
     }
 }

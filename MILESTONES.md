@@ -2,7 +2,7 @@
 
 Status: 1.0 stable release
 
-Version: 1.18.0
+Version: 1.19.0
 
 Updated: 2026-07-18
 
@@ -1208,6 +1208,17 @@ fixture accepted its stable identity. DASServer now runs the matching
 configured, and serves the checksum-identical signed XPI as
 ``application/x-xpinstall`` over HTTPS. One real user-played settlement remains
 the release gate: deployment alone does not complete XIMG-117.
+
+## 1.19.0 — Audience-bound Prosopikon host identity
+
+Monas ``0.9.0`` now strips the browser cookie and supplies Pinakotheke with the
+verified Prosopikon authority, principal, and session UUIDs plus the exact
+``pinakotheke`` audience. Pinakotheke accepts these fields only as a complete,
+canonical group and does not treat them as bearer credentials. Legacy
+``actor_id`` remains temporarily readable for actor-keyed data and extension
+pairing v1, but cannot grant a new canonical-only capability. Removing that
+compatibility path remains gated on inventory, rollback, mapping decisions,
+and cross-product canary acceptance.
 
 ## Post-1.0 candidates
 

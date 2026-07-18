@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.19.0 - 2026-07-18
+
+- Accept Monas host context bound to the verified Prosopikon authority,
+  immutable principal, immutable session, and exact ``pinakotheke`` audience.
+- Require canonical identity fields as an all-or-none group and reject wrong
+  audiences, nil/non-canonical UUIDs, partial assertions, and unknown fields.
+- Preserve the legacy ``actor_id`` and original v1 context shape only as an
+  explicit extension-pairing compatibility path pending service-session
+  migration; canonical UUIDs are assertions, never bearer credentials.
+
 ## 1.18.0 - 2026-07-18
 
 - Resolve the master HLS/DASH manifest belonging to the fragmented media family
