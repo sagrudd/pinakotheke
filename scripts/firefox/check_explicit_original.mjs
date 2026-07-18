@@ -213,6 +213,9 @@ vm.runInNewContext(contentSource, {
       assert.equal(type, "resource");
       return [
         { name: "https://cdn.example.invalid/unrelated.mp4", initiatorType: "video", startTime: 100 },
+        { name: "https://video.twimg.com/amplify_video/42/pl/avc1/1280x720/video.m3u8", initiatorType: "fetch", startTime: 5070 },
+        { name: "https://video.twimg.com/amplify_video/42/pl/master.m3u8", initiatorType: "fetch", startTime: 5060 },
+        { name: "https://video.twimg.com/amplify_video/42/vid/avc1/1280x720/segment.m4s", initiatorType: "fetch", startTime: 5120 },
         { name: "https://video.twimg.com/amplify_video/fixture/vid/avc1/1280x720/asset.mp4?token=ephemeral", initiatorType: "fetch", startTime: 5100 },
         { name: "https://cdn.example.invalid/page-script", initiatorType: "script", startTime: 5150 },
       ];
@@ -242,7 +245,7 @@ contentListeners.get("pointerdown")({ isTrusted: true, target: playedVideo });
 contentListeners.get("play")({ isTrusted: true, target: playedVideo });
 assert.equal(contentMessages.length, 2);
 assert.equal(contentMessages[1].command, "explicit-video-opened");
-assert.equal(contentMessages[1].mediaUrl, "https://video.twimg.com/amplify_video/fixture/vid/avc1/1280x720/asset.mp4?token=ephemeral");
+assert.equal(contentMessages[1].mediaUrl, "https://video.twimg.com/amplify_video/42/pl/master.m3u8");
 assert.equal(contentMessages[1].width, 1280);
 
 const overlayPlayedVideo = new FixtureVideo();

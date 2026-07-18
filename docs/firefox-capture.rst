@@ -170,6 +170,20 @@ or hidden playback remains origin-served with a redacted diagnostic. Bounded
 observer outcomes distinguish a missing source from missing trusted activation
 without recording the page or media URL.
 
+For clear segmented playback, the observer groups the recent audio/video
+fragments by their stable media-family path and selects only an already-observed
+matching master ``.m3u8`` or ``.mpd`` manifest. It never submits ``.m4s`` or
+CMAF fragments as complete video and never reads cookies, request headers, or
+authorization state. The server uses structured arguments to a configured
+FFmpeg executable behind a configured process-timeout executable. Acquisition
+is bounded to five minutes of wall time, 15 seconds per network read, two hours
+of media duration, and the configured video byte cap (one GiB by default).
+FFmpeg copies compatible streams into a standalone fast-start MP4; the result
+must pass the existing probe and verified DASObjectStore completion before it
+can enter the gallery. Encrypted, DRM-protected, authorization-dependent,
+unresolved, oversized, or timed-out media remains origin-served or failed with
+a bounded diagnostic.
+
 The experimental generic adapter is available for any exact HTTPS origin only
 after that origin has been added through the site policy UI and Firefox has
 granted its optional permission. Explicit adapters may remain origin-limited.

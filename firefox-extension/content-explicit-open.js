@@ -80,6 +80,7 @@ if (!globalThis.__pinakothekeExplicitOpenObserver) {
   const likelyProgressiveVideo = entry => {
     try {
       const url = new URL(entry.name);
+      if (/\.(?:m4s|m3u8|mpd|cmfv|cmfa)$/i.test(url.pathname)) return false;
       return url.protocol === "https:" && (
         entry.initiatorType === "video"
         || url.hostname === "video.twimg.com"
@@ -87,6 +88,32 @@ if (!globalThis.__pinakothekeExplicitOpenObserver) {
       );
     } catch (_) {
       return false;
+    }
+  };
+  const likelySegmentedManifest = entry => {
+    try {
+      const url = new URL(entry.name);
+      return url.protocol === "https:"
+        && url.hostname === "video.twimg.com"
+        && /\.(?:m3u8|mpd)$/i.test(url.pathname);
+    } catch (_) {
+      return false;
+    }
+  };
+  const preferMasterManifest = entries => entries
+    .filter(likelySegmentedManifest)
+    .sort((left, right) => {
+      const leftDepth = new URL(left.name).pathname.split("/").length;
+      const rightDepth = new URL(right.name).pathname.split("/").length;
+      return leftDepth - rightDepth || right.startTime - left.startTime;
+    })[0]?.name || null;
+  const mediaFamily = raw => {
+    try {
+      const url = new URL(raw);
+      const match = url.pathname.match(/^\/(amplify_video|ext_tw_video)\/([^/]+)\//);
+      return match ? `${url.hostname}/${match[1]}/${match[2]}` : null;
+    } catch (_) {
+      return null;
     }
   };
   const resolvePlayedVideo = async (video, activation) => {
@@ -111,13 +138,23 @@ if (!globalThis.__pinakothekeExplicitOpenObserver) {
           return null;
         }
       })();
-      const timed = performance.getEntriesByType("resource")
+      const allResources = performance.getEntriesByType("resource").slice(-512);
+      const recentResources = allResources
         .filter(entry => entry.startTime >= activation.performanceMilliseconds - 1000)
-        .filter(likelyProgressiveVideo)
+        .slice(-256);
+      const timed = recentResources.filter(likelyProgressiveVideo)
         .sort((left, right) => right.startTime - left.startTime)
         .slice(0, 24)
         .map(entry => entry.name);
-      const mediaUrl = [current, ...timed].find(Boolean);
+      const recentFamilies = new Set(recentResources.map(entry => mediaFamily(entry.name)).filter(Boolean));
+      const manifest = preferMasterManifest(allResources.filter(entry => {
+        const family = mediaFamily(entry.name);
+        return family && recentFamilies.has(family);
+      }));
+      const mediaUrl = manifest || [current, ...timed].find(candidate => {
+        if (!candidate) return false;
+        try { return !/\.(?:m4s|cmfv|cmfa)$/i.test(new URL(candidate).pathname); } catch (_) { return false; }
+      });
       if (mediaUrl) {
         void browser.runtime.sendMessage({
           command: "explicit-video-opened",

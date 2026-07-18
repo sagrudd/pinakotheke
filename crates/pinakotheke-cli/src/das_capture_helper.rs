@@ -61,6 +61,10 @@ struct Config {
     object_store_bucket: Option<String>,
     curl_executable: PathBuf,
     #[serde(default)]
+    ffmpeg_executable: Option<PathBuf>,
+    #[serde(default)]
+    timeout_executable: Option<PathBuf>,
+    #[serde(default)]
     ffprobe_executable: Option<PathBuf>,
     #[serde(default)]
     dasobjectstore_remote_executable: Option<PathBuf>,
@@ -242,6 +246,12 @@ fn load_config(path: &Path) -> Result<Config, Box<dyn std::error::Error>> {
         return Err("DAS capture helper config is invalid".into());
     }
     require_executable(&config.curl_executable)?;
+    if let Some(ffmpeg) = &config.ffmpeg_executable {
+        require_executable(ffmpeg)?;
+    }
+    if let Some(timeout) = &config.timeout_executable {
+        require_executable(timeout)?;
+    }
     if let Some(ffprobe) = &config.ffprobe_executable {
         require_executable(ffprobe)?;
     }
@@ -407,41 +417,47 @@ fn acquire(request: &Request, config: &Config) -> Result<Committed, Box<dyn std:
     } else {
         config.max_image_bytes.unwrap_or(DEFAULT_MAX_BYTES)
     };
-    let max_bytes_text = max_bytes.to_string();
-    let mut curl = Command::new(&config.curl_executable);
     let retrieval_media_url = if request.retrieval_media_url.is_empty() {
         &request.canonical_media_url
     } else {
         &request.retrieval_media_url
     };
-    curl.args([
-        "--fail",
-        "--silent",
-        "--show-error",
-        "--location",
-        "--proto",
-        "=https",
-        "--proto-redir",
-        "=https",
-        "--max-redirs",
-        "5",
-        "--connect-timeout",
-        "15",
-        "--max-time",
-        "300",
-        "--max-filesize",
-        &max_bytes_text,
-        "--output",
-    ])
-    .arg(&payload)
-    .args(["--write-out", "%{content_type}"])
-    .arg(retrieval_media_url)
-    .stderr(Stdio::null());
-    let (curl_status, curl_stdout) = output_bounded(&mut curl, 128)?;
-    if !curl_status.success() {
-        return Err("HTTPS media retrieval failed".into());
-    }
-    let content_type = String::from_utf8(curl_stdout)?.trim().to_ascii_lowercase();
+    let segmented_manifest = video && is_segmented_manifest(retrieval_media_url);
+    let content_type = if segmented_manifest {
+        assemble_segmented_video(config, retrieval_media_url, &payload, max_bytes)?;
+        "video/mp4".to_owned()
+    } else {
+        let max_bytes_text = max_bytes.to_string();
+        let mut curl = Command::new(&config.curl_executable);
+        curl.args([
+            "--fail",
+            "--silent",
+            "--show-error",
+            "--location",
+            "--proto",
+            "=https",
+            "--proto-redir",
+            "=https",
+            "--max-redirs",
+            "5",
+            "--connect-timeout",
+            "15",
+            "--max-time",
+            "300",
+            "--max-filesize",
+            &max_bytes_text,
+            "--output",
+        ])
+        .arg(&payload)
+        .args(["--write-out", "%{content_type}"])
+        .arg(retrieval_media_url)
+        .stderr(Stdio::null());
+        let (curl_status, curl_stdout) = output_bounded(&mut curl, 128)?;
+        if !curl_status.success() {
+            return Err("HTTPS media retrieval failed".into());
+        }
+        String::from_utf8(curl_stdout)?.trim().to_ascii_lowercase()
+    };
     if (!video && !content_type.starts_with("image/"))
         || (video && !content_type.starts_with("video/"))
         || content_type.len() > 128
@@ -517,6 +533,67 @@ fn acquire(request: &Request, config: &Config) -> Result<Committed, Box<dyn std:
         verified_at_epoch_seconds: SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs(),
         video: None,
     })
+}
+
+fn is_segmented_manifest(raw_url: &str) -> bool {
+    let path = raw_url.split(['?', '#']).next().unwrap_or_default();
+    path.ends_with(".m3u8") || path.ends_with(".mpd")
+}
+
+fn assemble_segmented_video(
+    config: &Config,
+    manifest_url: &str,
+    payload: &Path,
+    max_bytes: u64,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let ffmpeg = config
+        .ffmpeg_executable
+        .as_deref()
+        .ok_or("segmented video requires ffmpeg")?;
+    let timeout = config
+        .timeout_executable
+        .as_deref()
+        .ok_or("segmented video requires a timeout boundary")?;
+    let max_bytes_text = max_bytes.to_string();
+    let mut command = Command::new(timeout);
+    command
+        .args(["--signal=TERM", "--kill-after=10", "300"])
+        .arg(ffmpeg)
+        .args([
+            "-nostdin",
+            "-y",
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-rw_timeout",
+            "15000000",
+            "-protocol_whitelist",
+            "https,tcp,tls,crypto",
+            "-i",
+            manifest_url,
+            "-map",
+            "0:v:0",
+            "-map",
+            "0:a:0?",
+            "-c",
+            "copy",
+            "-movflags",
+            "+faststart",
+            "-t",
+            "7200",
+            "-fs",
+            &max_bytes_text,
+            "-f",
+            "mp4",
+        ])
+        .arg(payload)
+        .stdout(Stdio::null())
+        .stderr(Stdio::null());
+    let status = command.status()?;
+    if !status.success() {
+        return Err("bounded segmented video assembly failed".into());
+    }
+    Ok(())
 }
 
 fn upload_command(
@@ -1178,6 +1255,56 @@ mod tests {
     }
 
     #[test]
+    fn segmented_manifest_assembly_uses_bounded_ffmpeg_process() {
+        let root = std::env::temp_dir().join(format!(
+            "pinakotheke-segmented-assembly-test-{}",
+            std::process::id()
+        ));
+        let _ = fs::remove_dir_all(&root);
+        fs::create_dir(&root).unwrap();
+        let ffmpeg = root.join("ffmpeg");
+        executable(&ffmpeg, "#!/bin/sh\nexit 0\n");
+        let timeout = root.join("timeout");
+        executable(
+            &timeout,
+            "#!/bin/sh\nfor last do :; done\nprintf assembled-video > \"$last\"\n",
+        );
+        let config = Config {
+            schema_version: CONFIG_SCHEMA.into(),
+            endpoint_id: "endpoint-1".into(),
+            object_store_bucket: None,
+            curl_executable: PathBuf::from("/bin/true"),
+            ffmpeg_executable: Some(ffmpeg),
+            timeout_executable: Some(timeout),
+            ffprobe_executable: None,
+            dasobjectstore_remote_executable: None,
+            dasobjectstore_remote_config: None,
+            daemon_socket: None,
+            submit_to_daemon: true,
+            container_execution: None,
+            max_image_bytes: None,
+            max_video_bytes: None,
+            normalization: None,
+        };
+        let payload = root.join("assembled.mp4");
+        assemble_segmented_video(
+            &config,
+            "https://video.example.invalid/master.m3u8",
+            &payload,
+            1024,
+        )
+        .unwrap();
+        assert_eq!(fs::read(&payload).unwrap(), b"assembled-video");
+        assert!(is_segmented_manifest(
+            "https://example.invalid/master.m3u8?token=redacted"
+        ));
+        assert!(!is_segmented_manifest(
+            "https://example.invalid/segment.m4s"
+        ));
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
     fn incompatible_video_is_normalized_committed_and_redacted() {
         let root = std::env::temp_dir().join(format!(
             "pinakotheke-auto-normalize-test-{}",
@@ -1231,6 +1358,8 @@ print(json.dumps({'schema_version':h['schema_version'],'endpoint_id':h['endpoint
             endpoint_id: "endpoint-1".into(),
             object_store_bucket: None,
             curl_executable: curl,
+            ffmpeg_executable: None,
+            timeout_executable: None,
             ffprobe_executable: Some(ffprobe),
             dasobjectstore_remote_executable: Some(root.join("unused-remote")),
             dasobjectstore_remote_config: Some(root.join("unused-config")),
@@ -1343,6 +1472,8 @@ print(json.dumps({'schema_version':h['schema_version'],'endpoint_id':h['endpoint
             endpoint_id: "endpoint-1".into(),
             object_store_bucket: Some("dos-store-1".into()),
             curl_executable: curl,
+            ffmpeg_executable: None,
+            timeout_executable: None,
             ffprobe_executable: None,
             dasobjectstore_remote_executable: Some(remote),
             dasobjectstore_remote_config: Some(remote_config),
@@ -1429,6 +1560,8 @@ print(json.dumps({'schema_version':h['schema_version'],'endpoint_id':h['endpoint
             endpoint_id: "endpoint-1".into(),
             object_store_bucket: None,
             curl_executable: PathBuf::from("/does/not/run"),
+            ffmpeg_executable: None,
+            timeout_executable: None,
             ffprobe_executable: None,
             dasobjectstore_remote_executable: Some(PathBuf::from("/does/not/run")),
             dasobjectstore_remote_config: Some(PathBuf::from("/does/not/read")),
@@ -1466,6 +1599,8 @@ print(json.dumps({'schema_version':h['schema_version'],'endpoint_id':h['endpoint
             endpoint_id: "endpoint-1".into(),
             object_store_bucket: None,
             curl_executable: PathBuf::from("/does/not/run"),
+            ffmpeg_executable: None,
+            timeout_executable: None,
             ffprobe_executable: Some(PathBuf::from("/does/not/run")),
             dasobjectstore_remote_executable: Some(PathBuf::from("/does/not/run")),
             dasobjectstore_remote_config: Some(PathBuf::from("/does/not/read")),
@@ -1562,6 +1697,8 @@ print(json.dumps({'schema_version':h['schema_version'],'endpoint_id':h['endpoint
             endpoint_id: "endpoint-1".into(),
             object_store_bucket: None,
             curl_executable: curl,
+            ffmpeg_executable: None,
+            timeout_executable: None,
             ffprobe_executable: None,
             dasobjectstore_remote_executable: None,
             dasobjectstore_remote_config: None,

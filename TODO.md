@@ -2,7 +2,7 @@
 
 Status: dependency-ordered planning backlog
 
-Version: 1.17.2
+Version: 1.18.0
 
 Updated: 2026-07-18
 
@@ -1414,6 +1414,18 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   remains. Mozilla signing, permanent-install verification, and
   checksum-identical DASServer deployment of the ``1.17.2`` backend and XPI
   are complete in ``7f145d6``.
+
+- [ ] **XIMG-117 P0 — Assemble trusted-play HLS/fMP4 into a committed video.**
+  Live ``1.17.2`` plan ``capture-plan-48`` proved end-to-end observer and plan
+  admission, then correctly failed because the chosen ``.m4s`` object was a
+  48,529-byte fragment without initialization metadata. ``1.18.0`` selects the
+  matching observed master manifest by stable media-family identity, excludes
+  fragment suffixes from progressive capture, and adds bounded clear-HTTPS
+  HLS/DASH assembly before the existing probe and verified DASObjectStore
+  completion path. Synthetic tests must prove master-over-track selection,
+  fragment rejection, structured FFmpeg invocation and bounds. Completion
+  additionally requires one real user-played X video to settle and appear in
+  the gallery; do not mark complete from plan admission alone.
 
 - [x] **XIMG-115 P0 — Make Monas restart invalidate sessions and harden product
   forwarding.** Completed in Monas ``0.8.4`` commits ``624e7b4``,

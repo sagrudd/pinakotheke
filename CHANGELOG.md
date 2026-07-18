@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.18.0 - 2026-07-18
+
+- Resolve the master HLS/DASH manifest belonging to the fragmented media family
+  observed after a trusted play, while refusing to treat ``.m4s`` fragments as
+  standalone progressive video.
+- Assemble clear HTTPS segmented audio/video through a five-minute, one-GiB,
+  two-hour-duration bounded FFmpeg process before the existing probe,
+  DASObjectStore completion, and gallery admission path.
+
 ## 1.17.2 - 2026-07-18
 
 - Associate a trusted click on an overlaid video control with the visible video

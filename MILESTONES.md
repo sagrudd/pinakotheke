@@ -2,7 +2,7 @@
 
 Status: 1.0 stable release
 
-Version: 1.17.2
+Version: 1.18.0
 
 Updated: 2026-07-18
 
@@ -1187,6 +1187,22 @@ Mozilla signed ``1.17.2`` and the permanent-install fixture accepted its stable
 identity. DASServer now runs the ``1.17.2`` backend and serves the
 checksum-identical signed XPI as ``application/x-xpinstall`` over trusted HTTPS.
 Real user-played settlement remains the final XIMG-116 gate.
+
+## 1.18.0 — Bounded live segmented-video assembly
+
+Live ``1.17.2`` evidence admitted ``capture-plan-48`` but proved the selected
+48,529-byte ``.m4s`` object was one fragmented-MP4 media segment without its
+initialization metadata. Firefox cache evidence for that same play contained a
+master HLS playlist, track playlists, and separate audio/video fragments.
+``1.18.0`` groups recent fragments by their stable media-family path, selects
+the shallowest matching observed master manifest, and never classifies
+``.m4s``/CMAF fragments as progressive video. The first server adapter accepts
+only clear HTTPS HLS/DASH manifests already observed after trusted play and
+assembles them with structured FFmpeg arguments under a five-minute process
+deadline, 15-second network read deadline, one-GiB output cap, and two-hour
+duration cap. The standalone MP4 then traverses the existing FFprobe,
+DASObjectStore verified-completion, and gallery paths. No cookies, headers, or
+credentials are forwarded.
 
 ## Post-1.0 candidates
 
