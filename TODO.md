@@ -1286,7 +1286,7 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   checksum-identical signed XPI and 1.12.0 service are deployed on DASServer.
   Delivered in ``d0bb6cb``.
 
-- [ ] **XIMG-111 P0 — Automate container normalization handoff.**
+- [x] **XIMG-111 P0 — Automate container normalization handoff.**
   When progressive media is eligible but not already in the browser playback
   profile, create a redacted codec-gap record and hand the bounded source to
   DAS-managed staging. Select an authorized worker on the DASObjectStore host,
@@ -1294,7 +1294,14 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   digest-pinned network-isolated FFmpeg adapter; commit rendition, poster, and
   provenance manifest as separate objects; delete staging; and admit only
   after checksum, probe, and Firefox playback evidence. No unsupported source
-  may be mislabeled as stored or playable.
+  may be mislabeled as stored or playable. Completed in ``3ce70cb`` with the
+  1.14.0 DASObjectStore-host handoff: incompatible bounded progressive video
+  records only an aggregate redacted codec gap, enters private DAS-managed
+  staging, runs the existing digest-pinned network-isolated normalizer, commits
+  normalized MP4, WebP poster, and expanded provenance manifest separately,
+  and cleans staging. Gallery settlement receives only the verified MP4 after
+  all three commits, output probing, and configured Firefox profile evidence;
+  failures leave the capture pending and never admit the source bytes.
 
 - [ ] **XIMG-112 P0 — Prove generic segmented-video adapters.**
   Add a site-neutral plan for user-played HLS/DASH or MSE media without hidden

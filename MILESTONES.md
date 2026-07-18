@@ -1080,6 +1080,7 @@ receipt only after all commits, output probe, and configured Firefox profile
 evidence succeed. The worker retains exact actor, endpoint, ObjectStore,
 container image, resource-limit, checksum, codec, dimension, and duration
 provenance without recording the source site or URL in its gap journal.
+XIMG-111 was completed in ``3ce70cb``.
 
 ## Post-1.0 candidates
 
