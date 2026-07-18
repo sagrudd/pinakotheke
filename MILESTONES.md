@@ -2,7 +2,7 @@
 
 Status: 1.0 stable release
 
-Version: 1.12.0
+Version: 1.13.0
 
 Updated: 2026-07-17
 
@@ -1043,6 +1043,21 @@ native pointer input against an exact opted-in HTTPS origin and admitted an
 ephemeral synthetic progressive video as ``explicit_video``. The artifact and
 Pinakotheke 1.12.0 backend were deployed to DASServer; its trusted public Monas
 route serves the checksum-identical XPI. Delivered in ``d0bb6cb``.
+
+## 1.13.0 — Persistent reviewed storage destination
+
+Goal: replace session-only ObjectStore selection with a private actor-scoped
+authority record. The first slice persists stable endpoint/ObjectStore IDs
+with optimistic revisions, restores them after restart, rejects corrupt,
+permissive, symlinked, oversized, and future-schema state, and exposes a
+Monas-authenticated GET/PUT task-pane workflow. Browser inventory never grants
+authority: this slice saves only the exact pair already reviewed by the host.
+
+XIMG-098 remains open for the second slice: bind the persisted selection and
+revision into each capture plan, query live DASObjectStore authority for that
+exact pair immediately before helper execution, and reject selection changes,
+unavailable/read-only stores, expired pairing, quota exhaustion, and receipt
+destination mismatch without choosing a fallback.
 
 ## Post-1.0 candidates
 

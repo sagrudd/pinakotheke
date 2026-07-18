@@ -50,7 +50,17 @@ capability, object type, policy, quota, and reviewed stable-ID pair. The
 catalogue provenance records endpoint ID, ObjectStore ID, object key, checksum,
 actor/session reference, and commit time. XIMG-037 validates reviewed rows and
 revalidates the exact stable-ID pair against authority state. The current Yew
-selector establishes the destination displayed during the browser review
-session; server-side persistence and capture-plan consumption remain the
-explicit XIMG-098 completion gate. A browser choice alone is never write
-authority.
+selector now reads and explicitly saves the actor's reviewed stable IDs through
+``GET``/``PUT /products/pinakotheke/api/destinations/v1/reviewed``. The private
+``state/reviewed-destinations.v1.json`` authority uses optimistic revisions,
+atomic replacement, mode ``0600``, strict schema validation, and actor scope;
+it survives restart and never chooses another actor or the first visible store.
+On migration, the configured capture-authority pair seeds each known active
+actor only when no persisted selection exists.
+
+The first 1.13 slice still treats the host capture authority as the selection
+allowlist: a PUT naming any other pair is rejected even if the browser's DAS
+dashboard displayed it. This deliberately avoids converting presentation data
+into authority. Plan-bound snapshots and live DAS authority revalidation
+immediately before worker execution remain the XIMG-098 completion gate. Until
+then the running helper continues to use the configured reviewed authority pair.

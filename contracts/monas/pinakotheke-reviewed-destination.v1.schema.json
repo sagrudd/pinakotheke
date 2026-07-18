@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/sagrudd/pinakotheke/contracts/monas/pinakotheke-reviewed-destination.v1.schema.json",
+  "title": "Pinakotheke reviewed destination exchange",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "revision", "endpoint_id", "object_store_id"],
+      "properties": {
+        "schema_version": { "const": "pinakotheke.reviewed-destination.v1" },
+        "revision": { "type": "integer", "minimum": 1 },
+        "endpoint_id": { "$ref": "#/$defs/identifier" },
+        "object_store_id": { "$ref": "#/$defs/identifier" }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "expected_revision", "endpoint_id", "object_store_id"],
+      "properties": {
+        "schema_version": { "const": "pinakotheke.reviewed-destination.v1" },
+        "expected_revision": { "type": "integer", "minimum": 0 },
+        "endpoint_id": { "$ref": "#/$defs/identifier" },
+        "object_store_id": { "$ref": "#/$defs/identifier" }
+      }
+    }
+  ],
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._:-]{1,128}$"
+    }
+  }
+}

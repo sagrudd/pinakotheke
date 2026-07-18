@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.13.0 - 2026-07-18
+
+- Persist reviewed endpoint/ObjectStore selections per authenticated actor in
+  strict private metadata with optimistic revisions and restart-safe migration.
+- Add a Monas-authenticated destination GET/PUT API that accepts only the exact
+  pair already authorized by the host and never trusts browser inventory as
+  storage authority.
+- Replace session-only Yew selection with explicit accessible Save, saved,
+  unsaved, conflict, permission, invalid-response, and unavailable states.
+
 ## 1.12.0 - 2026-07-17
 
 - Detect user-played opaque progressive HTTPS video resources within a bounded

@@ -2,7 +2,7 @@
 
 Status: dependency-ordered planning backlog
 
-Version: 1.12.0
+Version: 1.13.0
 
 Updated: 2026-07-17
 
@@ -988,6 +988,16 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   Pinakotheke authority, restoring them after restart, and proving that capture
   planning and pre-commit revalidation consume that exact selection without a
   fallback. Monas forwarding fix: pushed sibling commit ``51d90d2``.
+  Pinakotheke 1.13.0 adds the first closure slice: a strict actor-scoped,
+  mode-0600, atomically replaced destination store with restart persistence,
+  optimistic revision conflicts, migration seeding from the existing reviewed
+  capture authority, and no cross-actor/default fallback. A protected GET/PUT
+  API and accessible Yew task pane load, distinguish saved/unsaved/error
+  states, and explicitly save only a Ready writable row whose endpoint matches
+  authenticated onboarding. The server accepts only the exact endpoint/store
+  pair already authorized by the host; browser inventory is not authority.
+  Keep this item open for plan-bound destination snapshots and live authority
+  revalidation immediately before helper execution.
 
 - [x] **XIMG-099 P0 — Establish trusted local HTTPS for Firefox.** Completed
   in ``61d91d7`` on 2026-07-17. The DASServer deployment now terminates TLS

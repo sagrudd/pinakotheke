@@ -49,6 +49,9 @@ use x_img_core::{
     playback_delivery::{
         DirectPlaybackError, DirectPlaybackResponse, DirectPlaybackService, parse_single_range,
     },
+    reviewed_destination::{
+        ReplaceReviewedDestination, ReviewedDestinationError, ReviewedDestinationStore,
+    },
     site_corpus::{ReplaceSiteCorpus, SiteCorpusError, SiteCorpusStore},
     synoptikon_catalogue::{
         SynoptikonCatalogueError, SynoptikonCataloguePage, SynoptikonCatalogueProjection,
@@ -64,6 +67,7 @@ type Operations = Arc<Mutex<OperationalTelemetry>>;
 type SynoptikonCatalogue = Arc<SynoptikonCatalogueProjection>;
 type MonasGalleryCatalogue = Arc<Mutex<GalleryCatalogue>>;
 type SiteCorpora = Arc<Mutex<SiteCorpusStore>>;
+type ReviewedDestinations = Arc<Mutex<ReviewedDestinationStore>>;
 
 /// Private host-worker authority used only to report independently verified
 /// DASObjectStore image commits.
@@ -82,6 +86,7 @@ pub struct CapturePlanComposition {
     acquire: Option<HostCaptureAcquireBackend>,
     onboarding: Option<ExtensionOnboardingAuthority>,
     site_corpus: Option<SiteCorpusStore>,
+    reviewed_destinations: Option<ReviewedDestinationStore>,
 }
 
 /// Reviewed server identity and DASObjectStore destination exposed only to an
@@ -242,6 +247,7 @@ impl CapturePlanComposition {
             acquire: None,
             onboarding: None,
             site_corpus: None,
+            reviewed_destinations: None,
         }
     }
 
@@ -263,6 +269,13 @@ impl CapturePlanComposition {
     #[must_use]
     pub fn with_site_corpus(mut self, store: SiteCorpusStore) -> Self {
         self.site_corpus = Some(store);
+        self
+    }
+
+    /// Adds actor-scoped persistent reviewed destination selections.
+    #[must_use]
+    pub fn with_reviewed_destinations(mut self, store: ReviewedDestinationStore) -> Self {
+        self.reviewed_destinations = Some(store);
         self
     }
 }
@@ -818,19 +831,29 @@ pub fn monolith_router_with_gallery_web_delivery_and_capture_authority(
             acquire,
             onboarding,
             site_corpus,
+            reviewed_destinations,
         } = capture;
         let capture_plans = Arc::new(Mutex::new(capture_plans));
         protected = protected.route(
             "/products/pinakotheke/api/extension/v1/capture-plans",
             get(capture_plans_pending).post(capture_plan),
         );
-        if let Some(onboarding) = onboarding {
+        if let Some(onboarding) = onboarding.clone() {
             protected = protected
                 .route(
                     "/products/pinakotheke/api/extension/v1/onboarding",
                     get(extension_onboarding),
                 )
                 .layer(Extension(onboarding));
+        }
+        if let (Some(store), Some(authority)) = (reviewed_destinations, onboarding) {
+            protected = protected
+                .route(
+                    "/products/pinakotheke/api/destinations/v1/reviewed",
+                    get(get_reviewed_destination).put(put_reviewed_destination),
+                )
+                .layer(Extension(authority))
+                .layer(Extension(Arc::new(Mutex::new(store))));
         }
         if let Some(site_corpus) = site_corpus {
             protected = protected
@@ -936,6 +959,60 @@ async fn put_site_corpus(
             | SiteCorpusError::TooLarge,
         ) => StatusCode::UNPROCESSABLE_ENTITY.into_response(),
         Err(SiteCorpusError::Io(_) | SiteCorpusError::Json(_)) => {
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        }
+    }
+}
+
+async fn get_reviewed_destination(
+    Extension(context): Extension<AuthenticatedHostContext>,
+    Extension(store): Extension<ReviewedDestinations>,
+) -> Response {
+    if !context.permits(XIMG_ACCESS) {
+        return StatusCode::FORBIDDEN.into_response();
+    }
+    let Ok(store) = store.lock() else {
+        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+    };
+    match store.get(context.actor_id()) {
+        Ok(selection) => Json(selection).into_response(),
+        Err(ReviewedDestinationError::NotSelected) => StatusCode::NOT_FOUND.into_response(),
+        Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+    }
+}
+
+async fn put_reviewed_destination(
+    Extension(context): Extension<AuthenticatedHostContext>,
+    Extension(store): Extension<ReviewedDestinations>,
+    Extension(authority): Extension<ExtensionOnboardingAuthority>,
+    Json(request): Json<ReplaceReviewedDestination>,
+) -> Response {
+    if !context.permits(XIMG_ACCESS) {
+        return StatusCode::FORBIDDEN.into_response();
+    }
+    // This first persistence slice accepts only the exact destination already
+    // reviewed by the host capture authority. Browser dashboard rows are
+    // presentation data and never grant storage authority.
+    if request.endpoint_id != authority.endpoint_id
+        || request.object_store_id != authority.object_store_id
+    {
+        return StatusCode::UNPROCESSABLE_ENTITY.into_response();
+    }
+    let Ok(store) = store.lock() else {
+        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+    };
+    match store.replace(context.actor_id(), request) {
+        Ok(selection) => Json(selection).into_response(),
+        Err(ReviewedDestinationError::Conflict(current)) => {
+            (StatusCode::CONFLICT, Json(current)).into_response()
+        }
+        Err(
+            ReviewedDestinationError::Invalid
+            | ReviewedDestinationError::UnsupportedSchema
+            | ReviewedDestinationError::TooLarge
+            | ReviewedDestinationError::NotSelected,
+        ) => StatusCode::UNPROCESSABLE_ENTITY.into_response(),
+        Err(ReviewedDestinationError::Io(_) | ReviewedDestinationError::Json(_)) => {
             StatusCode::INTERNAL_SERVER_ERROR.into_response()
         }
     }
@@ -2273,6 +2350,7 @@ mod tests {
         },
         operations::{Component, EventCode, EventOutcome, HealthState, OperationalTelemetry},
         playback_delivery::{DirectPlaybackGrant, DirectPlaybackService},
+        reviewed_destination::ReviewedDestinationStore,
         synoptikon_catalogue::{
             CatalogueMediaKind, CatalogueReviewState, SynoptikonCatalogueItem,
             SynoptikonCatalogueProjection,
@@ -3141,6 +3219,96 @@ mod tests {
         assert_eq!(body["pairing_reference"], "pair-0");
         assert_eq!(body["object_store_id"], "store-1");
         assert!(body.get("actor_id").is_none());
+    }
+
+    #[tokio::test]
+    async fn reviewed_destination_is_actor_scoped_persistent_and_host_bounded() {
+        let token = "synthetic-monas-dispatch-token-0001";
+        let root = std::env::temp_dir().join(format!(
+            "pinakotheke-api-reviewed-destination-{}",
+            std::process::id()
+        ));
+        let _ = fs::remove_dir_all(&root);
+        let composition = CapturePlanComposition::new(capture_plans(), None)
+            .with_onboarding(
+                ExtensionOnboardingAuthority::new(
+                    "pinakotheke-test".into(),
+                    "endpoint-1".into(),
+                    "store-1".into(),
+                    "/downloads/pinakotheke-1.12.0.xpi".into(),
+                )
+                .unwrap(),
+            )
+            .with_reviewed_destinations(ReviewedDestinationStore::new(root.join("reviewed.json")));
+        let app = monolith_router_with_gallery_web_delivery_and_capture_authority(
+            true,
+            Some(MonasDispatchVerifier::new(token.into()).unwrap()),
+            gallery_catalogue(),
+            None,
+            gallery_image_backend(),
+            Some(composition),
+        );
+        let path = "/products/pinakotheke/api/destinations/v1/reviewed";
+        let missing = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .uri(path)
+                    .header("x-monas-dispatch-token", token)
+                    .header("x-monas-host-context", MONAS_CONTEXT)
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(missing.status(), StatusCode::NOT_FOUND);
+        let saved = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("PUT")
+                    .uri(path)
+                    .header("content-type", "application/json")
+                    .header("x-monas-dispatch-token", token)
+                    .header("x-monas-host-context", MONAS_CONTEXT)
+                    .body(Body::from(r#"{"schema_version":"pinakotheke.reviewed-destination.v1","expected_revision":0,"endpoint_id":"endpoint-1","object_store_id":"store-1"}"#))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(saved.status(), StatusCode::OK);
+        let restored = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .uri(path)
+                    .header("x-monas-dispatch-token", token)
+                    .header("x-monas-host-context", MONAS_CONTEXT)
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(restored.status(), StatusCode::OK);
+        let body: serde_json::Value =
+            serde_json::from_slice(&to_bytes(restored.into_body(), 4096).await.unwrap()).unwrap();
+        assert_eq!(body["revision"], 1);
+        assert_eq!(body["object_store_id"], "store-1");
+        let changed = app
+            .oneshot(
+                Request::builder()
+                    .method("PUT")
+                    .uri(path)
+                    .header("content-type", "application/json")
+                    .header("x-monas-dispatch-token", token)
+                    .header("x-monas-host-context", MONAS_CONTEXT)
+                    .body(Body::from(r#"{"schema_version":"pinakotheke.reviewed-destination.v1","expected_revision":1,"endpoint_id":"endpoint-1","object_store_id":"unreviewed-store"}"#))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(changed.status(), StatusCode::UNPROCESSABLE_ENTITY);
+        fs::remove_dir_all(root).unwrap();
     }
 
     #[tokio::test]

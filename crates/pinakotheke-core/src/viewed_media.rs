@@ -718,7 +718,10 @@ mod tests {
         let refreshed = planner.plan("actor", 2, rotated).expect("refreshed plan");
 
         assert_eq!(initial.plan_id, refreshed.plan_id);
-        assert_eq!(refreshed.canonical_media_url, "https://cdn.example.invalid/opaque");
+        assert_eq!(
+            refreshed.canonical_media_url,
+            "https://cdn.example.invalid/opaque"
+        );
         assert_eq!(
             refreshed.retrieval_media_url,
             "https://cdn.example.invalid/opaque?token=second"

@@ -12,6 +12,7 @@ use clap::{Args, Subcommand};
 use serde::Deserialize;
 use x_img_core::{
     gallery_catalogue::GalleryCatalogueStore,
+    reviewed_destination::{AuthoritySelectionSeed, ReviewedDestinationStore},
     site_corpus::SiteCorpusStore,
     viewed_media::{AdapterKind, CapturePairing, CapturePlanService, SiteCapturePolicy},
 };
@@ -104,6 +105,7 @@ struct LoadedCaptureAuthority {
     plans: CapturePlanService,
     endpoint_id: String,
     object_store_id: String,
+    actor_ids: Vec<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -400,6 +402,24 @@ pub(crate) fn serve(arguments: ServeArgs) -> Result<(), Box<dyn std::error::Erro
         .as_deref()
         .map(|path| load_capture_authority(path, layout.root.join("state/capture-plans.v1.json")))
         .transpose()?;
+    let reviewed_destination_store = capture_authority
+        .as_ref()
+        .map(|authority| {
+            let store = ReviewedDestinationStore::new(
+                layout.root.join("state/reviewed-destinations.v1.json"),
+            );
+            let seed = AuthoritySelectionSeed {
+                endpoint_id: authority.endpoint_id.clone(),
+                object_store_id: authority.object_store_id.clone(),
+            };
+            for actor_id in &authority.actor_ids {
+                store
+                    .seed_from_authority_if_absent(actor_id, &seed)
+                    .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?;
+            }
+            Ok::<_, io::Error>(store)
+        })
+        .transpose()?;
     if arguments.capture_completion_token_file.is_some()
         && (object_read_backend.is_none()
             || capture_authority.is_none()
@@ -532,7 +552,11 @@ pub(crate) fn serve(arguments: ServeArgs) -> Result<(), Box<dyn std::error::Erro
                                 .with_onboarding(onboarding)
                                 .with_site_corpus(SiteCorpusStore::new(
                                     layout.root.join("state/site-corpus.v1.json"),
-                                )),
+                                ))
+                                .with_reviewed_destinations(
+                                    reviewed_destination_store
+                                        .expect("capture authority destination store"),
+                                ),
                             None => composition,
                         }
                     }),
@@ -693,6 +717,13 @@ fn load_capture_authority(
             })
         })
         .collect::<io::Result<Vec<_>>>()?;
+    let actor_ids = pairings
+        .iter()
+        .filter(|pairing| !pairing.revoked)
+        .map(|pairing| pairing.actor_id.clone())
+        .collect::<std::collections::BTreeSet<_>>()
+        .into_iter()
+        .collect();
     let mut origins = std::collections::BTreeSet::new();
     let sites = document
         .sites
@@ -728,6 +759,7 @@ fn load_capture_authority(
         plans,
         endpoint_id: document.endpoint_id,
         object_store_id: document.object_store_id,
+        actor_ids,
     })
 }
 

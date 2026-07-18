@@ -2,7 +2,7 @@
 //! Mnemosyne-compatible, host-integrable Yew application shell.
 
 use gloo_net::http::Request;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use wasm_bindgen::JsCast;
 use wasm_bindgen::closure::Closure;
 use wasm_bindgen_futures::spawn_local;
@@ -25,6 +25,8 @@ const GALLERY_FOLDERS_API: &str = "/products/pinakotheke/api/gallery/v1/folders"
 const OBJECT_STORE_API: &str = "/products/dasobjectstore/api/v1/dashboard/object-stores";
 const EXTENSION_ONBOARDING_API: &str = "/products/pinakotheke/api/extension/v1/onboarding";
 const INGESTION_STATUS_API: &str = "/products/pinakotheke/api/ingestion/v1/status";
+const REVIEWED_DESTINATION_API: &str = "/products/pinakotheke/api/destinations/v1/reviewed";
+const REVIEWED_DESTINATION_SCHEMA: &str = "pinakotheke.reviewed-destination.v1";
 const GALLERY_PAGE_SIZE: usize = 20;
 const GALLERY_WINDOW_ROWS: usize = 8;
 const GALLERY_OVERSCAN_ROWS: usize = 2;
@@ -137,6 +139,54 @@ enum ObjectStoreLoadState {
     Ready(Vec<ObjectStoreRow>),
     PermissionDenied,
     Unavailable,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ReviewedDestinationResponse {
+    schema_version: String,
+    revision: u64,
+    endpoint_id: String,
+    object_store_id: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(deny_unknown_fields)]
+struct ReviewedDestinationUpdate<'a> {
+    schema_version: &'static str,
+    expected_revision: u64,
+    endpoint_id: &'a str,
+    object_store_id: &'a str,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum DestinationPersistenceState {
+    Loading,
+    Ready(ReviewedDestinationResponse),
+    Unset { revision: u64 },
+    Saving,
+    PermissionDenied,
+    Conflict,
+    Unavailable,
+    InvalidResponse,
+}
+
+fn object_store_ready(store: &ObjectStoreRow) -> bool {
+    store.health == "healthy"
+        && store.writeable
+        && store.writer_policy.writeable_by_current_user
+        && matches!(
+            store.writer_policy.state.as_str(),
+            "ready" | "permitted" | "writable"
+        )
+}
+
+fn reviewed_destination_revision(state: &DestinationPersistenceState) -> Option<u64> {
+    match state {
+        DestinationPersistenceState::Ready(destination) => Some(destination.revision),
+        DestinationPersistenceState::Unset { revision } => Some(*revision),
+        _ => None,
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -391,6 +441,7 @@ pub fn app() -> Html {
     let keyboard_focus_pending = use_state(|| false);
     let object_stores = use_state(|| ObjectStoreLoadState::Loading);
     let selected_object_store = use_state(String::new);
+    let destination_persistence = use_state(|| DestinationPersistenceState::Loading);
     let extension_onboarding = use_state(|| ExtensionOnboardingState::Loading);
     let ingestion_status = use_state(|| IngestionStatusState::Loading);
 
@@ -465,6 +516,39 @@ pub fn app() -> Html {
                     Ok(_) | Err(_) => ObjectStoreLoadState::Unavailable,
                 };
                 object_stores.set(state);
+            });
+            || ()
+        });
+    }
+
+    {
+        let selected_object_store = selected_object_store.clone();
+        let destination_persistence = destination_persistence.clone();
+        use_effect_with((), move |()| {
+            spawn_local(async move {
+                let state = match Request::get(REVIEWED_DESTINATION_API).send().await {
+                    Ok(response) if matches!(response.status(), 401 | 403) => {
+                        DestinationPersistenceState::PermissionDenied
+                    }
+                    Ok(response) if response.status() == 404 => {
+                        DestinationPersistenceState::Unset { revision: 0 }
+                    }
+                    Ok(response) if response.ok() => {
+                        match response.json::<ReviewedDestinationResponse>().await {
+                            Ok(destination)
+                                if destination.schema_version == REVIEWED_DESTINATION_SCHEMA
+                                    && !destination.endpoint_id.is_empty()
+                                    && !destination.object_store_id.is_empty() =>
+                            {
+                                selected_object_store.set(destination.object_store_id.clone());
+                                DestinationPersistenceState::Ready(destination)
+                            }
+                            _ => DestinationPersistenceState::InvalidResponse,
+                        }
+                    }
+                    Ok(_) | Err(_) => DestinationPersistenceState::Unavailable,
+                };
+                destination_persistence.set(state);
             });
             || ()
         });
@@ -694,37 +778,137 @@ pub fn app() -> Html {
                         ObjectStoreLoadState::Loading => html! { <p role="status">{ "Loading ObjectStores…" }</p> },
                         ObjectStoreLoadState::PermissionDenied => html! { <p role="alert">{ "Monas did not authorize ObjectStore discovery." }</p> },
                         ObjectStoreLoadState::Unavailable => html! { <p role="alert">{ "DASObjectStore inventory is unavailable. Media browsing remains available." }</p> },
-                        ObjectStoreLoadState::Ready(stores) => html! {
-                            <>
-                                <label for="object-store-select">{ "DASServer · ObjectStore" }</label>
-                                <select
-                                    id="object-store-select"
-                                    value={(*selected_object_store).clone()}
-                                    onchange={{
-                                        let selected_object_store = selected_object_store.clone();
-                                        Callback::from(move |event: Event| {
-                                            selected_object_store.set(event.target_unchecked_into::<HtmlSelectElement>().value());
-                                        })
-                                    }}
-                                >
-                                    <option value="">{ "Select an ObjectStore…" }</option>
-                                    { for stores.iter().map(|store| {
-                                        let ready = store.health == "healthy" && store.writeable && store.writer_policy.writeable_by_current_user;
-                                        html! {
-                                            <option value={store.store_id.clone()} disabled={!ready}>
-                                                { format!("{} · {}", store.display_name, if ready { "Ready" } else { "Read-only or unavailable" }) }
-                                            </option>
-                                        }
-                                    }) }
-                                </select>
-                                <p role="status" aria-live="polite">{
-                                    if selected_object_store.is_empty() {
-                                        "No ObjectStore selected for this review session.".to_owned()
-                                    } else {
-                                        format!("Selected: DASServer · {}. This choice will be shown during capture review.", *selected_object_store)
-                                    }
-                                }</p>
-                            </>
+                        ObjectStoreLoadState::Ready(stores) => {
+                            let endpoint_id = match &*extension_onboarding {
+                                ExtensionOnboardingState::Ready(setup) => Some(setup.endpoint_id.clone()),
+                                _ => None,
+                            };
+                            let selected_row = stores.iter().find(|store| store.store_id == *selected_object_store);
+                            let selection_ready = selected_row.is_some_and(object_store_ready);
+                            let revision = reviewed_destination_revision(&destination_persistence);
+                            let save_enabled = endpoint_id.is_some()
+                                && selection_ready
+                                && revision.is_some()
+                                && !matches!(*destination_persistence, DestinationPersistenceState::Saving);
+                            let status_role = if matches!(
+                                *destination_persistence,
+                                DestinationPersistenceState::PermissionDenied
+                                    | DestinationPersistenceState::Conflict
+                                    | DestinationPersistenceState::Unavailable
+                                    | DestinationPersistenceState::InvalidResponse
+                            ) { "alert" } else { "status" };
+                            let status = match &*destination_persistence {
+                                DestinationPersistenceState::Loading =>
+                                    "Loading the saved destination…".to_owned(),
+                                DestinationPersistenceState::Ready(saved)
+                                    if endpoint_id.as_deref() == Some(saved.endpoint_id.as_str())
+                                        && *selected_object_store == saved.object_store_id =>
+                                {
+                                    format!("Saved: {} · {}.", saved.endpoint_id, saved.object_store_id)
+                                }
+                                DestinationPersistenceState::Ready(saved) => format!(
+                                    "Unsaved selection. Saved destination remains {} · {}.",
+                                    saved.endpoint_id, saved.object_store_id
+                                ),
+                                DestinationPersistenceState::Unset { .. }
+                                    if selected_object_store.is_empty() =>
+                                {
+                                    "No saved destination. Choose a Ready writable ObjectStore.".to_owned()
+                                }
+                                DestinationPersistenceState::Unset { .. } =>
+                                    "Unsaved selection. Save it before capture can use this destination.".to_owned(),
+                                DestinationPersistenceState::Saving =>
+                                    "Saving the reviewed destination…".to_owned(),
+                                DestinationPersistenceState::PermissionDenied =>
+                                    "Save failed: Monas did not authorize destination access.".to_owned(),
+                                DestinationPersistenceState::Conflict =>
+                                    "Save failed: the destination changed in another session. Reload before saving again.".to_owned(),
+                                DestinationPersistenceState::Unavailable =>
+                                    "Saved destination is unavailable. Media browsing remains available.".to_owned(),
+                                DestinationPersistenceState::InvalidResponse =>
+                                    "Saved destination response was invalid and was not used.".to_owned(),
+                            };
+                            html! {
+                                <div class="ximg-task-pane">
+                                    <label for="object-store-select">{ "Endpoint · ObjectStore" }</label>
+                                    <select
+                                        id="object-store-select"
+                                        value={(*selected_object_store).clone()}
+                                        disabled={matches!(*destination_persistence, DestinationPersistenceState::Loading | DestinationPersistenceState::Saving)}
+                                        aria-describedby="object-store-save-status"
+                                        onchange={{
+                                            let selected_object_store = selected_object_store.clone();
+                                            Callback::from(move |event: Event| {
+                                                selected_object_store.set(event.target_unchecked_into::<HtmlSelectElement>().value());
+                                            })
+                                        }}
+                                    >
+                                        <option value="">{ "Select an ObjectStore…" }</option>
+                                        { for stores.iter().map(|store| {
+                                            let ready = object_store_ready(store);
+                                            let endpoint = endpoint_id.as_deref().unwrap_or("Endpoint unavailable");
+                                            html! {
+                                                <option value={store.store_id.clone()} disabled={!ready}>
+                                                    { format!("{} · {} · {}", endpoint, store.display_name, if ready { "Ready" } else { "Read-only or unavailable" }) }
+                                                </option>
+                                            }
+                                        }) }
+                                    </select>
+                                    <button
+                                        type="button"
+                                        disabled={!save_enabled}
+                                        aria-describedby="object-store-save-status"
+                                        onclick={{
+                                            let selected_object_store = selected_object_store.clone();
+                                            let destination_persistence = destination_persistence.clone();
+                                            let endpoint_id = endpoint_id.clone().unwrap_or_default();
+                                            Callback::from(move |_| {
+                                                let Some(expected_revision) = reviewed_destination_revision(&destination_persistence) else {
+                                                    return;
+                                                };
+                                                let object_store_id = (*selected_object_store).clone();
+                                                if endpoint_id.is_empty() || object_store_id.is_empty() {
+                                                    return;
+                                                }
+                                                destination_persistence.set(DestinationPersistenceState::Saving);
+                                                let destination_persistence = destination_persistence.clone();
+                                                let selected_object_store = selected_object_store.clone();
+                                                let endpoint_id = endpoint_id.clone();
+                                                spawn_local(async move {
+                                                    let payload = ReviewedDestinationUpdate {
+                                                        schema_version: REVIEWED_DESTINATION_SCHEMA,
+                                                        expected_revision,
+                                                        endpoint_id: &endpoint_id,
+                                                        object_store_id: &object_store_id,
+                                                    };
+                                                    let state = match Request::put(REVIEWED_DESTINATION_API).json(&payload) {
+                                                        Ok(request) => match request.send().await {
+                                                            Ok(response) if matches!(response.status(), 401 | 403) =>
+                                                                DestinationPersistenceState::PermissionDenied,
+                                                            Ok(response) if response.status() == 409 =>
+                                                                DestinationPersistenceState::Conflict,
+                                                            Ok(response) if response.ok() => match response.json::<ReviewedDestinationResponse>().await {
+                                                                Ok(saved) if saved.schema_version == REVIEWED_DESTINATION_SCHEMA
+                                                                    && saved.endpoint_id == endpoint_id
+                                                                    && saved.object_store_id == object_store_id =>
+                                                                {
+                                                                    selected_object_store.set(saved.object_store_id.clone());
+                                                                    DestinationPersistenceState::Ready(saved)
+                                                                }
+                                                                _ => DestinationPersistenceState::InvalidResponse,
+                                                            },
+                                                            Ok(_) | Err(_) => DestinationPersistenceState::Unavailable,
+                                                        },
+                                                        Err(_) => DestinationPersistenceState::InvalidResponse,
+                                                    };
+                                                    destination_persistence.set(state);
+                                                });
+                                            })
+                                        }}
+                                    >{ "Save destination" }</button>
+                                    <p id="object-store-save-status" role={status_role} aria-live="polite">{ status }</p>
+                                </div>
+                            }
                         },
                     }}
                 </section>
@@ -1219,6 +1403,49 @@ mod tests {
         media.thumbnail = representation(GalleryObjectAvailability::Unavailable, None);
         assert_eq!(object_label(&media), "Object unavailable");
         assert_eq!(ready_path(&media.thumbnail), None);
+    }
+
+    #[test]
+    fn destination_save_requires_a_ready_writable_inventory_row() {
+        let mut store = ObjectStoreRow {
+            store_id: "store-1".into(),
+            display_name: "Media".into(),
+            health: "healthy".into(),
+            writeable: true,
+            writer_policy: ObjectStoreWriterPolicy {
+                writeable_by_current_user: true,
+                state: "ready".into(),
+            },
+        };
+        assert!(object_store_ready(&store));
+        store.writer_policy.writeable_by_current_user = false;
+        assert!(!object_store_ready(&store));
+        store.writer_policy.writeable_by_current_user = true;
+        store.health = "unavailable".into();
+        assert!(!object_store_ready(&store));
+    }
+
+    #[test]
+    fn destination_revision_is_available_only_for_loaded_persistence_state() {
+        assert_eq!(
+            reviewed_destination_revision(&DestinationPersistenceState::Unset { revision: 3 }),
+            Some(3)
+        );
+        assert_eq!(
+            reviewed_destination_revision(&DestinationPersistenceState::Ready(
+                ReviewedDestinationResponse {
+                    schema_version: REVIEWED_DESTINATION_SCHEMA.into(),
+                    revision: 4,
+                    endpoint_id: "endpoint-1".into(),
+                    object_store_id: "store-1".into(),
+                }
+            )),
+            Some(4)
+        );
+        assert_eq!(
+            reviewed_destination_revision(&DestinationPersistenceState::Conflict),
+            None
+        );
     }
 
     #[test]

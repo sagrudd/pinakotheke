@@ -27,6 +27,7 @@ pub mod persistent_video_gallery;
 pub mod playback_delivery;
 pub mod reconciliation;
 pub mod review_admission;
+pub mod reviewed_destination;
 pub mod scheduler;
 pub mod segmented_video;
 pub mod site_corpus;
@@ -251,7 +252,7 @@ mod tests {
 
     #[test]
     fn summary_contains_the_workspace_version() {
-        assert_eq!(build_info().summary(), "Pinakotheke 1.12.0");
+        assert_eq!(build_info().summary(), "Pinakotheke 1.13.0");
     }
 
     #[test]
