@@ -1186,7 +1186,11 @@ async fn monolith_readiness(
 ) -> Json<MonolithReadinessResponse> {
     Json(MonolithReadinessResponse {
         schema_version: "pinakotheke.monolith-readiness.v1",
-        status: "not_ready",
+        status: if dasobjectstore_ready && authentication_ready {
+            "ready"
+        } else {
+            "not_ready"
+        },
         root: "Ready",
         components: [
             MonolithComponentReadiness {
@@ -3432,6 +3436,30 @@ mod tests {
         let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
         assert_eq!(json["status"], "not_ready");
         assert_eq!(json["components"][1]["status"], "Not configured");
+        assert_eq!(json["components"][2]["status"], "Ready");
+    }
+
+    #[tokio::test]
+    async fn monolith_reports_ready_when_storage_and_authentication_are_composed() {
+        let response = monolith_router_with_authorities(
+            true,
+            Some(
+                MonasDispatchVerifier::new("synthetic-monas-dispatch-token-ready-0001".into())
+                    .unwrap(),
+            ),
+        )
+        .oneshot(
+            Request::builder()
+                .uri("/ready")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+        let body = to_bytes(response.into_body(), 8192).await.unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        assert_eq!(json["status"], "ready");
+        assert_eq!(json["components"][1]["status"], "Ready");
         assert_eq!(json["components"][2]["status"], "Ready");
     }
 

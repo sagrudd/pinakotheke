@@ -510,7 +510,11 @@ pub(crate) fn serve(arguments: ServeArgs) -> Result<(), Box<dyn std::error::Erro
     }
     let runtime = tokio::runtime::Runtime::new()?;
     runtime.block_on(async move {
-        let storage_ready = crate::local_objectstore::is_ready(&layout.root);
+        // A reviewed host reader is a composed DASObjectStore authority just as
+        // surely as the local managed profile.  Treating only the local profile
+        // as ready makes Monas reject healthy remote/server deployments.
+        let storage_ready =
+            crate::local_objectstore::is_ready(&layout.root) || object_read_backend.is_some();
         let gallery = gallery_store
             .load_or_empty()
             .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?;

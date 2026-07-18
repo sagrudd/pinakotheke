@@ -2,7 +2,7 @@
 
 Status: 1.0 stable release
 
-Version: 1.16.0
+Version: 1.16.1
 
 Updated: 2026-07-18
 
@@ -1121,6 +1121,13 @@ covers the real Yew video filter/metadata UI plus metadata loading, seeking,
 parallel ranges, conditional reads, cancellation, pause/resume, missing-object
 handling, responsive behavior, and absence of source-site fallback.
 XIMG-113 was completed in ``9279979``.
+
+## 1.16.1 — Composed backend readiness correction
+
+Goal: ensure Monas accepts a healthy Pinakotheke deployment using the reviewed
+remote/server DASObjectStore read authority. Readiness is ``ready`` only when
+both Monas dispatch and a local managed profile or composed host reader are
+present; partial configurations remain explicitly ``not_ready``.
 
 ## Post-1.0 candidates
 

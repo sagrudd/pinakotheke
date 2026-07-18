@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.16.1 - 2026-07-18
+
+- Report the composed remote DASObjectStore read authority as ready and make
+  aggregate monolith readiness become ready when both Monas authentication and
+  DASObjectStore authority are configured, preventing a healthy backend from
+  being rejected by Monas after upgrade.
+
 ## 1.16.0 - 2026-07-18
 
 - Carry normalization probe metadata and the committed poster receipt through
