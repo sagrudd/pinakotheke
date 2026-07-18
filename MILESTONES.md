@@ -2,9 +2,9 @@
 
 Status: 1.0 stable release
 
-Version: 1.13.0
+Version: 1.14.0
 
-Updated: 2026-07-17
+Updated: 2026-07-18
 
 Product identity: Pinakotheke is canonical from v1.0.0 at
 `sagrudd/pinakotheke`; `x-img` remains only where documented compatibility or
@@ -1062,6 +1062,24 @@ unexpired, ready, writable, media-compatible, and within quota. Any changed,
 missing, stale, unavailable, or malformed authority fails closed without a
 fallback; DASObjectStore remains the final atomic write authority.
 XIMG-098 was completed in ``fb2e467``.
+
+## 1.14.0 — Automatic incompatible-video normalization handoff
+
+Goal: turn an explicitly played, bounded progressive video into a verified
+browser-compatible rendition even when its source codec is not directly
+playable. The capture helper probes the source, retains the direct path for
+H.264/AAC MP4, and routes other safe ``video/*`` tuples through an authorized
+DASObjectStore-host worker using the existing digest-pinned, network-isolated Docker
+adapter. The source remains bounded ephemeral input and is never admitted as a
+playable object.
+
+The handoff records a redacted aggregate codec gap, commits normalized MP4,
+WebP poster, and expanded provenance manifest as separate DASObjectStore
+objects, cleans scratch on every outcome, and returns a gallery-settleable
+receipt only after all commits, output probe, and configured Firefox profile
+evidence succeed. The worker retains exact actor, endpoint, ObjectStore,
+container image, resource-limit, checksum, codec, dimension, and duration
+provenance without recording the source site or URL in its gap journal.
 
 ## Post-1.0 candidates
 

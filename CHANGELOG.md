@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.14.0 - 2026-07-18
+
+- Hand incompatible progressive video from the bounded capture helper directly
+  to the existing DASObjectStore-host, digest-pinned, network-isolated normalizer.
+- Commit the normalized MP4, WebP poster, and expanded provenance manifest as
+  separate verified DASObjectStore objects before gallery settlement.
+- Persist only aggregate container/codec/count/time gap metadata, with no site,
+  page, media URL, title, browser credential, or payload data.
+- Bind capture-helper provenance to the authenticated host actor while retaining
+  compatibility for legacy v1 helper requests.
+
 ## 1.13.0 - 2026-07-18
 
 - Persist reviewed endpoint/ObjectStore selections per authenticated actor in

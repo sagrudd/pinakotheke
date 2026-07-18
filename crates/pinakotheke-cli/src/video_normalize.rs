@@ -101,7 +101,7 @@ struct HelperReceipt {
     object_reference: String,
 }
 
-struct Upload {
+pub(crate) struct Upload {
     child: Option<Child>,
     stdin: Option<ChildStdin>,
 }
@@ -116,7 +116,7 @@ impl Drop for Upload {
     }
 }
 
-struct ProcessIngestBackend {
+pub(crate) struct ProcessIngestBackend {
     helper: PathBuf,
     content_types: BTreeMap<String, &'static str>,
 }
@@ -224,19 +224,7 @@ pub(crate) fn run(command: VideoCommand) -> Result<(), Box<dyn std::error::Error
     }
     let document: PlanDocument = serde_json::from_slice(&fs::read(&arguments.plan)?)?;
     let plan = build_plan(document)?;
-    let profile = x_img_core::video_profile::playback_profile(&plan.profile_id)
-        .ok_or("normalization profile is unavailable")?;
-    let backend = ProcessIngestBackend {
-        helper: arguments.ingest_helper,
-        content_types: BTreeMap::from([
-            (plan.normalized_object_key.clone(), profile.content_type),
-            (plan.poster_object_key.clone(), "image/webp"),
-            (plan.manifest_object_key.clone(), "application/json"),
-        ]),
-    };
-    let mut ingestor = StreamingObjectIngestor::new(backend);
-    let mut adapter = DockerFfmpegAdapter::new(SystemDockerRuntime::new(arguments.docker));
-    let result = adapter.normalize_and_ingest(&plan, &mut ingestor, &CancellationToken::new())?;
+    let result = normalize_with_process_ingest(&plan, arguments.docker, arguments.ingest_helper)?;
     println!(
         "normalized {} bytes as {} with poster {} and manifest {}",
         result.normalized_video.size_bytes,
@@ -245,6 +233,31 @@ pub(crate) fn run(command: VideoCommand) -> Result<(), Box<dyn std::error::Error
         result.provenance_manifest.object_reference
     );
     Ok(())
+}
+
+/// Runs the reviewed Docker adapter and commits all derived objects through
+/// the same bounded process-isolated DASObjectStore ingest helper used by the
+/// explicit CLI command. The caller owns plan construction and policy gates.
+pub(crate) fn normalize_with_process_ingest(
+    plan: &x_img_core::video_normalization::PairedDeviceNormalizationPlan,
+    docker: PathBuf,
+    ingest_helper: PathBuf,
+) -> Result<x_img_core::video_normalization::NormalizationResult, Box<dyn std::error::Error>> {
+    require_executable(&docker)?;
+    require_executable(&ingest_helper)?;
+    let profile = x_img_core::video_profile::playback_profile(&plan.profile_id)
+        .ok_or("normalization profile is unavailable")?;
+    let backend = ProcessIngestBackend {
+        helper: ingest_helper,
+        content_types: BTreeMap::from([
+            (plan.normalized_object_key.clone(), profile.content_type),
+            (plan.poster_object_key.clone(), "image/webp"),
+            (plan.manifest_object_key.clone(), "application/json"),
+        ]),
+    };
+    let mut ingestor = StreamingObjectIngestor::new(backend);
+    let mut adapter = DockerFfmpegAdapter::new(SystemDockerRuntime::new(docker));
+    Ok(adapter.normalize_and_ingest(plan, &mut ingestor, &CancellationToken::new())?)
 }
 
 fn build_plan(

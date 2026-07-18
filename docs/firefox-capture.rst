@@ -418,7 +418,21 @@ regular file rather than a symlink.
      "daemon_socket": "/Users/example/.x-img/dasobjectstore/run/dasobjectstored.sock",
      "submit_to_daemon": true,
      "max_image_bytes": 67108864,
-     "max_video_bytes": 1073741824
+     "max_video_bytes": 1073741824,
+     "normalization": {
+       "docker_executable": "/usr/bin/docker",
+       "ingest_helper": "/usr/local/bin/pinakotheke",
+       "executor_ref": "dasobjectstore-video-worker-1",
+       "staging_ref": "dasobjectstore-staging-1",
+       "staging_root": "/Users/example/.x-img/dasobjectstore/video-staging",
+       "image_reference": "registry://approved/ffmpeg",
+       "image_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+       "cpu_millis_limit": 2000,
+       "memory_bytes_limit": 1073741824,
+       "scratch_bytes_limit": 4294967296,
+       "firefox_playback_evidence_id": "firefox-h264-aac-profile-1",
+       "codec_gap_journal": "/Users/example/.x-img/state/codec-gaps.v1.json"
+     }
    }
 
 This document contains no DAS credential. The referenced DASObjectStore remote
@@ -464,7 +478,21 @@ the private host configuration:
        "daemon_socket": "/run/dasobjectstore/dasobjectstored.sock"
      },
      "max_image_bytes": 67108864,
-     "max_video_bytes": 1073741824
+     "max_video_bytes": 1073741824,
+     "normalization": {
+       "docker_executable": "/Applications/Docker.app/Contents/Resources/bin/docker",
+       "ingest_helper": "/usr/local/bin/pinakotheke",
+       "executor_ref": "dasobjectstore-video-worker-1",
+       "staging_ref": "dasobjectstore-staging-1",
+       "staging_root": "/Users/example/.x-img/dasobjectstore/video-staging",
+       "image_reference": "registry://approved/ffmpeg",
+       "image_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+       "cpu_millis_limit": 2000,
+       "memory_bytes_limit": 1073741824,
+       "scratch_bytes_limit": 4294967296,
+       "firefox_playback_evidence_id": "firefox-h264-aac-profile-1",
+       "codec_gap_journal": "/Users/example/.x-img/state/codec-gaps.v1.json"
+     }
    }
 
 Native and container fields are mutually exclusive. The container service and

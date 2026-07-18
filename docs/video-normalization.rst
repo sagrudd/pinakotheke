@@ -22,11 +22,27 @@ can prioritize profiles without collecting browsing history.
 Segmented HLS/DASH, Media Source Extensions, encrypted media, and blob-only
 playback remain origin-served until a generic adapter proves a bounded,
 user-initiated candidate plan. DRM or access-control circumvention is never an
-adapter capability. A future handoff will place an eligible source in
-DAS-managed staging and invoke the worker below on the DASObjectStore host, the
-paired Firefox computer, or another explicitly paired worker. Until that
-handoff is complete, unsupported media remains visible as requiring
-normalization and is not catalogue-ready.
+adapter capability.
+
+For progressive video, the acquisition helper now performs the automatic
+handoff. It probes a bounded ``video/*`` response and uses the direct commit
+path only for MP4 H.264 with absent or AAC audio. Any other safe codec tuple is
+written to a private aggregate codec-gap journal containing only container,
+video codec, audio codec, count, and time—never the site, page, media URL,
+title, cookie, or credential. The source is renamed into one mode-``0700``
+bounded DAS-managed staging directory, and the configured DASObjectStore-host worker
+invokes the existing digest-pinned, network-isolated adapter. The original is
+not committed by this path.
+
+The adapter commits the normalized MP4, WebP poster, and JSON provenance
+manifest as three independently checksummed DASObjectStore objects. Its
+manifest records the playback profile, pinned image digest, output codecs,
+dimensions, duration, resource settings, and video/poster checksums. The
+capture result can enter the gallery only when all three commits verify, the
+container probe matches the H.264/AAC profile, and the operator configuration
+names reviewed Firefox playback evidence for that exact profile. Failure keeps
+the capture pending, removes scratch, and never labels the source as stored or
+playable.
 
 The first implemented normalization worker runs only on an explicitly paired
 device that the user has approved for x-img.  It is a worker on the computer
@@ -34,7 +50,7 @@ that may run Firefox, not Firefox itself: the browser never stores video
 payloads, provides cookies, or starts a container.  DASObjectStore remains the
 durable authority for all source and derived objects.
 
-Before a job starts, x-img requires a confirmed candidate, a writable reviewed
+Before a job starts, x-img requires an explicitly played candidate, a writable reviewed
 endpoint plus ObjectStore, a selected versioned playback profile, a current
 paired-device reference, and a Docker image reference with an immutable
 ``sha256`` digest.  A mutable tag, an arbitrary host, a direct local folder,

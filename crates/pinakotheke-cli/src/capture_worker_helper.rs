@@ -24,9 +24,12 @@ pub(crate) fn backend(
 ) -> io::Result<HostCaptureAcquireBackend> {
     validate_helper(helper)?;
     let helper = helper.to_owned();
-    Ok(HostCaptureAcquireBackend::new(Box::new(move |plan| {
-        acquire(&helper, plan, &endpoint_id, &object_store_id).map_err(|error| error.to_string())
-    })))
+    Ok(HostCaptureAcquireBackend::new(Box::new(
+        move |actor_ref, plan| {
+            acquire(&helper, actor_ref, plan, &endpoint_id, &object_store_id)
+                .map_err(|error| error.to_string())
+        },
+    )))
 }
 
 #[derive(Serialize)]
@@ -34,6 +37,7 @@ pub(crate) fn backend(
 struct AcquireRequest<'a> {
     schema_version: &'static str,
     plan_id: &'a str,
+    actor_ref: &'a str,
     site_id: &'a str,
     origin: &'a str,
     canonical_page_url: &'a str,
@@ -78,6 +82,7 @@ enum AcquireResponse {
 
 pub(crate) fn acquire(
     helper: &Path,
+    actor_ref: &str,
     plan: &CapturePlan,
     endpoint_id: &str,
     object_store_id: &str,
@@ -92,6 +97,7 @@ pub(crate) fn acquire(
     let request = AcquireRequest {
         schema_version: SCHEMA,
         plan_id: &plan.plan_id,
+        actor_ref,
         site_id: &plan.site_id,
         origin: &plan.origin,
         canonical_page_url: &plan.canonical_page_url,
@@ -283,7 +289,7 @@ printf '%s\n' '{"outcome":"committed","schema_version":"pinakotheke.capture-acqu
         )
         .unwrap();
         std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o700)).unwrap();
-        let receipt = acquire(&path, &plan(), "endpoint-1", "store-1").unwrap();
+        let receipt = acquire(&path, "actor-1", &plan(), "endpoint-1", "store-1").unwrap();
         assert_eq!(receipt.object_version, 2);
         assert_eq!(receipt.content_length, 42);
         let _ = std::fs::remove_file(path);

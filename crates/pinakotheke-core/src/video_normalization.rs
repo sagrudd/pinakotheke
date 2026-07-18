@@ -559,19 +559,30 @@ fn report_progress<P: NormalizationProgressSink>(
 }
 
 fn validate_plan(plan: &PairedDeviceNormalizationPlan) -> Result<(), NormalizationError> {
+    let placement_and_scratch_valid = match (&plan.executor.placement, &plan.scratch) {
+        (
+            ExecutionPlacement::PairedFirefoxDevice {
+                pairing_ref,
+                device_ref,
+            },
+            ScratchAuthority::BoundedEphemeral { cleanup_ref },
+        ) => identifier(pairing_ref) && identifier(device_ref) && identifier(cleanup_ref),
+        (
+            ExecutionPlacement::DasObjectStoreHost { executor_ref },
+            ScratchAuthority::DasObjectStoreManaged { staging_ref },
+        ) => identifier(executor_ref) && identifier(staging_ref),
+        _ => false,
+    };
     if plan.schema_version != NORMALIZATION_SCHEMA
         || !identifier(&plan.job_id)
         || !identifier(&plan.source_identity)
         || !identifier(&plan.destination.endpoint_id)
         || !identifier(&plan.destination.object_store_id)
         || plan.destination.object_type != "video"
-        || !matches!(
-            plan.executor.placement,
-            ExecutionPlacement::PairedFirefoxDevice { .. }
-        )
-        || !matches!(plan.scratch, ScratchAuthority::BoundedEphemeral { .. })
+        || !placement_and_scratch_valid
         || !plan.scratch_root.is_absolute()
-        || !plan.scratch_root.starts_with(std::env::temp_dir())
+        || (matches!(plan.scratch, ScratchAuthority::BoundedEphemeral { .. })
+            && !plan.scratch_root.starts_with(std::env::temp_dir()))
         || plan.input_file != plan.scratch_root.join("input.media")
         || !plan.input_file.exists()
         || playback_profile(&plan.profile_id).is_none()
@@ -819,15 +830,27 @@ fn manifest_json(
         concat!(
             "{{\"schema_version\":\"x-img.normalization-manifest.v1\",",
             "\"source_identity\":\"{}\",\"profile_id\":\"{}\",",
-            "\"image_digest\":\"{}\",\"video_checksum\":\"{}\",",
-            "\"poster_checksum\":\"{}\",\"duration_millis\":{}}}"
+            "\"image_digest\":\"{}\",\"container\":\"{}\",",
+            "\"video_codec\":\"{}\",\"audio_codec\":\"{}\",",
+            "\"width\":{},\"height\":{},\"duration_millis\":{},",
+            "\"cpu_millis_limit\":{},\"memory_bytes_limit\":{},",
+            "\"scratch_bytes_limit\":{},\"video_checksum\":\"{}\",",
+            "\"poster_checksum\":\"{}\"}}"
         ),
         plan.source_identity,
         probe.profile_id,
         plan.executor.image_digest,
+        probe.container,
+        probe.video_codec,
+        probe.audio_codec,
+        probe.width,
+        probe.height,
+        probe.duration_millis,
+        plan.executor.cpu_millis_limit,
+        plan.executor.memory_bytes_limit,
+        plan.executor.scratch_bytes_limit,
         normalized.checksum,
-        poster.checksum,
-        probe.duration_millis
+        poster.checksum
     )
 }
 

@@ -660,6 +660,7 @@ pub(crate) fn run_capture(command: CaptureCommand) -> Result<(), Box<dyn std::er
         .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "pending capture plan not found"))?;
     let evidence = crate::capture_worker_helper::acquire(
         &arguments.helper,
+        &arguments.actor_id,
         &plan,
         &authority.endpoint_id,
         &authority.object_store_id,
@@ -833,7 +834,10 @@ fn read_dispatch_token(path: &Path) -> io::Result<String> {
 mod tests {
     use super::*;
     use std::net::Ipv4Addr;
+    use std::sync::atomic::{AtomicU64, Ordering};
     use std::time::{SystemTime, UNIX_EPOCH};
+
+    static TEMPORARY_ROOT_COUNTER: AtomicU64 = AtomicU64::new(0);
 
     fn temporary_root() -> PathBuf {
         std::env::temp_dir().join(format!(
@@ -843,6 +847,7 @@ mod tests {
                 .duration_since(UNIX_EPOCH)
                 .unwrap()
                 .as_nanos()
+                + u128::from(TEMPORARY_ROOT_COUNTER.fetch_add(1, Ordering::Relaxed))
         ))
     }
 

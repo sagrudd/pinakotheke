@@ -4,11 +4,20 @@
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::{
+    collections::BTreeMap,
     fs::{self, File},
-    io::{self, Read},
+    io::{self, Read, Write},
     path::{Path, PathBuf},
     process::{Command, ExitStatus, Stdio},
     time::{SystemTime, UNIX_EPOCH},
+};
+use x_img_core::{
+    destination::ReviewedDestination,
+    video_normalization::{NORMALIZATION_SCHEMA, PairedDeviceNormalizationPlan},
+    video_profile::{
+        AudioCodec, CodecVariant, DockerExecutionPlan, ExecutionPlacement,
+        PINAKOTHEKE_VIDEO_MP4_V1, ScratchAuthority, VideoCodec,
+    },
 };
 
 const REQUEST_SCHEMA: &str = "pinakotheke.capture-acquire-helper.v1";
@@ -21,6 +30,8 @@ const DEFAULT_MAX_VIDEO_BYTES: u64 = 1024 * 1024 * 1024;
 struct Request {
     schema_version: String,
     plan_id: String,
+    #[serde(default = "legacy_actor_ref")]
+    actor_ref: String,
     site_id: String,
     origin: String,
     canonical_page_url: String,
@@ -34,6 +45,10 @@ struct Request {
     adapter_version: String,
     endpoint_id: String,
     object_store_id: String,
+}
+
+fn legacy_actor_ref() -> String {
+    "legacy-host-actor".into()
 }
 
 #[derive(Debug, Deserialize)]
@@ -58,6 +73,49 @@ struct Config {
     container_execution: Option<ContainerExecution>,
     max_image_bytes: Option<u64>,
     max_video_bytes: Option<u64>,
+    #[serde(default)]
+    normalization: Option<NormalizationHandoff>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct NormalizationHandoff {
+    docker_executable: PathBuf,
+    ingest_helper: PathBuf,
+    executor_ref: String,
+    staging_ref: String,
+    staging_root: PathBuf,
+    image_reference: String,
+    image_digest: String,
+    cpu_millis_limit: u32,
+    memory_bytes_limit: u64,
+    scratch_bytes_limit: u64,
+    firefox_playback_evidence_id: String,
+    codec_gap_journal: PathBuf,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct VideoProbe {
+    container: String,
+    video_codec: String,
+    audio_codec: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CodecGapJournal {
+    schema_version: String,
+    gaps: BTreeMap<String, CodecGapRecord>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CodecGapRecord {
+    container: String,
+    video_codec: String,
+    audio_codec: String,
+    occurrences: u64,
+    last_observed_at_epoch_seconds: u64,
 }
 
 const fn default_submit_to_daemon() -> bool {
@@ -184,6 +242,12 @@ fn load_config(path: &Path) -> Result<Config, Box<dyn std::error::Error>> {
     if let Some(ffprobe) = &config.ffprobe_executable {
         require_executable(ffprobe)?;
     }
+    if let Some(normalization) = &config.normalization {
+        validate_normalization_handoff(normalization)?;
+        if config.ffprobe_executable.is_none() {
+            return Err("video normalization requires ffprobe".into());
+        }
+    }
     match &config.container_execution {
         Some(container) => {
             if config.dasobjectstore_remote_executable.is_some()
@@ -193,6 +257,17 @@ fn load_config(path: &Path) -> Result<Config, Box<dyn std::error::Error>> {
                 return Err("native and container DAS execution cannot be combined".into());
             }
             validate_container_execution(container)?;
+            if config
+                .normalization
+                .as_ref()
+                .is_some_and(|normalization| {
+                    !normalization
+                        .staging_root
+                        .starts_with(&container.managed_scratch_root)
+                })
+            {
+                return Err("normalization staging must use the DAS managed root".into());
+            }
         }
         None => {
             require_executable(
@@ -217,6 +292,72 @@ fn load_config(path: &Path) -> Result<Config, Box<dyn std::error::Error>> {
         }
     }
     Ok(config)
+}
+
+fn validate_normalization_handoff(
+    handoff: &NormalizationHandoff,
+) -> Result<(), Box<dyn std::error::Error>> {
+    require_executable(&handoff.docker_executable)?;
+    require_executable(&handoff.ingest_helper)?;
+    let identifier = |value: &str| {
+        !value.is_empty()
+            && value.len() <= 128
+            && value.bytes().all(|byte| {
+                byte.is_ascii_alphanumeric() || matches!(byte, b'.' | b'_' | b':' | b'-')
+            })
+    };
+    if !identifier(&handoff.executor_ref)
+        || !identifier(&handoff.staging_ref)
+        || !identifier(&handoff.firefox_playback_evidence_id)
+        || !handoff.image_reference.starts_with("registry://")
+        || handoff
+            .image_reference
+            .contains(['@', '?', '#', ' ', '\n', '\r'])
+        || handoff.image_digest.len() != 71
+        || !handoff.image_digest.starts_with("sha256:")
+        || !handoff.image_digest[7..]
+            .bytes()
+            .all(|byte| byte.is_ascii_hexdigit())
+        || handoff.cpu_millis_limit == 0
+        || handoff.memory_bytes_limit == 0
+        || handoff.scratch_bytes_limit == 0
+        || !handoff.staging_root.is_absolute()
+        || !handoff.codec_gap_journal.is_absolute()
+    {
+        return Err("normalization handoff configuration is invalid".into());
+    }
+    let staging = fs::canonicalize(&handoff.staging_root)?;
+    let staging_metadata = fs::symlink_metadata(&staging)?;
+    if staging != handoff.staging_root
+        || !staging_metadata.is_dir()
+        || staging_metadata.file_type().is_symlink()
+    {
+        return Err("normalization staging root is not DAS-managed".into());
+    }
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        if staging_metadata.permissions().mode() & 0o007 != 0 {
+            return Err("normalization staging root is not private".into());
+        }
+    }
+    if let Some(parent) = handoff.codec_gap_journal.parent() {
+        let metadata = fs::symlink_metadata(parent)?;
+        if !metadata.is_dir() || metadata.file_type().is_symlink() {
+            return Err("codec-gap journal parent is not trusted".into());
+        }
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            if metadata.permissions().mode() & 0o077 != 0 {
+                return Err("codec-gap journal parent must be private".into());
+            }
+        }
+    }
+    if handoff.codec_gap_journal.exists() {
+        require_private_regular(&handoff.codec_gap_journal)?;
+    }
+    Ok(())
 }
 
 fn validate_container_execution(
@@ -246,12 +387,22 @@ fn validate_container_execution(
 
 fn acquire(request: &Request, config: &Config) -> Result<Committed, Box<dyn std::error::Error>> {
     validate_request(request, config)?;
-    let scratch = match &config.container_execution {
-        Some(container) => Scratch::create_in(&container.managed_scratch_root)?,
-        None => Scratch::create()?,
+    let video = request.capture_kind == "explicit_video";
+    let scratch = if video {
+        match &config.normalization {
+            Some(normalization) => Scratch::create_in(&normalization.staging_root)?,
+            None => match &config.container_execution {
+                Some(container) => Scratch::create_in(&container.managed_scratch_root)?,
+                None => Scratch::create()?,
+            },
+        }
+    } else {
+        match &config.container_execution {
+            Some(container) => Scratch::create_in(&container.managed_scratch_root)?,
+            None => Scratch::create()?,
+        }
     };
     let payload = scratch.path.join("payload");
-    let video = request.capture_kind == "explicit_video";
     let max_bytes = if video {
         config.max_video_bytes.unwrap_or(DEFAULT_MAX_VIDEO_BYTES)
     } else {
@@ -293,7 +444,7 @@ fn acquire(request: &Request, config: &Config) -> Result<Committed, Box<dyn std:
     }
     let content_type = String::from_utf8(curl_stdout)?.trim().to_ascii_lowercase();
     if (!video && !content_type.starts_with("image/"))
-        || (video && content_type != "video/mp4")
+        || (video && !content_type.starts_with("video/"))
         || content_type.len() > 128
     {
         return Err("retrieved object is not an eligible bounded medium".into());
@@ -314,13 +465,16 @@ fn acquire(request: &Request, config: &Config) -> Result<Committed, Box<dyn std:
         std::os::unix::fs::chown(&payload, None, Some(daemon_group))?;
     }
     if video {
-        verify_firefox_mp4(
+        let probe = probe_video(
             config
                 .ffprobe_executable
                 .as_deref()
                 .ok_or("video capture requires ffprobe")?,
             &payload,
         )?;
+        if !firefox_compatible(&content_type, &probe) {
+            return normalize_incompatible_video(request, config, scratch, payload, probe);
+        }
     }
     let checksum = sha256_file(&payload)?;
     let object_key = object_key(request, &checksum);
@@ -546,6 +700,12 @@ fn validate_request(request: &Request, config: &Config) -> Result<(), Box<dyn st
     if request.schema_version != REQUEST_SCHEMA
         || request.endpoint_id != config.endpoint_id
         || request.plan_id.is_empty()
+        || request.actor_ref.is_empty()
+        || request.actor_ref.len() > 128
+        || !request
+            .actor_ref
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'.' | b'_' | b':' | b'-'))
         || request.site_id.is_empty()
         || request.site_id.len() > 64
         || !request
@@ -607,16 +767,16 @@ fn validate_request(request: &Request, config: &Config) -> Result<(), Box<dyn st
     Ok(())
 }
 
-fn verify_firefox_mp4(ffprobe: &Path, payload: &Path) -> Result<(), Box<dyn std::error::Error>> {
+fn probe_video(ffprobe: &Path, payload: &Path) -> Result<VideoProbe, Box<dyn std::error::Error>> {
     let mut command = Command::new(ffprobe);
     command
         .args([
             "-v",
             "error",
             "-show_entries",
-            "stream=codec_type,codec_name",
+            "format=format_name:stream=codec_type,codec_name",
             "-of",
-            "csv=p=0",
+            "json",
         ])
         .arg(payload)
         .stderr(Stdio::null());
@@ -624,19 +784,196 @@ fn verify_firefox_mp4(ffprobe: &Path, payload: &Path) -> Result<(), Box<dyn std:
     if !status.success() {
         return Err("video probe failed".into());
     }
-    let streams = String::from_utf8(output)?;
-    let h264 = streams
-        .lines()
-        .any(|line| line == "h264,video" || line == "video,h264");
-    let audio_ok = !streams
-        .lines()
-        .any(|line| line.ends_with(",audio") || line.starts_with("audio,"))
-        || streams
-            .lines()
-            .any(|line| line == "aac,audio" || line == "audio,aac");
-    if !h264 || !audio_ok {
-        return Err("video requires containerized normalization before admission".into());
+    let value: serde_json::Value = serde_json::from_slice(&output)?;
+    let streams = value
+        .get("streams")
+        .and_then(serde_json::Value::as_array)
+        .ok_or("video probe omitted streams")?;
+    let video_codec = streams
+        .iter()
+        .find(|stream| {
+            stream.get("codec_type").and_then(serde_json::Value::as_str) == Some("video")
+        })
+        .and_then(|stream| stream.get("codec_name"))
+        .and_then(serde_json::Value::as_str)
+        .filter(|codec| safe_codec(codec))
+        .ok_or("video probe omitted a safe video codec")?;
+    let audio_codec = streams
+        .iter()
+        .find(|stream| {
+            stream.get("codec_type").and_then(serde_json::Value::as_str) == Some("audio")
+        })
+        .and_then(|stream| stream.get("codec_name"))
+        .and_then(serde_json::Value::as_str)
+        .filter(|codec| safe_codec(codec));
+    let container = value
+        .get("format")
+        .and_then(|format| format.get("format_name"))
+        .and_then(serde_json::Value::as_str)
+        .and_then(|names| names.split(',').find(|name| safe_codec(name)))
+        .ok_or("video probe omitted a safe container")?;
+    Ok(VideoProbe {
+        container: container.into(),
+        video_codec: video_codec.into(),
+        audio_codec: audio_codec.map(str::to_owned),
+    })
+}
+
+fn safe_codec(value: &str) -> bool {
+    !value.is_empty()
+        && value.len() <= 32
+        && value
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'_' | b'-'))
+}
+
+fn firefox_compatible(content_type: &str, probe: &VideoProbe) -> bool {
+    content_type == "video/mp4"
+        && matches!(probe.container.as_str(), "mov" | "mp4")
+        && matches!(probe.video_codec.as_str(), "h264" | "avc1")
+        && probe
+            .audio_codec
+            .as_deref()
+            .is_none_or(|codec| codec == "aac")
+}
+
+fn normalize_incompatible_video(
+    request: &Request,
+    config: &Config,
+    scratch: Scratch,
+    payload: PathBuf,
+    probe: VideoProbe,
+) -> Result<Committed, Box<dyn std::error::Error>> {
+    let handoff = config
+        .normalization
+        .as_ref()
+        .ok_or("video requires configured container normalization")?;
+    record_codec_gap(&handoff.codec_gap_journal, &probe)?;
+    let source_checksum = sha256_file(&payload)?;
+    let input = scratch.path.join("input.media");
+    fs::rename(&payload, &input)?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        fs::set_permissions(&scratch.path, fs::Permissions::from_mode(0o700))?;
+        fs::set_permissions(&input, fs::Permissions::from_mode(0o600))?;
     }
+    let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
+    let key_root = format!("{}/normalized", object_key(request, &source_checksum));
+    let plan = PairedDeviceNormalizationPlan {
+        schema_version: NORMALIZATION_SCHEMA,
+        job_id: format!("normalize-{}", request.plan_id),
+        source_identity: format!("source-{}", &source_checksum[..24]),
+        profile_id: PINAKOTHEKE_VIDEO_MP4_V1.into(),
+        output_variant: CodecVariant {
+            video: VideoCodec::H264,
+            audio: AudioCodec::Aac,
+        },
+        destination: ReviewedDestination {
+            endpoint_id: request.endpoint_id.clone(),
+            object_store_id: request.object_store_id.clone(),
+            object_type: "video".into(),
+            selection_kind: "site_override".into(),
+            reviewed_at_unix_seconds: now,
+            actor_ref: request.actor_ref.clone(),
+        },
+        executor: DockerExecutionPlan {
+            placement: ExecutionPlacement::DasObjectStoreHost {
+                executor_ref: handoff.executor_ref.clone(),
+            },
+            image_reference: handoff.image_reference.clone(),
+            image_digest: handoff.image_digest.clone(),
+            cpu_millis_limit: handoff.cpu_millis_limit,
+            memory_bytes_limit: handoff.memory_bytes_limit,
+            scratch_bytes_limit: handoff.scratch_bytes_limit,
+        },
+        scratch: ScratchAuthority::DasObjectStoreManaged {
+            staging_ref: handoff.staging_ref.clone(),
+        },
+        scratch_root: scratch.path.clone(),
+        input_file: input,
+        normalized_object_key: format!("{key_root}/video.mp4"),
+        poster_object_key: format!("{key_root}/poster.webp"),
+        manifest_object_key: format!("{key_root}/manifest.json"),
+    };
+    let result = crate::video_normalize::normalize_with_process_ingest(
+        &plan,
+        handoff.docker_executable.clone(),
+        handoff.ingest_helper.clone(),
+    )?;
+    if result.phase != x_img_core::video_normalization::NormalizationPhase::AwaitingFirefoxPlayback
+        || handoff.firefox_playback_evidence_id.is_empty()
+    {
+        return Err("normalized video lacks reviewed Firefox playback evidence".into());
+    }
+    let checksum = result
+        .normalized_video
+        .checksum
+        .strip_prefix("sha256:")
+        .ok_or("normalizer returned an invalid checksum")?
+        .to_owned();
+    let version = u64::from_str_radix(&checksum[..16], 16).unwrap_or(1).max(1);
+    Ok(Committed {
+        schema_version: REQUEST_SCHEMA,
+        catalogue_id: catalogue_id(request),
+        title: format!("Normalized video from {}", request.site_id),
+        content_type: "video/mp4".into(),
+        content_length: result.normalized_video.size_bytes,
+        endpoint_id: result.normalized_video.endpoint_id,
+        object_store_id: result.normalized_video.object_store_id,
+        object_key: result.normalized_video.object_key,
+        object_version: version,
+        checksum_sha256: checksum,
+        verified_at_epoch_seconds: now,
+    })
+}
+
+fn record_codec_gap(path: &Path, probe: &VideoProbe) -> Result<(), Box<dyn std::error::Error>> {
+    let mut journal = if path.exists() {
+        let bytes = fs::read(path)?;
+        if bytes.len() > 64 * 1024 {
+            return Err("codec-gap journal exceeds 64 KiB".into());
+        }
+        let journal: CodecGapJournal = serde_json::from_slice(&bytes)?;
+        if journal.schema_version != "pinakotheke.codec-gap-journal.v1" {
+            return Err("codec-gap journal schema is unsupported".into());
+        }
+        journal
+    } else {
+        CodecGapJournal {
+            schema_version: "pinakotheke.codec-gap-journal.v1".into(),
+            gaps: BTreeMap::new(),
+        }
+    };
+    let audio = probe.audio_codec.as_deref().unwrap_or("none");
+    let key = format!("{}:{}:{audio}", probe.container, probe.video_codec);
+    let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
+    let gap = journal.gaps.entry(key).or_insert_with(|| CodecGapRecord {
+        container: probe.container.clone(),
+        video_codec: probe.video_codec.clone(),
+        audio_codec: audio.into(),
+        occurrences: 0,
+        last_observed_at_epoch_seconds: now,
+    });
+    gap.occurrences = gap.occurrences.saturating_add(1);
+    gap.last_observed_at_epoch_seconds = now;
+    let temporary = path.with_extension("json.tmp");
+    let bytes = serde_json::to_vec_pretty(&journal)?;
+    if bytes.len() > 64 * 1024 {
+        return Err("codec-gap journal exceeds 64 KiB".into());
+    }
+    let mut file = std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&temporary)?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        fs::set_permissions(&temporary, fs::Permissions::from_mode(0o600))?;
+    }
+    file.write_all(&bytes)?;
+    file.sync_all()?;
+    fs::rename(&temporary, path)?;
     Ok(())
 }
 
@@ -802,11 +1139,126 @@ mod tests {
         let probe = root.join("ffprobe");
         let payload = root.join("video.mp4");
         fs::write(&payload, b"synthetic").unwrap();
-        executable(&probe, "#!/bin/sh\nprintf 'h264,video\\naac,audio\\n'\n");
-        verify_firefox_mp4(&probe, &payload).unwrap();
-        executable(&probe, "#!/bin/sh\nprintf 'vp9,video\\nopus,audio\\n'\n");
-        assert!(verify_firefox_mp4(&probe, &payload).is_err());
+        executable(
+            &probe,
+            "#!/bin/sh\nprintf '%s' '{\"streams\":[{\"codec_type\":\"video\",\"codec_name\":\"h264\"},{\"codec_type\":\"audio\",\"codec_name\":\"aac\"}],\"format\":{\"format_name\":\"mov,mp4\"}}'\n",
+        );
+        let compatible = probe_video(&probe, &payload).unwrap();
+        assert!(firefox_compatible("video/mp4", &compatible));
+        executable(
+            &probe,
+            "#!/bin/sh\nprintf '%s' '{\"streams\":[{\"codec_type\":\"video\",\"codec_name\":\"vp9\"},{\"codec_type\":\"audio\",\"codec_name\":\"opus\"}],\"format\":{\"format_name\":\"matroska,webm\"}}'\n",
+        );
+        let incompatible = probe_video(&probe, &payload).unwrap();
+        assert!(!firefox_compatible("video/webm", &incompatible));
         fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn incompatible_video_is_normalized_committed_and_redacted() {
+        let root = std::env::temp_dir().join(format!(
+            "pinakotheke-auto-normalize-test-{}",
+            std::process::id()
+        ));
+        let _ = fs::remove_dir_all(&root);
+        fs::create_dir(&root).unwrap();
+        let curl = root.join("curl");
+        executable(
+            &curl,
+            "#!/bin/sh\nout=''\nwhile [ $# -gt 0 ]; do [ \"$1\" = --output ] && { shift; out=$1; }; shift; done\nprintf source-video > \"$out\"\nprintf video/webm\n",
+        );
+        let ffprobe = root.join("ffprobe");
+        executable(
+            &ffprobe,
+            "#!/bin/sh\nprintf '%s' '{\"streams\":[{\"codec_type\":\"video\",\"codec_name\":\"vp9\"},{\"codec_type\":\"audio\",\"codec_name\":\"opus\"}],\"format\":{\"format_name\":\"matroska,webm\"}}'\n",
+        );
+        let docker = root.join("docker-fixture.py");
+        executable(
+            &docker,
+            r#"#!/usr/bin/env python3
+import json,pathlib,sys
+mount=next(a for a in sys.argv if a.startswith('type=bind,src='))
+scratch=pathlib.Path(mount.split(',src=',1)[1].split(',dst=',1)[0])
+if '--entrypoint' in sys.argv and 'ffprobe' in sys.argv:
+ print(json.dumps({'streams':[{'codec_type':'video','codec_name':'h264','width':64,'height':48},{'codec_type':'audio','codec_name':'aac'}],'format':{'duration':'1.0'}}),end='')
+elif any('poster.webp' in a for a in sys.argv):
+ (scratch/'poster.webp').write_bytes(b'poster')
+else:
+ (scratch/'normalized.mp4').write_bytes(b'normalized-video')
+"#,
+        );
+        let ingest = root.join("ingest-fixture.py");
+        executable(
+            &ingest,
+            r#"#!/usr/bin/env python3
+import hashlib,json,sys
+h=json.loads(sys.stdin.buffer.readline())
+p=sys.stdin.buffer.read()
+assert len(p)==h['expected_size_bytes']
+assert 'sha256:'+hashlib.sha256(p).hexdigest()==h['expected_checksum']
+print(json.dumps({'schema_version':h['schema_version'],'endpoint_id':h['endpoint_id'],'object_store_id':h['object_store_id'],'object_key':h['object_key'],'size_bytes':len(p),'checksum':h['expected_checksum'],'object_reference':'dasobjectstore:'+h['endpoint_id']+':'+h['object_store_id']+':'+h['object_key']}))
+"#,
+        );
+        let gap_journal = root.join("codec-gaps.json");
+        let staging = root.join("video-staging");
+        fs::create_dir(&staging).unwrap();
+        fs::set_permissions(&staging, fs::Permissions::from_mode(0o700)).unwrap();
+        let config = Config {
+            schema_version: CONFIG_SCHEMA.into(),
+            endpoint_id: "endpoint-1".into(),
+            object_store_bucket: None,
+            curl_executable: curl,
+            ffprobe_executable: Some(ffprobe),
+            dasobjectstore_remote_executable: Some(root.join("unused-remote")),
+            dasobjectstore_remote_config: Some(root.join("unused-config")),
+            daemon_socket: Some(root.join("unused.sock")),
+            submit_to_daemon: true,
+            container_execution: None,
+            max_image_bytes: Some(1024),
+            max_video_bytes: Some(1024),
+            normalization: Some(NormalizationHandoff {
+                docker_executable: docker,
+                ingest_helper: ingest,
+                executor_ref: "dasobjectstore-worker-1".into(),
+                staging_ref: "dasobjectstore-staging-1".into(),
+                staging_root: staging.clone(),
+                image_reference: "registry://fixture/ffmpeg".into(),
+                image_digest: format!("sha256:{}", "a".repeat(64)),
+                cpu_millis_limit: 1_000,
+                memory_bytes_limit: 64 * 1024 * 1024,
+                scratch_bytes_limit: 1024 * 1024,
+                firefox_playback_evidence_id: "firefox-profile-evidence-1".into(),
+                codec_gap_journal: gap_journal.clone(),
+            }),
+        };
+        let request = Request {
+            schema_version: REQUEST_SCHEMA.into(),
+            plan_id: "video-plan-1".into(),
+            actor_ref: "actor-1".into(),
+            site_id: "enabled-site".into(),
+            origin: "https://example.invalid".into(),
+            canonical_page_url: "https://example.invalid/watch/1".into(),
+            canonical_media_url: "https://media.invalid/video.webm".into(),
+            retrieval_media_url: "https://media.invalid/video.webm".into(),
+            canonical_presentation_url: "https://example.invalid/watch/1".into(),
+            capture_kind: "explicit_video".into(),
+            width: 64,
+            height: 48,
+            adapter_version: "1.0.0".into(),
+            endpoint_id: "endpoint-1".into(),
+            object_store_id: "store-1".into(),
+        };
+        let receipt = acquire(&request, &config).unwrap();
+        assert_eq!(receipt.content_type, "video/mp4");
+        assert_eq!(receipt.content_length, 16);
+        assert!(receipt.object_key.ends_with("/normalized/video.mp4"));
+        let journal = fs::read_to_string(gap_journal).unwrap();
+        assert!(journal.contains("vp9"));
+        assert!(journal.contains("opus"));
+        assert!(!journal.contains("example.invalid"));
+        assert!(!journal.contains("video.webm"));
+        assert_eq!(fs::read_dir(staging).unwrap().count(), 0);
+        let _ = fs::remove_dir_all(root);
     }
 
     #[test]
@@ -864,10 +1316,12 @@ mod tests {
             container_execution: None,
             max_image_bytes: Some(1024),
             max_video_bytes: None,
+            normalization: None,
         };
         let mut request = Request {
             schema_version: REQUEST_SCHEMA.into(),
             plan_id: "plan-1".into(),
+            actor_ref: "actor-1".into(),
             site_id: "site-1".into(),
             origin: "https://example.invalid".into(),
             canonical_page_url: "https://example.invalid/gallery".into(),
@@ -921,6 +1375,7 @@ mod tests {
         let request = Request {
             schema_version: REQUEST_SCHEMA.into(),
             plan_id: "plan-1".into(),
+            actor_ref: "actor-1".into(),
             site_id: "site-1".into(),
             origin: "https://example.invalid".into(),
             canonical_page_url: "https://example.invalid/gallery".into(),
@@ -947,6 +1402,7 @@ mod tests {
             container_execution: None,
             max_image_bytes: Some(1024),
             max_video_bytes: None,
+            normalization: None,
         };
         assert!(validate_request(&request, &config).is_err());
     }
@@ -956,6 +1412,7 @@ mod tests {
         let request = Request {
             schema_version: REQUEST_SCHEMA.into(),
             plan_id: "plan-video-1".into(),
+            actor_ref: "actor-1".into(),
             site_id: "example-video".into(),
             origin: "https://media.example.invalid".into(),
             canonical_page_url: "https://media.example.invalid/watch/1".into(),
@@ -982,6 +1439,7 @@ mod tests {
             container_execution: None,
             max_image_bytes: Some(1024),
             max_video_bytes: Some(1024),
+            normalization: None,
         };
         assert!(validate_request(&request, &config).is_ok());
     }
@@ -1010,6 +1468,7 @@ mod tests {
         let request = Request {
             schema_version: REQUEST_SCHEMA.into(),
             plan_id: "plan-1".into(),
+            actor_ref: "actor-1".into(),
             site_id: "x-com".into(),
             origin: "https://x.com".into(),
             canonical_page_url: "https://x.com/home".into(),
@@ -1084,10 +1543,12 @@ mod tests {
             }),
             max_image_bytes: Some(1024),
             max_video_bytes: None,
+            normalization: None,
         };
         let request = Request {
             schema_version: REQUEST_SCHEMA.into(),
             plan_id: "plan-1".into(),
+            actor_ref: "actor-1".into(),
             site_id: "site-1".into(),
             origin: "https://example.invalid".into(),
             canonical_page_url: "https://example.invalid/gallery".into(),

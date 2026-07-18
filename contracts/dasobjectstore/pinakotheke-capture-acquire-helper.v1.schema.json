@@ -10,6 +10,7 @@
       "properties": {
         "schema_version": { "const": "pinakotheke.capture-acquire-helper.v1" },
         "plan_id": { "$ref": "#/$defs/identifier" },
+        "actor_ref": { "$ref": "#/$defs/identifier" },
         "site_id": { "$ref": "#/$defs/identifier" },
         "origin": { "type": "string", "pattern": "^https://" },
         "canonical_page_url": { "type": "string", "pattern": "^https://" },

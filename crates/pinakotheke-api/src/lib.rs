@@ -103,7 +103,7 @@ pub struct ExtensionOnboardingAuthority {
 
 /// Process-isolated callback that returns verified authority metadata only.
 pub type HostCaptureAcquire =
-    Box<dyn FnMut(&CapturePlan) -> Result<VerifiedCaptureCompletion, String> + Send>;
+    Box<dyn FnMut(&str, &CapturePlan) -> Result<VerifiedCaptureCompletion, String> + Send>;
 
 /// Current host-authority facts for the exact destination named by a capture
 /// plan. The browser inventory is never accepted as authority.
@@ -371,8 +371,12 @@ impl HostCaptureAcquireBackend {
         Self { acquire }
     }
 
-    fn acquire(&mut self, plan: &CapturePlan) -> Result<VerifiedCaptureCompletion, String> {
-        (self.acquire)(plan)
+    fn acquire(
+        &mut self,
+        actor_ref: &str,
+        plan: &CapturePlan,
+    ) -> Result<VerifiedCaptureCompletion, String> {
+        (self.acquire)(actor_ref, plan)
     }
 }
 
@@ -1856,7 +1860,7 @@ fn schedule_capture_runtime(
             backend
                 .lock()
                 .map_err(|_| String::from("acquire backend lock poisoned"))?
-                .acquire(&plan)
+                .acquire(&actor_id, &plan)
         });
         match acquired {
             Ok(evidence) => match settle_capture_runtime(&runtime, &actor_id, evidence) {
@@ -4162,7 +4166,7 @@ mod tests {
         let store = GalleryCatalogueStore::new(root.join("gallery.json"));
         let dispatch = "synthetic-monas-dispatch-token-0001";
         let worker = "synthetic-capture-worker-token-0001";
-        let acquire = HostCaptureAcquireBackend::new(Box::new(|plan| {
+        let acquire = HostCaptureAcquireBackend::new(Box::new(|_, plan| {
             Ok(VerifiedCaptureCompletion {
                 plan_id: plan.plan_id.clone(),
                 catalogue_id: "background-card-1".into(),
@@ -4272,7 +4276,7 @@ mod tests {
                         .unwrap(),
                     ),
                 )
-                .with_acquire(HostCaptureAcquireBackend::new(Box::new(|_| {
+                .with_acquire(HostCaptureAcquireBackend::new(Box::new(|_, _| {
                     Err("synthetic helper failure".into())
                 }))),
                 root.join("destinations.json"),
@@ -4370,7 +4374,7 @@ mod tests {
         let restarted = CapturePlanService::with_journal(pairings(), sites(), &journal).unwrap();
         let store = GalleryCatalogueStore::new(root.join("gallery.json"));
         let dispatch = "synthetic-monas-dispatch-token-0001";
-        let acquire = HostCaptureAcquireBackend::new(Box::new(|plan| {
+        let acquire = HostCaptureAcquireBackend::new(Box::new(|_, plan| {
             Ok(VerifiedCaptureCompletion {
                 plan_id: plan.plan_id.clone(),
                 catalogue_id: "startup-card-1".into(),

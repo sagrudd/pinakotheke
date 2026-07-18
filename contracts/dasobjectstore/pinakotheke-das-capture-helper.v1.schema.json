@@ -46,6 +46,28 @@
       }
     },
     "max_image_bytes": {"type": "integer", "minimum": 1, "maximum": 1073741824},
-    "max_video_bytes": {"type": "integer", "minimum": 1, "maximum": 8589934592}
+    "max_video_bytes": {"type": "integer", "minimum": 1, "maximum": 8589934592},
+    "normalization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["docker_executable", "ingest_helper", "executor_ref", "staging_ref", "staging_root", "image_reference", "image_digest", "cpu_millis_limit", "memory_bytes_limit", "scratch_bytes_limit", "firefox_playback_evidence_id", "codec_gap_journal"],
+      "properties": {
+        "docker_executable": {"type": "string", "pattern": "^/", "maxLength": 4096},
+        "ingest_helper": {"type": "string", "pattern": "^/", "maxLength": 4096},
+        "executor_ref": {"$ref": "#/$defs/identifier"},
+        "staging_ref": {"$ref": "#/$defs/identifier"},
+        "staging_root": {"type": "string", "pattern": "^/", "maxLength": 4096},
+        "image_reference": {"type": "string", "pattern": "^registry://[^@ ?#]+$", "maxLength": 512},
+        "image_digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+        "cpu_millis_limit": {"type": "integer", "minimum": 1},
+        "memory_bytes_limit": {"type": "integer", "minimum": 1},
+        "scratch_bytes_limit": {"type": "integer", "minimum": 1},
+        "firefox_playback_evidence_id": {"$ref": "#/$defs/identifier"},
+        "codec_gap_journal": {"type": "string", "pattern": "^/", "maxLength": 4096}
+      }
+    }
+  },
+  "$defs": {
+    "identifier": {"type": "string", "pattern": "^[A-Za-z0-9._:-]{1,128}$"}
   }
 }
