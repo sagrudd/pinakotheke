@@ -1183,6 +1183,10 @@ video rectangle beneath it and still requires that exact video to emit a real
 play event within two seconds. Unrelated clicks, autoplay, hidden video, and
 synthetic events remain ineligible. Bounded observer outcome diagnostics make
 missing source and missing activation distinguishable without retaining URLs.
+Mozilla signed ``1.17.2`` and the permanent-install fixture accepted its stable
+identity. DASServer now runs the ``1.17.2`` backend and serves the
+checksum-identical signed XPI as ``application/x-xpinstall`` over trusted HTTPS.
+Real user-played settlement remains the final XIMG-116 gate.
 
 ## Post-1.0 candidates
 

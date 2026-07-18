@@ -1411,7 +1411,9 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   ``1.17.2`` maps a trusted pointer inside a visible video rectangle to that
   exact video and still requires its genuine play event within two seconds;
   synthetic coverage includes a separate overlay control. Live capture proof
-  remains.
+  remains. Mozilla signing, permanent-install verification, and
+  checksum-identical DASServer deployment of the ``1.17.2`` backend and XPI
+  are complete in ``7f145d6``.
 
 - [x] **XIMG-115 P0 — Make Monas restart invalidate sessions and harden product
   forwarding.** Completed in Monas ``0.8.4`` commits ``624e7b4``,
