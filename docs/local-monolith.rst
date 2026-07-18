@@ -143,13 +143,16 @@ mirror records ``mnemosyne_design_language`` commit
 ``5539df8f662a78ebdf7cf4c868d71831380c8cfd``; Monas remains responsible for
 the approved host branding and login assets.
 
-The current compatibility baseline is Monas ``0.6.2`` at sibling commit
-``114ef9588b8906287381ec7708fb12c3d03efd7b``. Its validated Pinakotheke return
+The current compatibility baseline is Monas ``0.8.1`` at sibling commit
+``624e7b4037df1d372b3d2243232e061e5efb55c0``. Its validated Pinakotheke return
 path renders a product-aware sign-on modelled on the DASObjectStore reference:
 the restrained Mnemosyne wordmark and product purpose lead, the task panel says
 ``Pinakotheke sign in``, Monas session ownership remains explicit, and the
 Mnemosyne provenance footer carries exactly one decorative partial mark.
-Pinakotheke still receives no credentials and owns no login route.
+Pinakotheke still receives no credentials and owns no login route. Every Monas
+process start revokes sessions issued by the previous process, so a retained
+browser cookie redirects to sign-in after a restart. Authenticated product GET
+and HEAD requests use body-free, hop-by-hop-safe loopback forwarding.
 
 Point the backend at the reviewed build directory:
 

@@ -1383,6 +1383,16 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   services active. A restart proof also confirmed graceful Pinakotheke shutdown
   releases and reacquires the capture-worker lease without manual cleanup.
 
+- [x] **XIMG-115 P0 — Make Monas restart invalidate sessions and harden product
+  forwarding.** Completed in Monas ``0.8.1`` commit ``624e7b4`` and recorded
+  in Pinakotheke compatibility documentation. Monas now revokes all existing
+  Prosopikon browser sessions before serving after startup, requiring a fresh
+  login while retaining user registration and password data. Authenticated
+  Pinakotheke GET/HEAD forwarding no longer attaches a synthetic streaming
+  request body, strips request framing and hop-by-hop headers, and emits only
+  secret-safe upstream failure categories. Unit tests prove restart revocation,
+  repeated-start idempotence, protected-route redirects, and safe forwarding.
+
 - [x] **XIMG-090 P0 — Scaffold the runnable Pinakotheke monolith.** Completed
   in ``2cfa1e1``. ``pinakotheke serve`` now resolves ``$HOME/.x-img`` by
   default, requires an absolute non-symlink root, creates only private
