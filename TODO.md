@@ -1391,11 +1391,13 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   ``video.twimg.com`` gate for X. Synthetic tests prove a ``blob:`` element can
   resolve a recent fetch-initiated X MP4 without reading request headers,
   cookies, credentials, or response bytes. Segmented/MSE-only and unresolved
-  playback remains origin-served. Remaining acceptance: locally sign and
-  permanently install the ``1.17.0`` extension, deploy it through DASServer,
-  then prove one real user-played X video reaches verified DASObjectStore
-  settlement and appears as a playable gallery item. Do not mark complete from
-  an admitted or pending plan.
+  playback remains origin-served. Mozilla signed the ``1.17.0`` extension,
+  permanent-install verification passed, and DASServer serves the
+  checksum-identical XPI with ``application/x-xpinstall`` beside the ready
+  ``1.17.0`` backend. Remaining acceptance: install that XPI and prove one real
+  user-played X video reaches verified DASObjectStore settlement and appears as
+  a playable gallery item. Do not mark complete from an admitted or pending
+  plan.
 
 - [x] **XIMG-115 P0 — Make Monas restart invalidate sessions and harden product
   forwarding.** Completed in Monas ``0.8.4`` commits ``624e7b4``,

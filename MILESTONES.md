@@ -1152,6 +1152,10 @@ a progressive-video path, or the exact ``video.twimg.com`` media host. It does
 not inspect web requests, cookies, credentials, headers, hidden media, or page
 history. Segmented, encrypted, unresolved, stale, synthetic, and autoplay-only
 media remains origin-served. XIMG-116 tracks signed deployment and live proof.
+Mozilla signed the ``1.17.0`` extension, permanent-install verification passed,
+and DASServer serves the checksum-identical XPI with
+``application/x-xpinstall`` beside the ready ``1.17.0`` backend. The remaining
+gate is a real user-played X MP4 reaching verified settlement and the gallery.
 
 ## Post-1.0 candidates
 
