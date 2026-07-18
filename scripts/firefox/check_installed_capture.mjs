@@ -37,6 +37,17 @@ const server = https.createServer({
   key: fs.readFileSync(path.join(temporary, "key.pem")),
   cert: fs.readFileSync(path.join(temporary, "cert.pem")),
 }, (request, response) => {
+  if (request.method === "GET" && /^\/products\/pinakotheke\/api\/extension\/v1\/capture-plans\/plan-\d+$/.test(request.url)) {
+    const body = Buffer.from(JSON.stringify({
+      schema_version: "pinakotheke.capture-plan-status.v1",
+      plan_id: request.url.split("/").pop(),
+      catalogue_id: "firefox-fixture-card",
+      state: "stored",
+    }));
+    response.writeHead(200, { "content-type": "application/json", "content-length": body.length });
+    response.end(body);
+    return;
+  }
   if (request.method === "POST" && request.url === "/products/pinakotheke/api/extension/v1/capture-plans") {
     const chunks = [];
     request.on("data", chunk => chunks.push(chunk));
@@ -177,7 +188,7 @@ async function connect() {
 async function waitFor(predicate, label) {
   const deadline = Date.now() + 15_000;
   while (Date.now() < deadline) {
-    if (predicate()) return;
+    if (await predicate()) return;
     await new Promise(resolve => setTimeout(resolve, 100));
   }
   throw new Error(`timed out waiting for ${label}`);
@@ -193,6 +204,13 @@ try {
   await command("browsingContext.activate", { context });
   await command("browsingContext.navigate", { context, url: `${origin}/gallery`, wait: "complete" });
   await waitFor(() => captures.some(item => item.capture_kind === "observed_thumbnail"), "observed thumbnail");
+  await waitFor(async () => {
+    const framed = await command("script.evaluate", {
+      expression: "document.querySelector('#art')?.classList.contains('pinakotheke-stored-object') === true",
+      target: { context }, awaitPromise: false,
+    });
+    return framed.result.type === "boolean" && framed.result.value;
+  }, "stored thumbnail frame");
   const evaluated = await command("script.evaluate", {
     expression: "document.querySelector('#art')", target: { context }, awaitPromise: false,
   });
@@ -232,11 +250,18 @@ try {
     ],
   }] });
   await waitFor(() => captures.some(item => item.capture_kind === "explicit_video"), "trusted-play progressive video");
+  await waitFor(async () => {
+    const framed = await command("script.evaluate", {
+      expression: "document.querySelector('#clip')?.classList.contains('pinakotheke-stored-object') === true && getComputedStyle(document.querySelector('#clip')).borderTopWidth === '2px'",
+      target: { context }, awaitPromise: false,
+    });
+    return framed.result.type === "boolean" && framed.result.value;
+  }, "stored video frame");
   const video = captures.find(item => item.capture_kind === "explicit_video");
   assert.equal(video.media_url, `${origin}/synthetic-video.webm`);
   assert.equal(video.page_url, `${origin}/video`);
   assert.equal(captures.some(item => item.cookie || item.headers || item.payload), false);
-  console.log("Installed Firefox capture passed: observed thumbnail, trusted opened image, and trusted-play progressive video");
+  console.log("Installed Firefox capture passed: automatic thumbnail, trusted opened image/video, and verified 2px stored frames");
   await command("session.end", {});
 } finally {
   if (socket?.readyState === WebSocket.OPEN) socket.close();

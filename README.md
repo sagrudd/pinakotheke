@@ -140,6 +140,11 @@ canonical application path; direct backend requests are denied.
 Firefox with 1,000 ephemeral mixed records, bounded windowing, keyboard focus,
 server filtering, unavailable/no-origin behavior, and desktop/narrow reflow.
 It is browser-component evidence and does not replace live authority proof.
+``make critical-vertical-check VIDEO=/ephemeral/normalized.mp4`` assembles that
+browser proof with automatic thumbnail and trusted-open capture, verified
+settlement/restart tests, and real Firefox normalized playback. See the
+[critical vertical acceptance guide](docs/critical-vertical.rst) for the exact
+scope and the separately recorded live DASObjectStore authority evidence.
 
 The monolith can compose a reviewed DASObjectStore/host reader with
 ``--object-read-helper``. The versioned process protocol carries only immutable

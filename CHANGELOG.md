@@ -10,6 +10,9 @@
   responsive/keyboard behavior, range seeking, concurrent reads, conditional
   delivery, cancellation, pause/resume, and missing-object handling without a
   source-site request.
+- Assemble the automatic thumbnail, trusted opened image/video, verified
+  settlement, restart-safe gallery, and Firefox playback checks into one
+  repeatable critical-vertical release gate.
 
 ## 1.15.0 - 2026-07-18
 

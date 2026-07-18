@@ -100,13 +100,13 @@ Installed Firefox acceptance
 
 On macOS, ``make firefox-capture-check`` starts the installed Firefox binary
 with an isolated temporary profile and an ephemeral HTTPS gallery. It installs
-an unsigned temporary test copy of the extension, uses the production
-background and content scripts, observes a linked thumbnail, and performs a
-trusted WebDriver BiDi pointer click on that thumbnail. The check requires one
-``observed_thumbnail`` request and one ``explicit_original`` request to share
-the opened presentation identity, and rejects payload, cookie, and header
-fields. The certificate, profile, add-on, and synthetic media are removed at
-the end of the run.
+an unsigned temporary test copy of the extension and uses the production
+background and content scripts. The check requires an automatically observed
+thumbnail, a trusted opened original, and a trusted-play progressive video. It
+returns verified stored status and proves that Firefox applies the two-pixel
+frame to the matching image and video. Capture requests contain no payload,
+cookie, or header fields. The certificate, profile, add-on, and synthetic media
+are removed at the end of the run.
 
 The test copy is instrumented only to pre-authorize its ephemeral loopback
 origin and invoke the same action used by the toolbar; it is not release-XPI
