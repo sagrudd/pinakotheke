@@ -1129,7 +1129,9 @@ remote/server DASObjectStore read authority. Readiness is ``ready`` only when
 both Monas dispatch and a local managed profile or composed host reader are
 present; partial configurations remain explicitly ``not_ready``.
 
-The deployed host also requires Monas ``0.8.1`` at commit ``624e7b4``. Monas
+The deployed host also requires Monas ``0.8.2`` at commit ``c91c544``. Monas
+first migrates legacy account and session records to immutable Prosopikon IDs
+through a digest-guarded, privately backed-up, deterministic replacement. It
 revokes every pre-start Prosopikon browser session, so restart forces a fresh
 login, and its Pinakotheke proxy strips hop-by-hop framing while forwarding GET
 and HEAD requests without a synthetic streaming body. Secret-safe error
