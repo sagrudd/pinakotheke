@@ -1097,6 +1097,7 @@ size behavior. A planning failure leaves the origin player untouched. A plan
 does not make segmented substitution ready: exact adapter and real-Firefox
 evidence, normalization, DASObjectStore verification, and the existing Ready
 playback gate remain required.
+XIMG-112 was completed in ``1c26c20``.
 
 ## Post-1.0 candidates
 

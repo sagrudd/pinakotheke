@@ -1303,12 +1303,18 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   all three commits, output probing, and configured Firefox profile evidence;
   failures leave the capture pending and never admit the source bytes.
 
-- [ ] **XIMG-112 P0 — Prove generic segmented-video adapters.**
+- [x] **XIMG-112 P0 — Prove generic segmented-video adapters.**
   Add a site-neutral plan for user-played HLS/DASH or MSE media without hidden
   traversal, playlist crawling, browser cookies, or authorization headers.
   Permit an adapter only after bounded synthetic fixtures prove manifest and
   segment identity, retry/idempotency, policy and DRM blocks, and fail-open
-  origin playback. Record only redacted codec/container diagnostics.
+  origin playback. Record only redacted codec/container diagnostics. Completed
+  in ``1c26c20`` with the metadata-only HLS/DASH/MSE planner, deterministic
+  versioned plan identity, strict observation and proof bounds, redacted
+  diagnostics, and a redistributable positive/blocking fixture matrix. Planning
+  never fetches or traverses media, and substitution remains origin-served
+  until the existing normalized rendition and exact Firefox evidence gate is
+  satisfied.
 
 - [ ] **XIMG-113 P1 — Complete the playable-video library campaign.**
   Expose a dedicated Videos filter and a keyboard-accessible quick viewer using
