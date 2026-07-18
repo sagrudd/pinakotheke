@@ -2,7 +2,7 @@
 
 Status: 1.0 stable release
 
-Version: 1.16.1
+Version: 1.17.0
 
 Updated: 2026-07-18
 
@@ -1141,6 +1141,17 @@ The authenticated Firefox request exposed an absolute HTTP/2 URI that the old
 proxy concatenated onto its loopback origin. The corrected proxy retains only
 path and query, and live DASServer evidence shows a valid post-login session
 with no upstream failure after the authenticated application request.
+
+## 1.17.0 — Late progressive-video play detection
+
+Goal: make trusted X video playback reach the existing bounded acquisition and
+normalization pipeline when the page exposes a ``blob:`` element and starts its
+concrete MP4 fetch after the ``play`` event. The extension polls recent Resource
+Timing entries for at most two seconds and accepts only a native video initiator,
+a progressive-video path, or the exact ``video.twimg.com`` media host. It does
+not inspect web requests, cookies, credentials, headers, hidden media, or page
+history. Segmented, encrypted, unresolved, stale, synthetic, and autoplay-only
+media remains origin-served. XIMG-116 tracks signed deployment and live proof.
 
 ## Post-1.0 candidates
 

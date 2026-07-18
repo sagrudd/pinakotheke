@@ -198,7 +198,7 @@ vm.runInNewContext(contentSource, {
       assert.equal(type, "resource");
       return [
         { name: "https://cdn.example.invalid/unrelated.mp4", initiatorType: "video", startTime: 100 },
-        { name: "https://cdn.example.invalid/progressive/opaque-asset?token=ephemeral", initiatorType: "video", startTime: 5100 },
+        { name: "https://video.twimg.com/amplify_video/fixture/vid/avc1/1280x720/asset.mp4?token=ephemeral", initiatorType: "fetch", startTime: 5100 },
         { name: "https://cdn.example.invalid/page-script", initiatorType: "script", startTime: 5150 },
       ];
     },
@@ -227,7 +227,7 @@ contentListeners.get("pointerdown")({ isTrusted: true, target: playedVideo });
 contentListeners.get("play")({ isTrusted: true, target: playedVideo });
 assert.equal(contentMessages.length, 2);
 assert.equal(contentMessages[1].command, "explicit-video-opened");
-assert.equal(contentMessages[1].mediaUrl, "https://cdn.example.invalid/progressive/opaque-asset?token=ephemeral");
+assert.equal(contentMessages[1].mediaUrl, "https://video.twimg.com/amplify_video/fixture/vid/avc1/1280x720/asset.mp4?token=ephemeral");
 assert.equal(contentMessages[1].width, 1280);
 
 const sender = { tab: { id: 7, url: "https://art.example.invalid:8443/gallery?private=drop" } };

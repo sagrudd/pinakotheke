@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.17.0 - 2026-07-18
+
+- Detect user-played progressive video fetched by page script as well as a
+  native video element, including recent ``video.twimg.com`` MP4 resources.
+- Poll bounded resource timing for two seconds after the trusted play event so
+  late-starting progressive media can enter the existing capture, settlement,
+  normalization, and gallery path without observing cookies or headers.
+
 ## 1.16.1 - 2026-07-18
 
 - Report the composed remote DASObjectStore read authority as ready and make

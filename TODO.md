@@ -2,7 +2,7 @@
 
 Status: dependency-ordered planning backlog
 
-Version: 1.16.1
+Version: 1.17.0
 
 Updated: 2026-07-18
 
@@ -1382,6 +1382,20 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   login page, HTTP/2 XPI delivery with ``application/x-xpinstall``, and both
   services active. A restart proof also confirmed graceful Pinakotheke shutdown
   releases and reacquires the capture-worker lease without manual cleanup.
+
+- [ ] **XIMG-116 P0 — Capture late script-fetched progressive video after
+  trusted play.** The implementation is complete for ``1.17.0``: the exact
+  opted-in top-frame observer now polls nine bounded times over two seconds
+  after recent trusted activation, considers script/fetch initiated progressive
+  resources as well as native video initiators, and retains the strict
+  ``video.twimg.com`` gate for X. Synthetic tests prove a ``blob:`` element can
+  resolve a recent fetch-initiated X MP4 without reading request headers,
+  cookies, credentials, or response bytes. Segmented/MSE-only and unresolved
+  playback remains origin-served. Remaining acceptance: locally sign and
+  permanently install the ``1.17.0`` extension, deploy it through DASServer,
+  then prove one real user-played X video reaches verified DASObjectStore
+  settlement and appears as a playable gallery item. Do not mark complete from
+  an admitted or pending plan.
 
 - [x] **XIMG-115 P0 — Make Monas restart invalidate sessions and harden product
   forwarding.** Completed in Monas ``0.8.4`` commits ``624e7b4``,

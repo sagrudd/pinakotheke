@@ -63,37 +63,70 @@ if (!globalThis.__pinakothekeExplicitOpenObserver) {
   document.addEventListener("keydown", event => {
     if (event.key === "Enter" || event.key === " ") rememberVideoActivation(event);
   }, true);
+  const videoResolutions = new WeakSet();
+  const likelyProgressiveVideo = entry => {
+    try {
+      const url = new URL(entry.name);
+      return url.protocol === "https:" && (
+        entry.initiatorType === "video"
+        || url.hostname === "video.twimg.com"
+        || /\.(?:mp4|m4v|webm|mov)$/i.test(url.pathname)
+      );
+    } catch (_) {
+      return false;
+    }
+  };
+  const resolvePlayedVideo = async (video, activation) => {
+    if (videoResolutions.has(video)) return;
+    videoResolutions.add(video);
+    if (!activation || Date.now() - activation.epochMilliseconds > 2000) {
+      videoResolutions.delete(video);
+      return;
+    }
+    // X frequently presents a blob: URL to the element while Firefox has
+    // already fetched a concrete, independently retrievable MP4 resource.
+    // Resource timing exposes URLs, not request headers or cookies. X fetches
+    // progressive MP4 through script/fetch, so initiatorType cannot be the
+    // sole signal. Poll briefly after play because the resource often appears
+    // after the play event. Segmented/MSE playback remains origin-served.
+    for (let attempt = 0; attempt < 9; attempt += 1) {
+      const current = (() => {
+        try {
+          const url = new URL(video.currentSrc);
+          return url.protocol === "https:" ? video.currentSrc : null;
+        } catch (_) {
+          return null;
+        }
+      })();
+      const timed = performance.getEntriesByType("resource")
+        .filter(entry => entry.startTime >= activation.performanceMilliseconds - 1000)
+        .filter(likelyProgressiveVideo)
+        .sort((left, right) => right.startTime - left.startTime)
+        .slice(0, 24)
+        .map(entry => entry.name);
+      const mediaUrl = [current, ...timed].find(Boolean);
+      if (mediaUrl) {
+        void browser.runtime.sendMessage({
+          command: "explicit-video-opened",
+          mediaUrl,
+          presentationUrl: location.href,
+          width: video.videoWidth || video.clientWidth,
+          height: video.videoHeight || video.clientHeight,
+        });
+        videoResolutions.delete(video);
+        return;
+      }
+      if (attempt < 8) await new Promise(resolve => setTimeout(resolve, 250));
+    }
+    videoResolutions.delete(video);
+    void browser.runtime.sendMessage({ command: "explicit-video-unresolved" });
+  };
   document.addEventListener("play", event => {
     if (!event.isTrusted || !(event.target instanceof HTMLVideoElement) || !event.target.currentSrc) return;
     const video = event.target;
     const activation = videoActivations.get(video);
     if (!activation || Date.now() - activation.epochMilliseconds > 2000) return;
-    // X frequently presents a blob: URL to the element while Firefox has
-    // already fetched a concrete, independently retrievable MP4 resource.
-    // Resource timing exposes URLs, not request headers or cookies. Prefer the
-    // newest HTTPS MP4 associated with the played element and retain the page
-    // URL only as provenance. Segmented/MSE playback remains origin-served.
-    const candidates = [video.currentSrc, ...performance.getEntriesByType("resource")
-      .filter(entry => entry.initiatorType === "video"
-        && entry.startTime >= activation.performanceMilliseconds - 1000)
-      .map(entry => entry.name)
-      .filter(url => /^https:\/\//.test(url))
-      .slice(-12)
-      .reverse()];
-    const mediaUrl = candidates.find(url => {
-      try { return new URL(url).protocol === "https:"; } catch (_) { return false; }
-    });
-    if (!mediaUrl) {
-      void browser.runtime.sendMessage({ command: "explicit-video-unresolved" });
-      return;
-    }
-    void browser.runtime.sendMessage({
-      command: "explicit-video-opened",
-      mediaUrl,
-      presentationUrl: location.href,
-      width: video.videoWidth || video.clientWidth,
-      height: video.videoHeight || video.clientHeight,
-    });
+    void resolvePlayedVideo(video, activation);
   }, true);
   document.addEventListener("click", event => {
     if (!event.isTrusted || event.button !== 0) return;

@@ -147,7 +147,16 @@ subframes, and automatic opening are not eligible. Login and settings paths are
 excluded from registration. The background process revalidates current site
 policy, adapter capability, and sender-tab provenance for every message, so a
 stale page script cannot bypass a newly paused policy. Video acquisition is not
-implemented by this endpoint.
+triggered by observation alone. After a trusted pointer or keyboard activation
+causes a visible video to play, the content script searches only the element's
+HTTPS source and recent Resource Timing entries. It polls nine bounded times
+over two seconds because script-fetched progressive media may appear after the
+``play`` event. A resource is eligible only when Firefox identifies the video
+initiator, its path has a progressive video suffix, or the exact X media host
+is ``video.twimg.com``. This reads no request headers, cookies, credentials, or
+response bytes. A concrete candidate enters the existing ``explicit_video``
+plan; blob-only, segmented, encrypted, unresolved, synthetic, stale, autoplay,
+or hidden playback remains origin-served with a redacted diagnostic.
 
 The experimental generic adapter is available for any exact HTTPS origin only
 after that origin has been added through the site policy UI and Firefox has
