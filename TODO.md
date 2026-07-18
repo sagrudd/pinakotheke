@@ -1072,7 +1072,7 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   pairing proof, and failed pairing when logged out or when payload values are
   changed.
 
-- [ ] **XIMG-104 P0 — Replace capture approval with automatic site caching.**
+- [x] **XIMG-104 P0 — Replace capture approval with automatic site caching.**
   Pinakotheke 1.6.0 adds a three-second live, actor-scoped ingress status strip
   with observed thumbnail/opened image/opened video, pending, verified stored,
   and gallery counts. It also corrects X linked-image handling: Firefox now
@@ -1168,6 +1168,14 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   ``x.com/<canonical-account>/...`` rather than an unmanaged filesystem
   subdirectory. Deduplicate immutable bytes across actors while retaining
   actor-specific observation, provenance, and review state.
+  Completed by the assembled gate in ``f7dadb1``: installed Firefox proves an
+  automatically observed thumbnail plus trusted opened original and video,
+  waits for verified ``stored`` status, and checks the browser-only two-pixel
+  frame. XIMG-111 supplies automatic incompatible-video normalization and
+  XIMG-113 supplies committed poster/metadata, immediate persistent gallery
+  admission, and Firefox playback assurance. The earlier DASServer evidence
+  above remains the live authority half; no approval queue or local payload
+  store has been reintroduced.
 
 - [x] **XIMG-105 P0 — Persist and reconcile the user site corpus.** Completed
   in ``8bf3530`` with bounded deletion tombstones in ``7a2812d``. The strict

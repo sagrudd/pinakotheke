@@ -919,8 +919,9 @@ live counts for observed thumbnails, explicitly opened images/videos, pending
 plans, verified ObjectStore commits, and admitted gallery cards. Linked X
 images use the bytes Firefox rendered while retaining the status-page URL only
 as provenance, so successful image commits can flow directly into the gallery.
-XIMG-104 remains open until opened video completes the equivalent normalized
-ObjectStore and gallery path.
+XIMG-104 is closed by the assembled ``make critical-vertical-check`` evidence:
+opened video now completes the equivalent normalized ObjectStore, persistent
+gallery, committed-poster, metadata, and real Firefox playback path.
 
 ## 1.7.0 — Diagnosable ingress
 
