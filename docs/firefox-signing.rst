@@ -150,3 +150,21 @@ The stable-identity permanent-install check passed. The x86_64 DASServer was
 upgraded to Pinakotheke 1.6.0 and serves the signed XPI at
 ``https://192.168.1.192:8731/downloads/pinakotheke-1.6.0.xpi`` with the expected
 ``application/x-xpinstall``, ``nosniff``, and ``private, no-store`` headers.
+
+Generic progressive-video release evidence
+------------------------------------------
+
+Mozilla approved Pinakotheke ``1.12.0`` as an unlisted signed extension on
+2026-07-18. Its SHA-256 is
+``a198e774803e6d4d66ebf2873946d26f20f9a1d58eb64d5401643be97f433102``.
+Firefox ``152.0.6`` accepted it as a permanent add-on with the unchanged
+``x-img@example.invalid`` identity. The installed-Firefox capture harness
+generates an ephemeral synthetic progressive video inside its disposable
+profile, serves it from an exact opted-in HTTPS origin, and proves that native
+trusted pointer/play input produces an ``explicit_video`` capture plan. The
+fixture bytes are deleted with the profile and never enter the repository.
+
+The x86_64 DASServer runs Pinakotheke ``1.12.0`` and serves the
+checksum-identical artifact at
+``https://192.168.1.192:8731/downloads/pinakotheke-1.12.0.xpi`` with
+``application/x-xpinstall``. A trusted TLS download returned the same SHA-256.

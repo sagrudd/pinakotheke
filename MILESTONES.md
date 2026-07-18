@@ -1028,6 +1028,22 @@ with ``application/x-xpinstall``; process ownership showed Monas—not nginx—o
 8731. Pinakotheke restart testing proved its runtime lease is released during
 graceful SIGTERM and immediately reacquired on startup.
 
+## 1.12.0 — Signed generic progressive-video ingress
+
+Goal: carry an opaque, short-lived progressive-media retrieval capability
+privately from trusted Firefox playback to the isolated acquisition helper,
+while retaining a stable query-free identity for only-once semantics. Rotated
+capabilities refresh an unsettled plan without duplicating catalogue identity,
+and signed query material is excluded from API responses, catalogue records,
+diagnostics, and logs.
+
+Mozilla approved the unlisted 1.12.0 extension and Firefox 152.0.6 accepted it
+as a permanent add-on with stable identity. A real installed-Firefox test used
+native pointer input against an exact opted-in HTTPS origin and admitted an
+ephemeral synthetic progressive video as ``explicit_video``. The artifact and
+Pinakotheke 1.12.0 backend were deployed to DASServer; its trusted public Monas
+route serves the checksum-identical XPI. Delivered in ``d0bb6cb``.
+
 ## Post-1.0 candidates
 
 - Synoptikon catalogue/plugin integration through the preserved host adapter

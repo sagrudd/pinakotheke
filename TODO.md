@@ -1250,7 +1250,7 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   additionally requires automatic settlement into the store's two managed HDD
   copies and a fresh installed-Firefox capture proof.
 
-- [ ] **XIMG-110 P0 — Generalize trusted-play progressive video capture.**
+- [x] **XIMG-110 P0 — Generalize trusted-play progressive video capture.**
   Remove the accidental single-source restriction from the first-party capture
   helper. Accept concrete progressive HTTPS video from any explicitly enabled
   origin only after trusted playback, without browser credentials. Preserve
@@ -1263,8 +1263,13 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   the trusted-play window and carries its validated exact retrieval URL
   privately to the isolated acquisition helper. Stable query-free identity
   still provides idempotency, while a rotated capability refreshes an
-  unsettled plan. Synthetic browser and core coverage pass. Keep this item
-  open pending signed-extension deployment and installed-Firefox proof.
+  unsettled plan. Mozilla-signed 1.12.0 permanently installs with the stable
+  identity in Firefox 152.0.6. The real-Firefox harness now creates an
+  ephemeral progressive video inside its isolated profile and proves that a
+  native trusted pointer/play produces an ``explicit_video`` plan without
+  cookies, headers, payload bytes, or an encoded website catalogue. The
+  checksum-identical signed XPI and 1.12.0 service are deployed on DASServer.
+  Delivered in ``d0bb6cb``.
 
 - [ ] **XIMG-111 P0 — Automate container normalization handoff.**
   When progressive media is eligible but not already in the browser playback
