@@ -349,7 +349,7 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   over its synthetic catalogue. Server-side account/platform/site/media/time/
   dimension/review/object filters remain the catalogue API follow-up.
 
-- [ ] **XIMG-096 P0 — Prove the critical Firefox-capture-to-gallery vertical.**
+- [x] **XIMG-096 P0 — Prove the critical Firefox-capture-to-gallery vertical.**
   This is a normative stable-release correction and cannot be satisfied by
   synthetic cards, proxy artwork, packaging evidence, or published release
   metadata. Through the Monas-authenticated Pinakotheke instance, prove that an
@@ -621,6 +621,22 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   strict JSON contracts, and warnings-denied Sphinx 8.2.3 passed. Docker
   Desktop again did not answer within the bounded 20-second documentation
   container-build attempt; the local Sphinx authority passed independently.
+  Completed by the assembled acceptance gate in ``f7dadb1``. Real installed
+  Firefox now covers automatic observed-thumbnail capture, trusted opened
+  original and progressive-video capture, verified stored framing, the actual
+  Yew/WASM gallery with 1,000 mixed records, bounded virtualization, keyboard
+  traversal, filters, responsive layouts, unavailable/no-origin states, and
+  normalized H.264/AAC metadata load, play, seek, pause/resume, conditional and
+  concurrent ranges, cancellation, and missing-object recovery. Native tests
+  cover verified completion, immediate ``New`` admission, complete immutable
+  endpoint/ObjectStore/object/provenance/review/poster/video metadata, exact
+  authorized delivery, and restart convergence. The clean-home XIMG-094 run
+  in ``9e1688c`` supplies daemon-verified DASObjectStore commit, checksum-equal
+  authorized read, restart reconciliation, and session recovery; subsequent
+  recorded DASServer runs supply automatic X image admission, account-key
+  provenance, and normalized MP4/WebP/manifest settlement. The authoritative
+  evidence matrix and failure boundaries are in ``docs/critical-vertical.rst``;
+  its pinned Sphinx HTML and dummy container builds pass with warnings denied.
 
 ## 0.6.0 — Firefox capture
 

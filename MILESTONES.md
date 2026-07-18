@@ -461,10 +461,11 @@ Exit criteria:
   without silently changing a reviewed destination; and
 - no full administration form is permanently embedded in the browsing view.
 
-The exit criteria above are component criteria. Stable-release acceptance also
-requires XIMG-096 to prove the assembled Firefox-to-DASObjectStore-to-gallery
-vertical with real ephemeral media, persistence across restart, explicit
-unavailable states, and no origin fallback.
+The exit criteria above are component criteria. XIMG-096 now closes the
+stable-release acceptance with the assembled Firefox-to-DASObjectStore-to-
+gallery gate: real ephemeral media, persistence across restart, explicit
+unavailable states, and no origin fallback are covered by the evidence matrix
+in ``docs/critical-vertical.rst``.
 
 ## 0.6.0 — Firefox site capture
 
@@ -627,10 +628,11 @@ Goal: stable public interfaces and dependable day-to-day operation.
 
 Normative correction: the critical Firefox-capture-to-ThumbsPlus-gallery intent
 defined in 0.5.0 and XIMG-096 is a mandatory v1 product criterion. Existing
-published v1.0.0 packaging and identity evidence does not prove this functional
-vertical and must not be used to waive it. Until XIMG-096 passes, the historical
-tag remains published but the complete v1 product claim is not functionally
-closed; the next stable release must carry the backfilled evidence.
+published v1.0.0 packaging and identity evidence did not prove this functional
+vertical and was not used to waive it. The backfilled installed-Firefox,
+native-restart, live-DAS-authority, persistent-gallery, and playback evidence is
+now assembled by ``make critical-vertical-check`` and documented in
+``docs/critical-vertical.rst``.
 
 Published: ``v1.0.0`` is the canonical Pinakotheke release at
 https://github.com/sagrudd/pinakotheke/releases/tag/v1.0.0 with thirteen
@@ -666,7 +668,7 @@ Pinakotheke product rather than leaving release operations on candidate paths.
 Exit criteria:
 
 - no unresolved P0/P1 TODOs;
-- XIMG-096 proves real Firefox image and normalized-video capture through the
+- XIMG-096 has proved real Firefox image and normalized-video capture through the
   selected DASObjectStore into persistent, responsive ThumbsPlus-style cards,
   authorized preview/playback, review state, and restart recovery without
   synthetic media or origin fallback;
