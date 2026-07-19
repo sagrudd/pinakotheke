@@ -15,8 +15,10 @@ EXTENSION = ROOT / "firefox-extension"
 def main() -> int:
     manifest = json.loads((EXTENSION / "manifest.json").read_text())
     assert manifest["action"]["default_popup"] == "popup.html"
-    forbidden = {"cookies", "history", "webRequest", "webRequestBlocking"}
+    forbidden = {"cookies", "history", "webRequestBlocking"}
     assert forbidden.isdisjoint(manifest["permissions"])
+    assert "webRequest" in manifest["permissions"]
+    assert manifest["host_permissions"] == ["https://video.twimg.com/*"]
     popup = (EXTENSION / "popup.html").read_text()
     popup_script = (EXTENSION / "popup.js").read_text()
     options_script = (EXTENSION / "options.js").read_text()
@@ -34,6 +36,8 @@ def main() -> int:
         assert phrase in popup + popup_script
     for forbidden_text in ("requestHeaders", "requestBody", "onAuthRequired"):
         assert forbidden_text not in background + popup_script
+    assert 'browser.webRequest.onCompleted.addListener' in background
+    assert 'https://video.twimg.com/*' in background + options_script
     diagnostic_block = background[background.index("async function recordSiteDiagnostic"):]
     diagnostic_block = diagnostic_block[: diagnostic_block.index("async function recordSegmentedOriginFallback")]
     for forbidden_field in ("pageUrl", "mediaUrl", "canonicalAlias", "checksum", "cookie"):

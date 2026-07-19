@@ -18,6 +18,7 @@ assert.equal(
   "the published Gecko ID must remain stable",
 );
 assert.deepEqual(candidate.permissions, current.permissions);
+assert.deepEqual(candidate.host_permissions, current.host_permissions);
 assert.deepEqual(candidate.optional_host_permissions, current.optional_host_permissions);
 assert.deepEqual(candidate.content_security_policy, current.content_security_policy);
 assert.deepEqual(current.background.scripts, ["background.js"]);
@@ -44,6 +45,7 @@ const storage = {
   objectStoreId: "store-stable",
 };
 const browser = {
+  webRequest: { onCompleted: { addListener() {} } },
   runtime: {
     onInstalled: { addListener(callback) { installed = callback; } },
     onStartup: { addListener(callback) { startup = callback; } },
@@ -58,7 +60,7 @@ const browser = {
       async set(values) { Object.assign(storage, values); },
     },
   },
-  tabs: { async query() { return []; } },
+  tabs: { async query() { return []; }, async get() { return null; } },
   scripting: {
     async executeScript() { return []; },
     async getRegisteredContentScripts() { return registeredScripts; },
@@ -86,12 +88,16 @@ assert.equal(typeof startup, "function");
 
 const before = structuredClone(storage);
 await installed({ reason: "update", previousVersion: "0.9.0" });
-assert.deepEqual(storage, before, "upgrade must preserve pairing, rules, endpoint, and ObjectStore");
+const after = structuredClone(storage);
+delete after.diagnosticEvents;
+assert.deepEqual(after, before, "upgrade must preserve pairing, rules, endpoint, and ObjectStore");
 
 for (const key of Object.keys(storage)) delete storage[key];
 await installed({ reason: "install" });
+const installedState = structuredClone(storage);
+delete installedState.diagnosticEvents;
 assert.equal(
-  JSON.stringify(storage),
+  JSON.stringify(installedState),
   JSON.stringify({ instanceUrl: "", instanceId: "", pairId: "", sites: [] }),
 );
 

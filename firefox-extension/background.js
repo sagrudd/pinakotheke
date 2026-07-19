@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
-// No page cookies, webRequest interception, credentials, or automatic navigation.
+// No page cookies, response interception, credentials, or automatic navigation.
 async function initializeStorage(details) {
   if (details.reason === "install") {
     const existing = await browser.storage.local.get(["instanceUrl", "instanceId", "pairId", "sites"]);
@@ -18,6 +18,51 @@ browser.runtime.onStartup.addListener(syncExplicitOpenObservers);
 
 const EXPLICIT_OPEN_SCRIPT_ID = "pinakotheke-explicit-open-v1";
 const captureInFlight = new Set();
+const segmentedManifestsByTab = new Map();
+
+async function observeSegmentedRequest(details) {
+  if (!Number.isInteger(details.tabId) || details.tabId < 0) return;
+  let candidate;
+  try {
+    candidate = new URL(details.url);
+  } catch (_) {
+    return;
+  }
+  if (candidate.protocol !== "https:" || candidate.hostname !== "video.twimg.com"
+    || !/\.(?:m3u8|mpd)$/i.test(candidate.pathname)) return;
+  let tab;
+  try {
+    tab = await browser.tabs.get(details.tabId);
+  } catch (_) {
+    return;
+  }
+  if (!tab?.url || new URL(tab.url).origin !== "https://x.com") return;
+  const { sites = [] } = await browser.storage.local.get(["sites"]);
+  const rule = sites.find(site => site.origin === "https://x.com");
+  if (!rule?.capture || !rule.media.includes("videos")) return;
+  const now = Date.now();
+  const recent = (segmentedManifestsByTab.get(details.tabId) || [])
+    .filter(item => now - item.observedAt < 120000);
+  recent.push({ url: candidate.href, observedAt: now });
+  segmentedManifestsByTab.set(details.tabId, recent.slice(-32));
+}
+
+browser.webRequest.onCompleted.addListener(
+  details => void observeSegmentedRequest(details),
+  { urls: ["https://video.twimg.com/*"] },
+);
+
+function recentSegmentedManifest(tabId) {
+  const now = Date.now();
+  const recent = (segmentedManifestsByTab.get(tabId) || [])
+    .filter(item => now - item.observedAt < 120000);
+  segmentedManifestsByTab.set(tabId, recent);
+  return recent.sort((left, right) => {
+    const leftDepth = new URL(left.url).pathname.split("/").length;
+    const rightDepth = new URL(right.url).pathname.split("/").length;
+    return leftDepth - rightDepth || right.observedAt - left.observedAt;
+  })[0]?.url || null;
+}
 
 async function traceEvent(stage, outcome, detail = "", origin = "") {
   try {
@@ -678,6 +723,15 @@ browser.runtime.onMessage.addListener(async (message, sender) => {
     const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
     await runCacheForTab(tab);
     return { completed: true };
+  }
+  if (message?.command === "resolve-segmented-video" && sender?.tab?.id && sender.tab.url) {
+    const origin = new URL(sender.tab.url).origin;
+    const { sites = [] } = await browser.storage.local.get(["sites"]);
+    const rule = sites.find(site => site.origin === origin);
+    if (origin !== "https://x.com" || !rule?.capture || !rule.media.includes("videos")) {
+      return { mediaUrl: null };
+    }
+    return { mediaUrl: recentSegmentedManifest(sender.tab.id) };
   }
   if (message?.command === "visible-media-changed" && sender?.tab) {
     await traceEvent("content_observer", "signal", "visible media changed", new URL(sender.tab.url).origin);

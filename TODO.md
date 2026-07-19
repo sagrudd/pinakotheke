@@ -2,7 +2,7 @@
 
 Status: dependency-ordered planning backlog
 
-Version: 1.19.2
+Version: 1.20.0
 
 Updated: 2026-07-19
 
@@ -1439,7 +1439,10 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   installed immediately. Implementation is pushed in ``25284ef``; Mozilla
   signing, permanent-install verification, and checksum-identical DASServer
   deployment of the matching ``1.19.2`` backend and XPI are complete. The live
-  user-played settlement criterion remains unchecked.
+  playback then progressed to ``segmented_or_unresolved`` because the worker-
+  fetched manifest was absent from page Resource Timing. ``1.20.0`` adds a
+  bounded URL-only completed-request handoff for the explicitly permitted X
+  media host; the user-played settlement criterion remains unchecked.
 
 - [x] **XIMG-115 P0 — Make Monas restart invalidate sessions and harden product
   forwarding.** Completed in Monas ``0.8.4`` commits ``624e7b4``,

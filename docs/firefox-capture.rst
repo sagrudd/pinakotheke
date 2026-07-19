@@ -138,7 +138,17 @@ registers one persistent, top-frame content script for that exact origin. The
 registration is restored after extension updates and browser startup, and is
 removed before capture is paused or the origin permission is revoked. It does
 not require the user to press the toolbar cache control on every page and it
-does not add tab, history, cookie, or ``webRequest`` permission.
+does not add tab, history, or cookie permission.
+
+The signed extension declares only the exact ``https://video.twimg.com/*``
+media-host permission for its obligate X-video adapter. A non-blocking
+``webRequest.onCompleted`` listener retains at most 32 completed HLS/DASH
+manifest URLs per tab for two minutes. It records no headers or bodies and is
+discarded unless the owning tab currently has an enabled ``https://x.com``
+video rule; it is consulted only after a trusted visible play. This supplies
+manifests fetched by workers that are absent from page
+Resource Timing while preserving the existing server-side policy and bounded
+assembly gates.
 
 After registration, the extension also injects the same idempotent observer
 into eligible tabs that are already open. This matters for long-lived

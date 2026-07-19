@@ -8,6 +8,7 @@ import vm from "node:vm";
 
 let messageListener;
 let startupListener;
+let completedRequestListener;
 const captures = [];
 let registeredScripts = [];
 const fileInjections = [];
@@ -38,6 +39,9 @@ const registry = {
   }],
 };
 const browser = {
+  webRequest: {
+    onCompleted: { addListener(callback) { completedRequestListener = callback; } },
+  },
   runtime: {
     onInstalled: { addListener() {} },
     onStartup: { addListener(callback) { startupListener = callback; } },
@@ -54,6 +58,7 @@ const browser = {
   },
   tabs: {
     async query() { return [{ id: 73, url: "https://art.example.invalid:8443/gallery" }]; },
+    async get(tabId) { return { id: tabId, url: tabId === 91 ? "https://x.com/home" : "https://art.example.invalid:8443/gallery" }; },
     async sendMessage() {},
   },
   scripting: {
@@ -95,6 +100,7 @@ const backgroundContext = vm.createContext({
 vm.runInContext(source, backgroundContext);
 assert.equal(typeof messageListener, "function");
 assert.equal(typeof startupListener, "function");
+assert.equal(typeof completedRequestListener, "function");
 
 backgroundContext.document.images = [{
   complete: true,
@@ -154,6 +160,17 @@ assert.equal(
   "https://pbs.twimg.com/media/fixture?format=jpg&name=small",
 );
 
+storage.sites.push({ origin: "https://x.com", capture: true, media: ["videos"] });
+completedRequestListener({ tabId: 91, url: "https://video.twimg.com/amplify_video/42/pl/avc1/video.m3u8" });
+completedRequestListener({ tabId: 91, url: "https://video.twimg.com/amplify_video/42/pl/master.m3u8" });
+await new Promise(resolve => setImmediate(resolve));
+const segmentedRequest = await messageListener(
+  { command: "resolve-segmented-video" },
+  { tab: { id: 91, url: "https://x.com/home" } },
+);
+assert.equal(segmentedRequest.mediaUrl, "https://video.twimg.com/amplify_video/42/pl/master.m3u8");
+storage.sites.pop();
+
 const sync = await messageListener({ command: "sync-capture-observers" }, {});
 assert.equal(sync.registered, 1);
 assert.equal(sync.injected, 1);
@@ -202,7 +219,13 @@ const contentContext = vm.createContext({
   __pinakothekeExplicitOpenObserver: true,
   browser: { runtime: {
     getManifest() { return { version: "fixture-version" }; },
-    sendMessage(message) { contentMessages.push(message); },
+    sendMessage(message) {
+      if (message.command === "resolve-segmented-video") {
+        return Promise.resolve({ mediaUrl: "https://video.twimg.com/amplify_video/42/pl/master.m3u8" });
+      }
+      contentMessages.push(message);
+      return Promise.resolve({});
+    },
     onMessage: { addListener() {} },
   } },
   document: contentDocument,
@@ -257,6 +280,7 @@ playedVideo.clientWidth = 640;
 playedVideo.clientHeight = 360;
 contentListeners.get("pointerdown")({ isTrusted: true, target: playedVideo });
 contentListeners.get("play")({ isTrusted: true, target: playedVideo });
+await new Promise(resolve => setImmediate(resolve));
 assert.equal(contentMessages.length, 2);
 assert.equal(contentMessages[1].command, "explicit-video-opened");
 assert.equal(contentMessages[1].mediaUrl, "https://video.twimg.com/amplify_video/42/pl/master.m3u8");
@@ -273,6 +297,7 @@ const overlayControl = new FixtureElement();
 contentDocument.querySelectorAll = selector => selector === "video" ? [overlayPlayedVideo] : [];
 contentListeners.get("pointerdown")({ isTrusted: true, type: "pointerdown", target: overlayControl, clientX: 320, clientY: 220 });
 contentListeners.get("play")({ isTrusted: true, target: overlayPlayedVideo });
+await new Promise(resolve => setImmediate(resolve));
 assert.equal(contentMessages.length, 3);
 assert.equal(contentMessages[2].command, "explicit-video-opened");
 assert.equal(contentMessages[2].width, 854);
@@ -295,6 +320,7 @@ contentListeners.get("pointerdown")({
   clientY: 700,
 });
 contentListeners.get("play")({ isTrusted: true, target: delayedOverlayVideo });
+await new Promise(resolve => setImmediate(resolve));
 assert.equal(contentMessages.length, 4);
 assert.equal(contentMessages[3].command, "explicit-video-opened");
 assert.equal(contentMessages[3].width, 1920);

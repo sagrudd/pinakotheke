@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.20.0 - 2026-07-19
+
+- Observe only completed X media-CDN HLS/DASH manifest URLs for explicitly
+  enabled X video capture, retaining at most 32 URLs per tab for two minutes.
+- Resolve worker-fetched playlists that are absent from page Resource Timing
+  without reading headers, cookies, credentials, or response bodies and without
+  blocking or modifying origin traffic.
+
 ## 1.19.2 - 2026-07-19
 
 - Version the injected Firefox page-observer marker so an extension upgrade

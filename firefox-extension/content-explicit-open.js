@@ -165,7 +165,14 @@
         const family = mediaFamily(entry.name);
         return family && recentFamilies.has(family);
       }));
-      const mediaUrl = manifest || [current, ...timed].find(candidate => {
+      let backgroundManifest = null;
+      try {
+        const resolved = await browser.runtime.sendMessage({ command: "resolve-segmented-video" });
+        backgroundManifest = resolved?.mediaUrl || null;
+      } catch (_) {
+        // URL-only request observation is optional and capture remains fail-open.
+      }
+      const mediaUrl = manifest || backgroundManifest || [current, ...timed].find(candidate => {
         if (!candidate) return false;
         try { return !/\.(?:m4s|cmfv|cmfa)$/i.test(new URL(candidate).pathname); } catch (_) { return false; }
       });

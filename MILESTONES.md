@@ -2,7 +2,7 @@
 
 Status: 1.0 stable release
 
-Version: 1.19.2
+Version: 1.20.0
 
 Updated: 2026-07-19
 
@@ -1246,6 +1246,19 @@ while repeated injection of that same version stays idempotent. Mozilla signed
 ``1.19.2`` and the permanent-install fixture accepted its stable identity.
 DASServer runs the matching ``/usr/bin/pinakotheke`` backend and serves the
 checksum-identical signed XPI as ``application/x-xpinstall``.
+
+## 1.20.0 — Worker-fetched segmented manifest handoff
+
+Live X playback progressed through trusted-play admission but ended as
+``segmented_or_unresolved`` because X fetched its HLS playlist through a worker,
+outside the page Resource Timing surface. For an explicitly enabled
+``https://x.com`` video rule, ``1.20.0`` requests the exact X media-host
+permission and observes completed manifest URLs only. The bounded per-tab list
+contains at most 32 ``.m3u8``/``.mpd`` URLs for two minutes and is consulted
+only after trusted visible playback. No request/response headers, cookies,
+bodies, credentials, blocking, or rewriting are involved; the selected manifest
+still passes through Pinakotheke's server-side policy, assembly, probe, and
+verified DASObjectStore settlement gates.
 
 ## Post-1.0 candidates
 

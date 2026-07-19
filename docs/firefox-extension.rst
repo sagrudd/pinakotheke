@@ -83,8 +83,12 @@ The options page shows the exact origin and consequences before permission,
 chooses image/video media classes, and provides independent capture and
 substitution toggles plus permission removal for each site.
 
-The extension has no cookie, webRequest, history, password, or credential API;
-it never opens pages, traverses hidden content, crawls, or simulates browsing.
+The extension has no cookie, history, password, response-body interception, or
+credential API; it never opens pages, traverses hidden content, crawls, or
+simulates browsing. For explicitly enabled X video capture only, it observes a
+bounded list of completed ``video.twimg.com`` HLS/DASH request URLs. It never
+reads request headers, response headers, bodies, cookies, or authorization and
+never blocks or modifies the request.
 The toolbar has no effect unless a paired instance and an explicitly enabled
 site exist, and failures are silent so ordinary page use continues.
 
