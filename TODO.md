@@ -1462,7 +1462,12 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   Live ``1.20.2`` then exposed a user-action ordering defect: an awaited
   permission check preceded the request, so Firefox could not show approval.
   ``1.20.3`` caches the check during rendering and starts the request directly
-  in the toolbar click handler; signing, deployment, and live proof remain.
+  in the toolbar click handler. Implementation is pushed in ``b1a71fe``;
+  Mozilla signing, permanent-install verification, and checksum-identical XPI
+  deployment are complete. The compatible ``1.20.2`` server remains active
+  because Docker Desktop returned an output-sync I/O error while packaging the
+  metadata-only server version bump. Live permission and settlement proof
+  remain.
 
 - [x] **XIMG-115 P0 — Make Monas restart invalidate sessions and harden product
   forwarding.** Completed in Monas ``0.8.4`` commits ``624e7b4``,

@@ -1296,6 +1296,11 @@ Firefox prompt. The toolbar handler awaited ``permissions.contains()`` before
 calling ``permissions.request()``; Firefox discards user-action eligibility
 after an awaited promise. ``1.20.3`` caches the inspected state while rendering
 and invokes the request synchronously from the button click.
+Mozilla signed ``1.20.3`` and the permanent-install fixture accepted its stable
+identity. DASServer serves the checksum-identical XPI as
+``application/x-xpinstall``. This release changes only the Firefox client; the
+compatible ``1.20.2`` server remains active after Docker Desktop failed to sync
+the otherwise compiled ``1.20.3`` package output.
 
 ## Post-1.0 candidates
 
