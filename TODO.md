@@ -2,7 +2,7 @@
 
 Status: dependency-ordered planning backlog
 
-Version: 1.22.17
+Version: 1.22.18
 
 Updated: 2026-07-19
 
@@ -1847,6 +1847,10 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   an imported original, explicit-original evidence wins over thumbnail
   evidence for the same alias, and an X-recycled media element loses its token,
   overlay, and frame as soon as its rendered identity changes.
+  Version ``1.22.18`` keeps thumbnail-only records viewable in quick preview:
+  it renders the verified DASObjectStore thumbnail with an explicit
+  original-not-captured status and reserves the unavailable state for records
+  where neither stored representation is readable.
 - [ ] **XIMG-202 P3 — Add perceptual duplicate grouping.**
 - [ ] **XIMG-203 P3 — Add collections, tags, and saved searches.**
 - [ ] **XIMG-204 P3 — Add provenance-linked derivatives/transcodes.**

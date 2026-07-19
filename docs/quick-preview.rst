@@ -18,6 +18,14 @@ Each preview names the selected record and keeps the following evidence visible:
 * an explicit ``Object unavailable`` state when an authorized object cannot be
   read.  That state never falls back to the source URL.
 
+An image record that contains a ready DASObjectStore thumbnail but no original
+remains viewable: the preview renders that stored thumbnail and states
+``Stored thumbnail shown · Original not captured``. If an original reference
+exists but is unavailable, the same stored-only fallback is labelled
+``Original representation unavailable``. Only when neither representation is
+ready does the pane show ``Image object unavailable``. None of these states
+request media from the source website.
+
 The dedicated **Playable videos** browse context filters at the server before
 pagination. New normalized video cards show duration and codec families at a
 glance. The preview adds exact dimensions, versioned playback profile, and the

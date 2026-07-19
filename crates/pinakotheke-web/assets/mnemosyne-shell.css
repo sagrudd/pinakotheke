@@ -46,6 +46,7 @@
 .ximg-preview__visual.is-original { align-content:start; justify-items:start; }
 .ximg-preview__image, .ximg-preview__visual video { max-height:70vh; max-width:100%; object-fit:contain; }
 .ximg-preview__visual.is-original .ximg-preview__image { max-height:none; max-width:none; }
+.ximg-preview__rendition-note { background:var(--mn-color-surface-raised); border:1px solid var(--mn-color-border-subtle); color:var(--mn-color-text-secondary); margin:0; padding:var(--mn-space-2) var(--mn-space-3); }
 .ximg-preview__details dl { display:grid; gap:var(--mn-space-3); margin:0; }
 .ximg-preview__details dl div { border-bottom:1px solid var(--mn-color-border-subtle); padding-bottom:var(--mn-space-2); }
 .ximg-preview__details dt { color:var(--mn-color-text-secondary); font-size:.875rem; }

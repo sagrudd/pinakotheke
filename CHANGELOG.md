@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.22.18 - 2026-07-19
+
+- Render the verified DASObjectStore thumbnail in quick preview when an image
+  was observed but its original was not captured.
+- Distinguish an uncaptured or unavailable original from a wholly unavailable
+  image record without ever falling back to the source website.
+
 ## 1.22.17 - 2026-07-19
 
 - Reserve the two-pixel green browser frame for verified user-opened originals

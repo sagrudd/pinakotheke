@@ -310,6 +310,21 @@ fn ready_url(representation: &GalleryRepresentation) -> Option<String> {
     ))
 }
 
+fn ready_image_preview(item: &GalleryItem) -> Option<(String, Option<&'static str>)> {
+    if let Some(path) = item.preview.as_ref().and_then(ready_url) {
+        return Some((path, None));
+    }
+    let path = ready_url(&item.thumbnail)?;
+    Some((
+        path,
+        Some(if item.preview.is_some() {
+            "Stored thumbnail shown · Original representation unavailable"
+        } else {
+            "Stored thumbnail shown · Original not captured"
+        }),
+    ))
+}
+
 fn source_display_label(item: &GalleryItem) -> String {
     let account = std::iter::once(&item.thumbnail)
         .chain(item.preview.iter())
@@ -1303,10 +1318,19 @@ pub fn app() -> Html {
                                 <div class="ximg-preview__layout">
                                     <section class={classes!("ximg-preview__visual", (view_mode == "Original size").then_some("is-original"))} aria-label="Media visual">
                                         { if selected_card.media_kind == GalleryMediaKind::Image {
-                                            if let Some(path) = selected_card.preview.as_ref().and_then(ready_url) {
-                                                html! { <img class="ximg-preview__image" src={path} alt={selected_card.title.clone()} /> }
+                                            if let Some((path, rendition_note)) = ready_image_preview(&selected_card) {
+                                                html! {
+                                                    <>
+                                                        <img class="ximg-preview__image" src={path} alt={selected_card.title.clone()} />
+                                                        { if let Some(note) = rendition_note {
+                                                            html! { <p class="ximg-preview__rendition-note" role="status">{ note }</p> }
+                                                        } else {
+                                                            html! {}
+                                                        } }
+                                                    </>
+                                                }
                                             } else {
-                                                html! { <div class="ximg-preview__unavailable" role="status"><strong>{ "Original image unavailable" }</strong><p>{ "Pinakotheke does not fall back to the source website." }</p></div> }
+                                                html! { <div class="ximg-preview__unavailable" role="status"><strong>{ "Image object unavailable" }</strong><p>{ "Neither a stored original nor a stored thumbnail can be read. Pinakotheke does not fall back to the source website." }</p></div> }
                                             }
                                         } else if let Some(path) = selected_card.preview.as_ref().and_then(ready_path) {
                                             html! {
@@ -1431,9 +1455,34 @@ mod tests {
             ready_path(&media.thumbnail),
             Some("/products/pinakotheke/api/gallery/v1/objects/thumbnail-1")
         );
+        let (thumbnail_preview, note) = ready_image_preview(&media).expect("stored thumbnail");
+        assert!(thumbnail_preview.contains("thumbnail-1"));
+        assert_eq!(note, Some("Stored thumbnail shown · Original not captured"));
         media.thumbnail = representation(GalleryObjectAvailability::Unavailable, None);
         assert_eq!(object_label(&media), "Object unavailable");
         assert_eq!(ready_path(&media.thumbnail), None);
+        assert_eq!(ready_image_preview(&media), None);
+    }
+
+    #[test]
+    fn image_preview_prefers_original_and_falls_back_only_to_a_stored_thumbnail() {
+        let mut media = item();
+        let original = representation(
+            GalleryObjectAvailability::Ready,
+            Some("/products/pinakotheke/api/gallery/v1/objects/original-1"),
+        );
+        media.preview = Some(original);
+        let (path, note) = ready_image_preview(&media).expect("ready original");
+        assert!(path.contains("original-1"));
+        assert_eq!(note, None);
+
+        media.preview = Some(representation(GalleryObjectAvailability::Unavailable, None));
+        let (path, note) = ready_image_preview(&media).expect("stored thumbnail fallback");
+        assert!(path.contains("thumbnail-1"));
+        assert_eq!(
+            note,
+            Some("Stored thumbnail shown · Original representation unavailable")
+        );
     }
 
     #[test]
