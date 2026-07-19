@@ -2175,6 +2175,9 @@ async fn capture_alias_evidence(
     if !context.permits(XIMG_ACCESS) || envelope.schema_version != CACHE_LOOKUP_SCHEMA_VERSION {
         return Err(StatusCode::FORBIDDEN);
     }
+    if envelope.adapter_id.is_empty() || envelope.adapter_id.len() > 128 {
+        return Err(StatusCode::UNPROCESSABLE_ENTITY);
+    }
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
@@ -2187,7 +2190,6 @@ async fn capture_alias_evidence(
             &envelope.pairing_id,
             now,
             &envelope.origin,
-            &envelope.adapter_id,
             &envelope.adapter_version,
             &envelope.canonical_alias,
         );

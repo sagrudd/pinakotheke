@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.22.3 - 2026-07-19
+
+- Correct cache evidence matching across the extension-adapter and server-site
+  identifier namespaces while retaining actor, pairing, origin, version,
+  stable-media, settlement, and gallery authority checks.
+
 ## 1.22.2 - 2026-07-19
 
 - Treat X ``name=small``, ``name=medium``, and opened-size renditions as the

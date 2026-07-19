@@ -332,14 +332,12 @@ impl CapturePlanService {
     }
 
     #[must_use]
-    #[allow(clippy::too_many_arguments)]
     pub fn settled_for_alias(
         &self,
         actor_id: &str,
         pairing_id: &str,
         now: u64,
         origin: &str,
-        adapter_id: &str,
         adapter_version: &str,
         canonical_alias: &str,
     ) -> Option<CapturePlan> {
@@ -354,7 +352,6 @@ impl CapturePlanService {
                 pending.actor_id == actor_id
                     && pending.settled
                     && pending.plan.origin == origin
-                    && pending.plan.site_id == adapter_id
                     && pending.plan.adapter_version == adapter_version
                     && cache_alias_identity(&pending.plan.canonical_media_url)
                         == cache_alias_identity(canonical_alias)
@@ -836,7 +833,6 @@ mod tests {
                     "pair-0",
                     2,
                     &plan.origin,
-                    &plan.site_id,
                     &plan.adapter_version,
                     &plan.canonical_media_url,
                 )
@@ -850,7 +846,6 @@ mod tests {
                     "pair-0",
                     2,
                     &plan.origin,
-                    &plan.site_id,
                     &plan.adapter_version,
                     &plan.canonical_media_url,
                 )
@@ -864,7 +859,6 @@ mod tests {
                     "pair-0",
                     2,
                     &plan.origin,
-                    &plan.site_id,
                     &plan.adapter_version,
                     &plan.canonical_media_url,
                 )
