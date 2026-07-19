@@ -9,6 +9,8 @@
   coverage at the producer and strict consumer boundaries.
 - Retains the bounded trusted-selection snapshot used when a deep virtualized
   timeline replaces the selected image node between pointerdown and click.
+- Requires DASObjectStore 0.121.1's unified local/provider inventory view so a
+  verified Garage commit remains available to gallery reconciliation.
 
 ## 1.27.0 - 2026-07-19
 

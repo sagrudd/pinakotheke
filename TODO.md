@@ -1986,7 +1986,7 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   authenticated report is authoritative ``0``, projected-ready ``0``, orphan
   ``0``, stale ``54`` after the earlier out-of-band reset, and a subsequent
   periodic pass reports zero further changes.
-- [ ] **XIMG-131 P0 — Recover deep-timeline explicit image settlement.** Keep
+- [x] **XIMG-131 P0 — Recover deep-timeline explicit image settlement.** Keep
   trusted selection snapshotting bounded to the selected image, then ensure an
   admitted original can consume capture-helper progress and proceed to
   DASObjectStore verification. Pin the v1 producer discriminator to lowercase
@@ -1994,6 +1994,16 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   outcomes. Acceptance requires exact producer serialization, consumer
   progress/commit, virtualized-node replacement, native/quality/docs checks,
   deployment, and live recovery or retry evidence for an admitted X image.
+  Pinakotheke implementation ``70a59ee`` fixes the producer discriminator and
+  passes 251 native tests, strict Clippy, Wasm, virtualized-node replacement,
+  repository quality, and pinned Sphinx build/run checks. DASObjectStore
+  implementation ``7a11ef58`` makes verified provider-profile objects visible
+  through its public authoritative inventory rather than a private SQLite
+  query. DASServer now runs Pinakotheke ``1.27.1`` and DASObjectStore
+  ``0.121.1``. Startup recovered plans ``capture-plan-53`` and
+  ``capture-plan-54`` to verified gallery admission; the public inventory
+  reports both exact keys as ``Protected`` at 362,285 and 202,745 bytes, and
+  both gallery previews are ``ready`` with authenticated delivery paths.
 - [ ] **XIMG-202 P3 — Add perceptual duplicate grouping.**
 - [x] **XIMG-129 P0 — Generalize trusted-play video capture and feedback.** On
   any explicitly enabled HTTPS origin, admit only a video selected by a trusted

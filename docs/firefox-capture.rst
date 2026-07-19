@@ -160,6 +160,13 @@ use the exact lower-snake-case outcomes ``progress``, ``committed``,
 the worker continues reading until a verified commit or a bounded terminal
 outcome. A restart safely retries an admitted, unsettled plan; it never treats
 progress as storage evidence and never falls back to the source website.
+
+Provider-backed ObjectStores require DASObjectStore 0.121.1 or newer. Its
+``store contents`` authority combines locally landed objects with the latest
+verified provider-profile versions. Older inventory views omitted verified
+Garage catalogue rows and could therefore make reconciliation withdraw a
+successfully committed image. Pinakotheke never works around that gap with a
+raw bucket listing or private database query.
 On the DASServer inspect them with:
 
 .. code-block:: console

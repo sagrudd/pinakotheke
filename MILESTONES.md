@@ -1420,6 +1420,11 @@ browse/play cycle demonstrating the frames and settled toolbar transition.
 - Deployment acceptance recovers or safely retries previously admitted image
   plans and proves a subsequent explicit image reaches a terminal, observable
   state without browser credentials or source-site fallback.
+- Live DASServer acceptance recovered two previously failed explicit-original
+  plans, verified their exact keys through DASObjectStore 0.121.1's public
+  inventory, and restored both authenticated gallery delivery paths. The
+  compatibility-sensitive provider-inventory boundary is DASObjectStore commit
+  ``7a11ef58d4aaeccefb332400a7bd959979840acf``.
 
 ## 1.27.0 — Authoritative gallery convergence
 
@@ -1434,7 +1439,7 @@ browse/play cycle demonstrating the frames and settled toolbar transition.
 - Authenticated diagnostics expose authoritative, projected, orphan, stale,
   and changed counts without object identities or browsing data.
 - Compatibility-sensitive implementation records DASObjectStore commit
-  ``500aaf4bfcd75a5f954476d1f9c999ce5aa21a30``, Monas commit
+  ``7a11ef58d4aaeccefb332400a7bd959979840acf``, Monas commit
   ``dac0e113c8b197cb06abc38187d72f27e562ad63``, and design-language commit
   ``fbfa28e55d1c8111ef95a139d83927c231534b5f``.
 
