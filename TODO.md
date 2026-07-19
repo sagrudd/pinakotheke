@@ -2,7 +2,7 @@
 
 Status: dependency-ordered planning backlog
 
-Version: 1.22.3
+Version: 1.22.4
 
 Updated: 2026-07-19
 
@@ -1747,6 +1747,9 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   weakening actor, pairing, origin, version, settlement, or gallery checks.
   Fix ``cbfcf62`` and the matching Mozilla-signed ``1.22.3`` package are now
   deployed; the next browse is the visual acceptance check.
+  Because that check still showed no frame, ``1.22.4`` adds redacted server
+  hit/miss-stage telemetry and extension lookup/frame-application counts. It
+  also reinforces the non-destructive marker against site layout clipping.
 - [ ] **XIMG-202 P3 — Add perceptual duplicate grouping.**
 - [ ] **XIMG-203 P3 — Add collections, tags, and saved searches.**
 - [ ] **XIMG-204 P3 — Add provenance-linked derivatives/transcodes.**

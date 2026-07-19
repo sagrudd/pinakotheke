@@ -10,7 +10,7 @@
   const style = document.createElement("style");
   style.textContent = [
     ".pinakotheke-capture-selected { box-sizing: border-box !important; outline: 2px dashed #1769aa !important; outline-offset: -2px !important; }",
-    ".pinakotheke-stored-object { box-sizing: border-box !important; border: 2px solid #238636 !important; outline: none !important; }",
+    ".pinakotheke-stored-object { box-sizing: border-box !important; border: 2px solid #238636 !important; outline: 2px solid #238636 !important; outline-offset: -2px !important; box-shadow: inset 0 0 0 2px #238636 !important; }",
   ].join("\n");
   (document.head || document.documentElement).append(style);
   const canonical = raw => { const url = new URL(raw); url.search = ""; url.hash = ""; return url.href; };
@@ -59,11 +59,13 @@
   browser.runtime.onMessage.addListener(message => {
     if (!["frame-stored", "media-capture-state"].includes(message?.command)) return;
     const wanted = message.mediaUrl ? canonical(message.mediaUrl) : null;
+    let matched = 0;
     for (const media of document.querySelectorAll("img,video")) {
       try {
         const matches = (message.mediaToken && mediaTokenFor(media) === message.mediaToken)
           || (wanted && media.currentSrc && canonical(media.currentSrc) === wanted);
         if (!matches) continue;
+        matched += 1;
         if (message.command === "frame-stored" || message.state === "stored") {
           media.classList.remove("pinakotheke-capture-selected");
           media.classList.add("pinakotheke-stored-object");
@@ -74,6 +76,7 @@
         }
       } catch (_) { /* ignore malformed page media */ }
     }
+    return Promise.resolve({ matched });
   });
 
   const videoActivations = new WeakMap();

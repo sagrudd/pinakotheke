@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.22.4 - 2026-07-19
+
+- Add redacted end-to-end cache-evidence and DOM-frame outcome diagnostics.
+- Reinforce the browser-only stored marker with border, outline, and inset
+  frame so site layout clipping cannot hide authoritative evidence.
+
 ## 1.22.3 - 2026-07-19
 
 - Correct cache evidence matching across the extension-adapter and server-site

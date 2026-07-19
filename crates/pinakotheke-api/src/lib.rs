@@ -2194,6 +2194,7 @@ async fn capture_alias_evidence(
             &envelope.canonical_alias,
         );
     let Some(plan) = plan else {
+        eprintln!("pinakotheke_cache_evidence outcome=miss stage=settled_alias");
         return Ok(Json(cache_fallback("miss", None)));
     };
     let gallery = gallery
@@ -2204,6 +2205,7 @@ async fn capture_alias_evidence(
         .iter()
         .find(|item| item.catalogue_id == plan.catalogue_id)
     else {
+        eprintln!("pinakotheke_cache_evidence outcome=miss stage=gallery");
         return Ok(Json(cache_fallback("miss", None)));
     };
     let representation = match plan.capture_kind {
@@ -2212,8 +2214,10 @@ async fn capture_alias_evidence(
         CaptureKind::ExplicitVideo => item.preview.as_ref().or(Some(&item.thumbnail)),
     };
     let Some(representation) = representation else {
+        eprintln!("pinakotheke_cache_evidence outcome=miss stage=representation");
         return Ok(Json(cache_fallback("miss", None)));
     };
+    eprintln!("pinakotheke_cache_evidence outcome=hit stage=ready");
     Ok(Json(CacheAliasLookupResponse {
         schema_version: CACHE_RESULT_SCHEMA_VERSION,
         outcome: "hit",
