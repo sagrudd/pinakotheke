@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.22.15 - 2026-07-19
+
+- Preserve bounded, redacted acquisition failure categories across the capture
+  helper boundary so operators can distinguish retrieval, video assembly,
+  ObjectStore verification, and poster failures.
+- Retry the checksum-addressed video poster commit across the short catalogue
+  transaction handoff after its parent MP4 has settled.
+- Store each poster beside its parent MP4 instead of beneath that object key,
+  avoiding an invalid file-versus-folder collision in DASObjectStore.
+- Grant the native DAS daemon the same narrow group-read access to the derived
+  poster scratch payload as the already-working parent video upload.
+
 ## 1.22.14 - 2026-07-19
 
 - Treat a genuine X media image with positive on-screen geometry as visible

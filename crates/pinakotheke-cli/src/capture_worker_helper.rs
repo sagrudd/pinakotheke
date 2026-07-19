@@ -74,12 +74,18 @@ enum AcquireResponse {
     },
     PolicyBlocked {
         schema_version: String,
+        #[serde(default)]
+        reason_code: Option<String>,
     },
     Unavailable {
         schema_version: String,
+        #[serde(default)]
+        reason_code: Option<String>,
     },
     Rejected {
         schema_version: String,
+        #[serde(default)]
+        reason_code: Option<String>,
     },
 }
 
@@ -158,9 +164,9 @@ pub(crate) fn acquire(
     }
     let schema = match &parsed {
         AcquireResponse::Committed { schema_version, .. }
-        | AcquireResponse::PolicyBlocked { schema_version }
-        | AcquireResponse::Unavailable { schema_version }
-        | AcquireResponse::Rejected { schema_version } => schema_version,
+        | AcquireResponse::PolicyBlocked { schema_version, .. }
+        | AcquireResponse::Unavailable { schema_version, .. }
+        | AcquireResponse::Rejected { schema_version, .. } => schema_version,
     };
     if schema != SCHEMA {
         return Err(io::Error::new(
@@ -202,19 +208,30 @@ pub(crate) fn acquire(
             io::ErrorKind::InvalidData,
             "capture helper changed the reviewed destination",
         )),
-        AcquireResponse::PolicyBlocked { .. } => Err(io::Error::new(
+        AcquireResponse::PolicyBlocked { reason_code, .. } => Err(io::Error::new(
             io::ErrorKind::PermissionDenied,
-            "capture helper blocked acquisition by policy",
+            helper_failure("capture helper blocked acquisition by policy", reason_code),
         )),
-        AcquireResponse::Unavailable { .. } => Err(io::Error::new(
+        AcquireResponse::Unavailable { reason_code, .. } => Err(io::Error::new(
             io::ErrorKind::WouldBlock,
-            "capture helper is temporarily unavailable",
+            helper_failure("capture helper is temporarily unavailable", reason_code),
         )),
-        AcquireResponse::Rejected { .. } => Err(io::Error::new(
+        AcquireResponse::Rejected { reason_code, .. } => Err(io::Error::new(
             io::ErrorKind::InvalidData,
-            "capture helper rejected the plan",
+            helper_failure("capture helper rejected the plan", reason_code),
         )),
     }
+}
+
+fn helper_failure(message: &str, reason_code: Option<String>) -> String {
+    let reason_code = reason_code.filter(|code| {
+        !code.is_empty()
+            && code.len() <= 64
+            && code
+                .bytes()
+                .all(|byte| byte.is_ascii_lowercase() || byte == b'_')
+    });
+    reason_code.map_or_else(|| message.to_owned(), |code| format!("{message}: {code}"))
 }
 
 fn validate_helper(path: &Path) -> io::Result<()> {

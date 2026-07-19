@@ -166,6 +166,7 @@ struct Committed {
 struct Failed {
     outcome: &'static str,
     schema_version: &'static str,
+    reason_code: &'static str,
 }
 
 pub(crate) fn run_protocol() -> Result<(), Box<dyn std::error::Error>> {
@@ -173,16 +174,34 @@ pub(crate) fn run_protocol() -> Result<(), Box<dyn std::error::Error>> {
         Ok(()) => Ok(()),
         Err(error) => {
             let outcome = protocol_failure_outcome(error.as_ref());
+            let reason_code = protocol_failure_code(error.as_ref());
             serde_json::to_writer(
                 io::stderr().lock(),
                 &Failed {
                     outcome,
                     schema_version: REQUEST_SCHEMA,
+                    reason_code,
                 },
             )?;
             eprintln!();
             Ok(())
         }
+    }
+}
+
+fn protocol_failure_code(error: &(dyn std::error::Error + 'static)) -> &'static str {
+    match error.to_string().as_str() {
+        "segmented video assembly failed" => "segmented_assembly",
+        "HTTPS media retrieval failed" => "media_retrieval",
+        "retrieved object is not an eligible bounded medium"
+        | "retrieved media payload is invalid" => "invalid_media",
+        "DASObjectStore remote upload failed" => "object_upload",
+        "DASObjectStore did not report verified completion" => "daemon_verification",
+        "bounded video poster generation failed" | "generated video poster is invalid" => {
+            "poster_generation"
+        }
+        "DASObjectStore did not verify video poster completion" => "poster_upload",
+        _ => "capture_rejected",
     }
 }
 
@@ -601,17 +620,42 @@ fn create_and_commit_video_poster(
     {
         return Err("generated video poster is invalid".into());
     }
+    #[cfg(unix)]
+    if config.container_execution.is_none() {
+        use std::os::unix::fs::{MetadataExt, PermissionsExt};
+        // The native DAS daemon runs as the shared dasobjectstore group and
+        // must be able to read this second payload just as it reads the MP4.
+        fs::set_permissions(&poster, fs::Permissions::from_mode(0o640))?;
+        let daemon_group = fs::symlink_metadata(&scratch.path)?.gid();
+        std::os::unix::fs::chown(&poster, None, Some(daemon_group))?;
+    }
     let checksum = sha256_file(&poster)?;
-    let object_key = format!("{video_key}/poster.webp");
-    let mut upload = upload_command(config, scratch, &poster, request, &object_key, "image/webp")?;
-    let (status, stdout) = output_bounded(&mut upload, 64 * 1024)?;
-    if !status.success()
-        || !String::from_utf8(stdout)?.lines().any(|line| {
-            line.starts_with("Final:")
-                && line.contains("state=Complete")
-                && line.contains("stage=remote_s3_transfer_complete")
-        })
-    {
+    // A DASObjectStore catalogue key is either an object or a folder prefix;
+    // the committed MP4 key cannot also become the parent of its poster.
+    let object_key = format!("{video_key}.poster.webp");
+    // The poster follows the larger video commit immediately. A DAS daemon
+    // can still be releasing its catalogue transaction at that boundary, so
+    // retry this same checksum-addressed object for a short bounded interval.
+    // The stable key and checksum keep retries idempotent.
+    let mut verified = false;
+    for attempt in 0..5 {
+        let mut upload =
+            upload_command(config, scratch, &poster, request, &object_key, "image/webp")?;
+        let (status, stdout) = output_bounded(&mut upload, 64 * 1024)?;
+        verified = status.success()
+            && String::from_utf8(stdout)?.lines().any(|line| {
+                line.starts_with("Final:")
+                    && line.contains("state=Complete")
+                    && line.contains("stage=remote_s3_transfer_complete")
+            });
+        if verified {
+            break;
+        }
+        if attempt < 4 {
+            std::thread::sleep(std::time::Duration::from_millis(200 * (attempt + 1)));
+        }
+    }
+    if !verified {
         return Err("DASObjectStore did not verify video poster completion".into());
     }
     Ok(GalleryVideoCompletion {
@@ -1396,7 +1440,7 @@ mod tests {
         let remote = root.join("remote");
         executable(
             &remote,
-            "#!/bin/sh\nprintf '%s' \"$*\" | grep -q -- '--key x.com/artist/explicit_video/checksum/poster.webp --content-type image/webp' || exit 9\nprintf 'Final: job state=Complete stage=remote_s3_transfer_complete\\n'\n",
+            "#!/bin/sh\nprintf '%s' \"$*\" | grep -q -- '--key x.com/artist/explicit_video/checksum.poster.webp --content-type image/webp' || exit 9\nprintf 'Final: job state=Complete stage=remote_s3_transfer_complete\\n'\n",
         );
         let remote_config = root.join("remote.json");
         fs::write(&remote_config, "{}").unwrap();
@@ -1457,7 +1501,7 @@ mod tests {
         assert_eq!(completion.poster_content_length, 14);
         assert_eq!(
             completion.poster_object_key,
-            "x.com/artist/explicit_video/checksum/poster.webp"
+            "x.com/artist/explicit_video/checksum.poster.webp"
         );
         assert_eq!((completion.width, completion.height), (64, 48));
         drop(scratch);

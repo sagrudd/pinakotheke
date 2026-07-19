@@ -2,7 +2,7 @@
 
 Status: dependency-ordered planning backlog
 
-Version: 1.22.14
+Version: 1.22.15
 
 Updated: 2026-07-19
 
@@ -1825,6 +1825,17 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   positive viewport geometry for genuine ``pbs.twimg.com/media`` elements
   instead of generic intrinsic-load/style heuristics that reject X virtualized
   nodes. Temporary Firefox proof remains.
+- Live X video regression diagnosis in version ``1.22.15`` proved segmented
+  assembly and the parent MP4 commit complete before the immediately following
+  poster commit was rejected. The helper now reports bounded stage codes and
+  retries that idempotent checksum-addressed poster across the short DAS
+  catalogue transaction handoff. Live retry evidence then isolated the durable
+  defect: the MP4 key was incorrectly reused as a folder prefix. Posters now
+  use a checksum-linked sibling key and inherit the same narrow daemon-readable
+  scratch permissions as the parent MP4 so DASObjectStore can settle them.
+  Deployed v1.22.15 proof on the x86_64 host reconciled and gallery-admitted
+  pending X video plans 124, 129, and 158 with their derived poster objects.
+  Fresh installed-Firefox capture proof remains.
 - [ ] **XIMG-202 P3 — Add perceptual duplicate grouping.**
 - [ ] **XIMG-203 P3 — Add collections, tags, and saved searches.**
 - [ ] **XIMG-204 P3 — Add provenance-linked derivatives/transcodes.**
