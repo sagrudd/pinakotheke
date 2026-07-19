@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.22.5 - 2026-07-19
+
+- Restore authoritative evidence lookup and observed-image capture when X
+  serves visibly rendered media from a delivery host other than its historical
+  image CDN; server-side policy remains authoritative for every acquisition.
+
 ## 1.22.4 - 2026-07-19
 
 - Add redacted end-to-end cache-evidence and DOM-frame outcome diagnostics.

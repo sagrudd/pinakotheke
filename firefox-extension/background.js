@@ -472,9 +472,15 @@ function displayedImages() {
 
 function eligibleObservedImages(origin, rule, images) {
   if (origin !== "https://x.com" || !rule.xIngress) return images;
+  // X changes the delivery host used by images without changing the page-level
+  // opt-in contract.  Restricting observed media to one historical CDN host
+  // prevented both authoritative cache-evidence lookup and capture for images
+  // Firefox had visibly rendered.  The content observer has already bounded
+  // this list to visible HTTPS images; the server remains the policy authority
+  // for acquisition and treats an unknown alias as a harmless cache miss.
   return images.filter(observed => {
     try {
-      return new URL(observed.url).hostname === "pbs.twimg.com";
+      return new URL(observed.url).protocol === "https:";
     } catch (_) {
       return false;
     }
