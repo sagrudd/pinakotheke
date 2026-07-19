@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.22.1 - 2026-07-19
+
+- Mount authoritative cache-alias evidence in the production monolith and
+  resolve settled aliases from the persistent capture journal and gallery.
+- Route Firefox evidence checks through the Monas-authenticated Pinakotheke
+  product boundary instead of the absent standalone cache route.
+
 ## 1.22.0 - 2026-07-19
 
 - Query authoritative cache-alias evidence for displayed media independently of

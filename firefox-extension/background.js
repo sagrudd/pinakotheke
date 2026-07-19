@@ -568,7 +568,7 @@ async function substituteDisplayedVideo(candidate) {
 }
 
 async function lookupAlias(instanceUrl, instanceId, pairId, origin, adapter, alias) {
-  const response = await fetch(`${instanceUrl}/api/extension/v1/cache-aliases/lookup`, {
+  const response = await fetch(`${instanceUrl}/products/pinakotheke/api/extension/v1/cache-aliases/lookup`, {
     method: "POST",
     credentials: "include",
     cache: "no-store",

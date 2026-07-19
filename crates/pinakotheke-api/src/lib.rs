@@ -914,10 +914,15 @@ pub fn monolith_router_with_gallery_web_delivery_and_capture_authority(
         } = capture;
         let capture_plans = Arc::new(Mutex::new(capture_plans));
         let reviewed_destinations = reviewed_destinations.map(|store| Arc::new(Mutex::new(store)));
-        protected = protected.route(
-            "/products/pinakotheke/api/extension/v1/capture-plans",
-            get(capture_plans_pending).post(capture_plan),
-        );
+        protected = protected
+            .route(
+                "/products/pinakotheke/api/extension/v1/capture-plans",
+                get(capture_plans_pending).post(capture_plan),
+            )
+            .route(
+                "/products/pinakotheke/api/extension/v1/cache-aliases/lookup",
+                post(capture_alias_evidence),
+            );
         if let Some(onboarding) = onboarding.clone() {
             protected = protected
                 .route(
@@ -2159,6 +2164,68 @@ async fn cache_alias_lookup(
             }
         },
     ))
+}
+
+async fn capture_alias_evidence(
+    Extension(context): Extension<AuthenticatedHostContext>,
+    Extension(capture_plans): Extension<CapturePlans>,
+    Extension(gallery): Extension<MonasGalleryCatalogue>,
+    Json(envelope): Json<CacheAliasLookupEnvelope>,
+) -> Result<Json<CacheAliasLookupResponse>, StatusCode> {
+    if !context.permits(XIMG_ACCESS) || envelope.schema_version != CACHE_LOOKUP_SCHEMA_VERSION {
+        return Err(StatusCode::FORBIDDEN);
+    }
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .as_secs();
+    let plan = capture_plans
+        .lock()
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .settled_for_alias(
+            context.actor_id(),
+            &envelope.pairing_id,
+            now,
+            &envelope.origin,
+            &envelope.adapter_id,
+            &envelope.adapter_version,
+            &envelope.canonical_alias,
+        );
+    let Some(plan) = plan else {
+        return Ok(Json(cache_fallback("miss", None)));
+    };
+    let gallery = gallery
+        .lock()
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let Some(item) = gallery
+        .items()
+        .iter()
+        .find(|item| item.catalogue_id == plan.catalogue_id)
+    else {
+        return Ok(Json(cache_fallback("miss", None)));
+    };
+    let representation = match plan.capture_kind {
+        CaptureKind::ObservedThumbnail => Some(&item.thumbnail),
+        CaptureKind::ExplicitOriginal => item.preview.as_ref(),
+        CaptureKind::ExplicitVideo => item.preview.as_ref().or(Some(&item.thumbnail)),
+    };
+    let Some(representation) = representation else {
+        return Ok(Json(cache_fallback("miss", None)));
+    };
+    Ok(Json(CacheAliasLookupResponse {
+        schema_version: CACHE_RESULT_SCHEMA_VERSION,
+        outcome: "hit",
+        reason: None,
+        media_class: Some(match plan.capture_kind {
+            CaptureKind::ObservedThumbnail => "thumbnail_image",
+            CaptureKind::ExplicitOriginal => "original_image",
+            CaptureKind::ExplicitVideo => "normalized_mp4",
+        }),
+        content_type: Some(representation.content_type.clone()),
+        content_length: Some(representation.content_length),
+        object_checksum: Some(representation.checksum.clone()),
+        delivery_path: representation.delivery_path.clone(),
+    }))
 }
 
 fn cache_fallback(outcome: &'static str, reason: Option<&'static str>) -> CacheAliasLookupResponse {

@@ -331,6 +331,36 @@ impl CapturePlanService {
         })
     }
 
+    #[must_use]
+    #[allow(clippy::too_many_arguments)]
+    pub fn settled_for_alias(
+        &self,
+        actor_id: &str,
+        pairing_id: &str,
+        now: u64,
+        origin: &str,
+        adapter_id: &str,
+        adapter_version: &str,
+        canonical_alias: &str,
+    ) -> Option<CapturePlan> {
+        let pairing = self.pairings.get(pairing_id)?;
+        if pairing.actor_id != actor_id || pairing.revoked || pairing.expires_at <= now {
+            return None;
+        }
+        self.accepted
+            .iter()
+            .rev()
+            .find(|pending| {
+                pending.actor_id == actor_id
+                    && pending.settled
+                    && pending.plan.origin == origin
+                    && pending.plan.site_id == adapter_id
+                    && pending.plan.adapter_version == adapter_version
+                    && pending.plan.canonical_media_url == canonical_alias
+            })
+            .map(|pending| pending.plan.clone())
+    }
+
     pub fn settle(&mut self, actor_id: &str, plan_id: &str) -> Result<(), CapturePlanError> {
         let Some(index) = self
             .accepted
@@ -784,6 +814,53 @@ mod tests {
         assert_eq!(plan.capture_kind, CaptureKind::ObservedThumbnail);
         assert_eq!(plan.scheduler_job_id, "refresh-0");
         assert_eq!(plan.state, CapturePlanState::AwaitingApprovedAcquisition);
+    }
+
+    #[test]
+    fn settled_alias_evidence_is_pairing_scoped_and_restart_safe() {
+        let mut planner = service();
+        let plan = planner.plan("actor", 1, request()).expect("plan");
+        assert!(
+            planner
+                .settled_for_alias(
+                    "actor",
+                    "pair-0",
+                    2,
+                    &plan.origin,
+                    &plan.site_id,
+                    &plan.adapter_version,
+                    &plan.canonical_media_url,
+                )
+                .is_none()
+        );
+        planner.settle("actor", &plan.plan_id).expect("settle");
+        assert_eq!(
+            planner
+                .settled_for_alias(
+                    "actor",
+                    "pair-0",
+                    2,
+                    &plan.origin,
+                    &plan.site_id,
+                    &plan.adapter_version,
+                    &plan.canonical_media_url,
+                )
+                .map(|matched| matched.plan_id),
+            Some(plan.plan_id)
+        );
+        assert!(
+            planner
+                .settled_for_alias(
+                    "other",
+                    "pair-0",
+                    2,
+                    &plan.origin,
+                    &plan.site_id,
+                    &plan.adapter_version,
+                    &plan.canonical_media_url,
+                )
+                .is_none()
+        );
     }
 
     #[test]
