@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: MPL-2.0
 // Runs only on exact origins dynamically registered from explicit site policy.
-if (!globalThis.__pinakothekeExplicitOpenObserver) {
+(() => {
+  const pinakothekeObserverVersion = browser.runtime.getManifest().version;
+  if (globalThis.__pinakothekeExplicitOpenObserverVersion !== pinakothekeObserverVersion) {
+  globalThis.__pinakothekeExplicitOpenObserverVersion = pinakothekeObserverVersion;
+  // Retain the historic marker for compatibility while using the versioned
+  // marker as the upgrade/idempotency authority.
   globalThis.__pinakothekeExplicitOpenObserver = true;
   const style = document.createElement("style");
   style.textContent = ".pinakotheke-stored-object { box-sizing: border-box !important; border: 2px solid #238636 !important; }";
@@ -221,4 +226,5 @@ if (!globalThis.__pinakothekeExplicitOpenObserver) {
       height: image.naturalHeight,
     });
   }, true);
-}
+  }
+})();

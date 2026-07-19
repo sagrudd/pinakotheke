@@ -2,7 +2,7 @@
 
 Status: 1.0 stable release
 
-Version: 1.19.1
+Version: 1.19.2
 
 Updated: 2026-07-19
 
@@ -1234,6 +1234,15 @@ authority. Mozilla signed ``1.19.1`` and the permanent-install fixture accepted
 its stable identity. DASServer now runs the matching ``1.19.1`` backend and
 serves the checksum-identical signed XPI as ``application/x-xpinstall``. A new
 installed-Firefox play remains the final settlement proof.
+
+## 1.19.2 — Upgrade-safe Firefox observers
+
+Live ``1.19.1`` evidence showed no post-upgrade observer diagnostic or server
+plan despite the extension being active. The existing X page retained the
+legacy boolean observer marker, causing the newly injected script to exit
+before installing ``1.19.1`` behavior. ``1.19.2`` keys observer admission by
+the installed extension version: a new version activates in open eligible tabs,
+while repeated injection of that same version stays idempotent.
 
 ## Post-1.0 candidates
 

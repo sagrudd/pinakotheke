@@ -171,6 +171,7 @@ assert.equal(registeredScripts[0].allFrames, false);
 
 const contentListeners = new Map();
 const contentMessages = [];
+let contentListenerRegistrations = 0;
 class FixtureElement {
   closest(selector) {
     if (selector === "img") return this;
@@ -192,12 +193,15 @@ const contentDocument = {
   createElement() { return { textContent: "" }; },
   querySelectorAll() { return []; },
   addEventListener(kind, callback, capture) {
+    contentListenerRegistrations += 1;
     contentListeners.set(kind, callback);
     if (["click", "pointerdown", "play"].includes(kind)) assert.equal(capture, true);
   },
 };
-vm.runInNewContext(contentSource, {
+const contentContext = vm.createContext({
+  __pinakothekeExplicitOpenObserver: true,
   browser: { runtime: {
+    getManifest() { return { version: "fixture-version" }; },
     sendMessage(message) { contentMessages.push(message); },
     onMessage: { addListener() {} },
   } },
@@ -226,6 +230,14 @@ vm.runInNewContext(contentSource, {
   location: { href: "https://art.example.invalid:8443/watch/fixture" },
   URL,
 });
+vm.runInContext(contentSource, contentContext);
+const firstRegistrationCount = contentListenerRegistrations;
+vm.runInContext(contentSource, contentContext);
+assert.equal(
+  contentListenerRegistrations,
+  firstRegistrationCount,
+  "reinjecting the same observer version must remain idempotent",
+);
 const clickListener = contentListeners.get("click");
 assert.equal(typeof clickListener, "function");
 clickListener({ isTrusted: false, button: 0, target: openedImage });

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.19.2 - 2026-07-19
+
+- Version the injected Firefox page-observer marker so an extension upgrade
+  activates the new observer in already-open eligible tabs instead of exiting
+  because a prior release left its legacy marker behind.
+
 ## 1.19.1 - 2026-07-19
 
 - Admit a visible video play for capture after a recent genuine page pointer or
