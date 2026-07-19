@@ -79,6 +79,7 @@ pub fn admit_ready_normalized_video(
         catalogue_id: presentation.catalogue_id.clone(),
         title: presentation.title,
         source_label: presentation.source_label,
+        source_page_url: None,
         source_kind: GallerySourceKind::Website,
         media_kind: GalleryMediaKind::NormalizedVideo,
         review_state: GalleryReviewState::New,

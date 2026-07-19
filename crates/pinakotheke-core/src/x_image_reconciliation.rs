@@ -20,12 +20,16 @@ pub struct XImageReconciliationReport {
     pub redundant_cards: usize,
     pub renamed_cards: usize,
     pub rebound_plans: usize,
+    pub source_links_added: usize,
 }
 
 impl XImageReconciliationReport {
     #[must_use]
     pub const fn changed(self) -> bool {
-        self.redundant_cards > 0 || self.renamed_cards > 0 || self.rebound_plans > 0
+        self.redundant_cards > 0
+            || self.renamed_cards > 0
+            || self.rebound_plans > 0
+            || self.source_links_added > 0
     }
 }
 
@@ -136,6 +140,37 @@ pub fn reconcile_x_image_catalogue(
         }
     }
 
+    let source_pages = plans
+        .iter()
+        .filter(|pending| pending.settled)
+        .filter_map(|pending| {
+            let raw = [
+                &pending.plan.canonical_presentation_url,
+                &pending.plan.canonical_page_url,
+            ]
+            .into_iter()
+            .find(|value| value.starts_with("https://x.com/"))?;
+            let mut page = raw.parse::<url::Url>().ok()?;
+            if page.host_str() != Some("x.com")
+                || !page.username().is_empty()
+                || page.password().is_some()
+            {
+                return None;
+            }
+            page.set_query(None);
+            page.set_fragment(None);
+            Some((pending.plan.catalogue_id.clone(), page.to_string()))
+        })
+        .collect::<BTreeMap<_, _>>();
+    for item in &mut reconciled_items {
+        if item.source_page_url.is_none()
+            && let Some(page) = source_pages.get(&item.catalogue_id)
+        {
+            item.source_page_url = Some(page.clone());
+            report.source_links_added += 1;
+        }
+    }
+
     Ok(XImageReconciliation {
         items: reconciled_items,
         plans,
@@ -243,6 +278,7 @@ fn merge_group(
         catalogue_id: stable,
         title: metadata.title.clone(),
         source_label: metadata.source_label.clone(),
+        source_page_url: metadata.source_page_url.clone(),
         source_kind: metadata.source_kind,
         media_kind: GalleryMediaKind::Image,
         review_state,
@@ -296,6 +332,7 @@ mod tests {
             catalogue_id: id.into(),
             title: "Captured image".into(),
             source_label: "X / @fixture".into(),
+            source_page_url: None,
             source_kind: GallerySourceKind::XAccount,
             media_kind: GalleryMediaKind::Image,
             review_state: GalleryReviewState::New,
@@ -383,12 +420,17 @@ mod tests {
                 .all(|pending| pending.plan.catalogue_id == stable)
         );
         assert_eq!(
+            result.items[0].source_page_url.as_deref(),
+            Some("https://x.com/fixture/status/legacy-c")
+        );
+        assert_eq!(
             result.report,
             XImageReconciliationReport {
                 duplicate_groups: 1,
                 redundant_cards: 2,
                 renamed_cards: 3,
                 rebound_plans: 3,
+                source_links_added: 1,
             }
         );
     }

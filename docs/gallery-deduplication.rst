@@ -42,6 +42,12 @@ or ``Hidden`` review intent is preserved conservatively. Endpoint and logical
 ObjectStore identities must match exactly; ambiguous or cross-store groups fail
 closed.
 
+The same guarded pass backfills a safe X presentation link from a settled
+capture-plan record when the gallery card does not already have one. This lets
+the quick preview offer an explicit source-open action for a thumbnail-only
+record without making an origin request itself. Query-bearing media retrieval
+capabilities are never used as source links.
+
 No DASObjectStore object is deleted. Redundant immutable representations remain
 available to DASObjectStore retention and administration policy even when they
 are no longer repeated in the Pinakotheke gallery projection.

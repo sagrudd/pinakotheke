@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.22.20 - 2026-07-19
+
+- Preserve a safe source-presentation link for new captures and backfill
+  historic X cards from the private capture-plan journal, allowing a user to
+  explicitly reopen a thumbnail-only image and trigger original capture.
+- Retry transient DASObjectStore upload and verification handoff failures with
+  bounded backoff and fresh destination revalidation before every attempt.
+- Extend deterministic browser fixtures to cover X-style overlay clicks and
+  retain the restart-safe thumbnail-to-original single-card regression proof.
+
 ## 1.22.19 - 2026-07-19
 
 - Derive X image gallery identity from the immutable media path rather than a

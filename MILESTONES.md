@@ -2,7 +2,7 @@
 
 Status: 1.0 stable release
 
-Version: 1.22.19
+Version: 1.22.20
 
 Updated: 2026-07-19
 
@@ -1347,6 +1347,25 @@ The implementation is pushed in ``9e874df`` and the Mozilla-signed XPI passed
 permanent installation. DASServer serves the checksum-matching artifact and
 runs the ``1.22.0`` package; final milestone evidence is one user-driven X
 browse/play cycle demonstrating the frames and settled toolbar transition.
+
+## 1.22.20 — Thumbnail-to-original recovery assurance
+
+Goal: make thumbnail-only state useful and ensure an explicit user open cannot
+be lost to a transient storage handoff or an untested X overlay interaction.
+
+Exit criteria:
+
+- thumbnail-only cards render their verified DASObjectStore thumbnail and, when
+  safe recorded provenance exists, expose a visible source-open action;
+- new admissions preserve credential-free HTTPS presentation provenance and a
+  guarded stopped-service pass backfills historic X cards without printing it;
+- transient object-upload and daemon-verification failures receive bounded
+  retries with destination revalidation before every attempt;
+- deterministic fixtures cover direct image clicks, X overlay clicks,
+  thumbnail-to-original one-card promotion, restart persistence, and honest
+  unavailable states; and
+- live reconciliation backfills existing records idempotently without deleting
+  any DASObjectStore object.
 
 ## 1.22.19 — Exact X image gallery convergence
 

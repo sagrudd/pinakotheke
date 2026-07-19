@@ -2,7 +2,7 @@
 
 Status: dependency-ordered planning backlog
 
-Version: 1.22.19
+Version: 1.22.20
 
 Updated: 2026-07-19
 
@@ -1860,6 +1860,15 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   plans, and left 240 unique cards. Private metadata backups were created, no
   DASObjectStore object was deleted, and the post-restart dry run converged to
   zero changes with Monas, Pinakotheke, and DASObjectStore all ``Ready``.
+- [ ] **XIMG-121 P0 — Anchor thumbnail-to-original recovery to deterministic
+  regression evidence.** Preserve a safe presentation link on gallery cards,
+  backfill historic X cards from settled plan metadata, and offer an explicit
+  source-open action when only the DASObjectStore thumbnail exists. Retry only
+  transient upload/verification handoff failures with bounded backoff and
+  destination revalidation. Acceptance requires synthetic proof of direct and
+  overlay image clicks, observed-thumbnail then opened-original convergence to
+  one restart-safe card, stored-thumbnail preview without an unavailable
+  claim, transient DAS retry, and a stopped-service live metadata backfill.
 - [ ] **XIMG-202 P3 — Add perceptual duplicate grouping.**
 - [ ] **XIMG-203 P3 — Add collections, tags, and saved searches.**
 - [ ] **XIMG-204 P3 — Add provenance-linked derivatives/transcodes.**

@@ -91,6 +91,10 @@ pub struct GalleryItem {
     pub catalogue_id: String,
     pub title: String,
     pub source_label: String,
+    /// Safe HTTPS presentation page the user can explicitly reopen.
+    /// Historic catalogues omit it and remain readable.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_page_url: Option<String>,
     pub source_kind: GallerySourceKind,
     pub media_kind: GalleryMediaKind,
     pub review_state: GalleryReviewState,
@@ -673,6 +677,23 @@ fn validate_item(item: &GalleryItem) -> Result<(), GalleryCatalogueError> {
             "identity, title, and dimensions are required".into(),
         ));
     }
+    if item.source_page_url.as_deref().is_some_and(|value| {
+        value.len() > 2_048
+            || !value.starts_with("https://")
+            || value.contains(['\n', '\r'])
+            || value.parse::<url::Url>().ok().is_none_or(|url| {
+                url.scheme() != "https"
+                    || url.host_str().is_none()
+                    || !url.username().is_empty()
+                    || url.password().is_some()
+                    || url.query().is_some()
+                    || url.fragment().is_some()
+            })
+    }) {
+        return Err(GalleryCatalogueError::InvalidItem(
+            "source page must be a bounded credential-free HTTPS URL".into(),
+        ));
+    }
     validate_representation(&item.thumbnail)?;
     if !matches!(
         item.thumbnail.kind,
@@ -790,6 +811,7 @@ mod tests {
             catalogue_id: id.into(),
             title: "Synthetic redistributable image".into(),
             source_label: "Example website".into(),
+            source_page_url: Some("https://example.invalid/gallery".into()),
             source_kind: GallerySourceKind::Website,
             media_kind: GalleryMediaKind::Image,
             review_state: GalleryReviewState::New,

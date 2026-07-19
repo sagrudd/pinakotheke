@@ -1869,12 +1869,7 @@ fn schedule_capture_runtime(
     };
     let runtime = Arc::clone(runtime);
     handle.spawn_blocking(move || {
-        let acquired = revalidate_capture_destination(&runtime, &actor_id, &plan).and_then(|_| runtime.acquire.as_ref().ok_or_else(|| String::from("acquire backend unavailable"))).and_then(|backend| {
-            backend
-                .lock()
-                .map_err(|_| String::from("acquire backend lock poisoned"))?
-                .acquire(&actor_id, &plan)
-        });
+        let acquired = acquire_capture_with_retry(&runtime, &actor_id, &plan);
         match acquired {
             Ok(evidence) => match settle_capture_runtime(&runtime, &actor_id, evidence) {
                 Ok(_) => eprintln!(
@@ -1896,6 +1891,38 @@ fn schedule_capture_runtime(
         }
     });
     Ok(true)
+}
+
+fn acquire_capture_with_retry(
+    runtime: &CaptureCompletionRuntime,
+    actor_id: &str,
+    plan: &CapturePlan,
+) -> Result<VerifiedCaptureCompletion, String> {
+    const MAX_ATTEMPTS: usize = 3;
+    for attempt in 0..MAX_ATTEMPTS {
+        revalidate_capture_destination(runtime, actor_id, plan)?;
+        let result = runtime
+            .acquire
+            .as_ref()
+            .ok_or_else(|| String::from("acquire backend unavailable"))?
+            .lock()
+            .map_err(|_| String::from("acquire backend lock poisoned"))?
+            .acquire(actor_id, plan);
+        match result {
+            Ok(evidence) => return Ok(evidence),
+            Err(reason) if transient_capture_failure(&reason) && attempt + 1 < MAX_ATTEMPTS => {
+                std::thread::sleep(std::time::Duration::from_millis(200 * (attempt as u64 + 1)));
+            }
+            Err(reason) => return Err(reason),
+        }
+    }
+    unreachable!("bounded retry loop always returns")
+}
+
+fn transient_capture_failure(reason: &str) -> bool {
+    reason.ends_with(": object_upload")
+        || reason.ends_with(": daemon_verification")
+        || reason.contains("temporarily unavailable")
 }
 
 fn revalidate_capture_destination(
@@ -2691,6 +2718,7 @@ mod tests {
             catalogue_id: "media-1".into(),
             title: "Synthetic redistributable image".into(),
             source_label: "Example website".into(),
+            source_page_url: Some("https://example.invalid/gallery".into()),
             source_kind: GallerySourceKind::Website,
             media_kind: GalleryMediaKind::Image,
             review_state: GalleryReviewState::New,
@@ -2755,6 +2783,7 @@ mod tests {
             catalogue_id: "video-1".into(),
             title: "Synthetic normalized video".into(),
             source_label: "Example website".into(),
+            source_page_url: Some("https://example.invalid/video".into()),
             source_kind: GallerySourceKind::Website,
             media_kind: GalleryMediaKind::NormalizedVideo,
             review_state: GalleryReviewState::New,
@@ -4313,7 +4342,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn admitted_plan_runs_one_background_helper_and_becomes_live() {
+    async fn admitted_plan_retries_transient_object_upload_and_becomes_live() {
         let root = std::env::temp_dir().join(format!(
             "pinakotheke-api-background-capture-{}",
             std::process::id()
@@ -4322,7 +4351,12 @@ mod tests {
         let store = GalleryCatalogueStore::new(root.join("gallery.json"));
         let dispatch = "synthetic-monas-dispatch-token-0001";
         let worker = "synthetic-capture-worker-token-0001";
-        let acquire = HostCaptureAcquireBackend::new(Box::new(|_, plan| {
+        let attempts = Arc::new(AtomicUsize::new(0));
+        let attempts_for_acquire = Arc::clone(&attempts);
+        let acquire = HostCaptureAcquireBackend::new(Box::new(move |_, plan| {
+            if attempts_for_acquire.fetch_add(1, Ordering::SeqCst) == 0 {
+                return Err("capture helper rejected the plan: object_upload".into());
+            }
             Ok(VerifiedCaptureCompletion {
                 plan_id: plan.plan_id.clone(),
                 catalogue_id: "background-card-1".into(),
@@ -4403,6 +4437,7 @@ mod tests {
             tokio::time::sleep(std::time::Duration::from_millis(10)).await;
         }
         assert!(visible, "background capture should update the live gallery");
+        assert_eq!(attempts.load(Ordering::SeqCst), 2);
         let _ = std::fs::remove_dir_all(root);
     }
 

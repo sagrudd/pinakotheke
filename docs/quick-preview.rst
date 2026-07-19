@@ -1,10 +1,12 @@
 Quick preview and normalized video playback
 ===========================================
 
-The library opens a selected media card in a focused preview task pane.  The
-preview is a reading and playback surface, not an acquisition control: it never
-opens an origin page, fetches a source URL, stores media bytes, or exposes a
-credential.
+The library opens a selected media card in a focused preview task pane. Media
+is always rendered from DASObjectStore and never falls back to an origin URL.
+For a thumbnail-only image, an explicit external link may reopen the recorded
+source presentation in a new tab so the user's normal Firefox interaction can
+request original capture. Pinakotheke never follows that link itself and never
+receives site credentials.
 
 Using the preview
 -----------------
@@ -14,7 +16,8 @@ Each preview names the selected record and keeps the following evidence visible:
 * source account/origin label, capture time, media type, ObjectStore state, and
   descriptive alt text;
 * a ``Fit to pane`` / ``View original size`` control for the visual area;
-* a source-metadata link, rather than a hidden source navigation; and
+* a visible ``Open source image to capture original`` link for a thumbnail-only
+  record when safe presentation provenance is available; and
 * an explicit ``Object unavailable`` state when an authorized object cannot be
   read.  That state never falls back to the source URL.
 
@@ -25,6 +28,12 @@ exists but is unavailable, the same stored-only fallback is labelled
 ``Original representation unavailable``. Only when neither representation is
 ready does the pane show ``Image object unavailable``. None of these states
 request media from the source website.
+
+Opening the source link is an explicit user action. It does not claim capture
+success: the card changes to ``Stored in ObjectStore`` only after the Firefox
+extension emits an opened-original plan and DASObjectStore verifies settlement.
+Historic cards without recoverable presentation provenance state that the
+source link is unavailable instead of inventing one.
 
 The dedicated **Playable videos** browse context filters at the server before
 pagination. New normalized video cards show duration and codec families at a
@@ -83,6 +92,6 @@ It removes its Firefox profile and retains no media.
 
 Compatibility-sensitive sources reviewed: Mnemosyne design language
 ``fbfa28e55d1c8111ef95a139d83927c231534b5f``, Monas
-``799484eeb1f6d324500f8ed59bed8e43deed7be5``, DASObjectStore
-``8afcfb487120f5fa9d0431b3ae8ce0fc4a42af37``, and Mnemosyne
-``52810176bf95a170f93d74a6f5daa94da5c6640e``.
+``dac0e113c8b197cb06abc38187d72f27e562ad63``, DASObjectStore
+``27ae0d9e936a68b5cd5783b44725d709e1ba665e``, and Mnemosyne
+``2244a49f5057ef6251b2760bd0729de8e2207f56``.

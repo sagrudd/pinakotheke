@@ -275,6 +275,7 @@ const contentDocument = {
   documentElement: {},
   head: { append() {} },
   body: { append() {} },
+  images: [openedImage],
   createElement() { return new FixtureElement(); },
   querySelectorAll() { return []; },
   addEventListener(kind, callback, capture) {
@@ -322,7 +323,7 @@ const contentContext = vm.createContext({
       ];
     },
   },
-  location: { href: "https://art.example.invalid:8443/watch/fixture" },
+  location: { href: "https://x.com/fixture/status/42/photo/1", origin: "https://x.com" },
   URL,
 });
 vm.runInContext(contentSource, contentContext);
@@ -343,6 +344,26 @@ assert.equal(contentMessages[0].command, "explicit-original-opened");
 assert.equal(contentMessages[0].mediaUrl, "https://media.example.invalid/thumb.jpg");
 assert.equal(contentMessages[0].presentationUrl, "https://media.example.invalid/open.jpg?signed=drop");
 assert.equal(contentMessages[0].width, 2048);
+
+const imageOverlay = new FixtureElement();
+imageOverlay.closest = () => null;
+const overlayXImage = new FixtureElement();
+overlayXImage.currentSrc = "https://pbs.twimg.com/media/fixture?format=jpg&name=small";
+overlayXImage.naturalWidth = 1200;
+overlayXImage.naturalHeight = 800;
+contentDocument.images = [overlayXImage];
+clickListener({
+  isTrusted: true,
+  button: 0,
+  target: imageOverlay,
+  clientX: 120,
+  clientY: 80,
+});
+assert.equal(contentMessages.length, 2, "an X-style overlay click must resolve the image below it");
+assert.equal(contentMessages[1].command, "explicit-original-opened");
+assert.equal(contentMessages[1].mediaUrl, "https://pbs.twimg.com/media/fixture?format=jpg&name=orig");
+contentMessages.pop();
+contentDocument.images = [openedImage];
 
 const playedVideo = new FixtureVideo();
 playedVideo.currentSrc = "blob:https://art.example.invalid/fixture";

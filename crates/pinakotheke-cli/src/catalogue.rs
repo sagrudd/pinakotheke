@@ -43,11 +43,12 @@ pub(crate) fn run(command: CatalogueCommand) -> Result<(), Box<dyn std::error::E
     let result = reconcile_x_image_catalogue(original_items.clone(), original_plans.clone())?;
 
     println!(
-        "X image reconciliation: {} duplicate group(s), {} redundant card(s), {} card identity rename(s), {} plan binding update(s)",
+        "X image reconciliation: {} duplicate group(s), {} redundant card(s), {} card identity rename(s), {} plan binding update(s), {} source link(s) added",
         result.report.duplicate_groups,
         result.report.redundant_cards,
         result.report.renamed_cards,
         result.report.rebound_plans,
+        result.report.source_links_added,
     );
     if !arguments.apply {
         println!("Dry run only; no metadata was changed.");

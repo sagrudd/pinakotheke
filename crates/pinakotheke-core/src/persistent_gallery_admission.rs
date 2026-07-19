@@ -152,6 +152,7 @@ impl PersistentWebsiteGalleryAdmission {
                     catalogue_id: presentation.catalogue_id,
                     title: presentation.title,
                     source_label: source_label.clone(),
+                    source_page_url: source_page_url(plan),
                     source_kind,
                     media_kind: GalleryMediaKind::Image,
                     review_state: GalleryReviewState::New,
@@ -195,6 +196,7 @@ impl PersistentWebsiteGalleryAdmission {
                     catalogue_id: presentation.catalogue_id,
                     title: presentation.title,
                     source_label,
+                    source_page_url: source_page_url(plan),
                     source_kind,
                     media_kind: GalleryMediaKind::Image,
                     review_state: GalleryReviewState::New,
@@ -220,6 +222,9 @@ impl PersistentWebsiteGalleryAdmission {
                     return Err(PersistentGalleryAdmissionError::ConflictingReplay);
                 }
                 item.preview = Some(representation);
+                if let Some(source_page_url) = source_page_url(plan) {
+                    item.source_page_url = Some(source_page_url);
+                }
                 item.width = plan.width;
                 item.height = plan.height;
                 PersistentGalleryAdmissionOutcome::OriginalAttached
@@ -261,6 +266,7 @@ impl PersistentWebsiteGalleryAdmission {
                     catalogue_id: presentation.catalogue_id,
                     title: presentation.title,
                     source_label,
+                    source_page_url: source_page_url(plan),
                     source_kind,
                     media_kind: GalleryMediaKind::NormalizedVideo,
                     review_state: GalleryReviewState::New,
@@ -311,6 +317,24 @@ fn gallery_source(plan: &CapturePlan) -> (String, GallerySourceKind) {
         format!("Website / {}", plan.site_id),
         GallerySourceKind::Website,
     )
+}
+
+fn source_page_url(plan: &CapturePlan) -> Option<String> {
+    [&plan.canonical_presentation_url, &plan.canonical_page_url]
+        .into_iter()
+        .find_map(|candidate| {
+            let mut url = candidate.parse::<url::Url>().ok()?;
+            if url.scheme() != "https"
+                || url.host_str().is_none()
+                || !url.username().is_empty()
+                || url.password().is_some()
+            {
+                return None;
+            }
+            url.set_query(None);
+            url.set_fragment(None);
+            Some(url.to_string())
+        })
 }
 
 fn validate_presentation(
@@ -460,6 +484,10 @@ mod tests {
         assert_eq!(restarted.items().len(), 1);
         let item = &restarted.items()[0];
         assert_eq!(item.review_state, GalleryReviewState::New);
+        assert_eq!(
+            item.source_page_url.as_deref(),
+            Some("https://example.invalid/original.jpg")
+        );
         assert_eq!(item.width, 1920);
         assert_eq!(item.thumbnail.object_key, "thumbnail-object");
         assert_eq!(item.thumbnail.object_version, 7);

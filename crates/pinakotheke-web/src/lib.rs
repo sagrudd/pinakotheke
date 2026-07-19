@@ -1370,7 +1370,28 @@ pub fn app() -> Html {
                                             <div><dt>{ "Endpoint / ObjectStore" }</dt><dd>{ format!("{} / {}", primary_representation(&selected_card).endpoint_id, primary_representation(&selected_card).object_store_id) }</dd></div>
                                             <div><dt>{ "Object version" }</dt><dd>{ primary_representation(&selected_card).object_version }</dd></div>
                                         </dl>
-                                        <a id="preview-source-link" href={format!("#catalogue-{}", selected_card.catalogue_id)}>{ "View catalogue metadata" }</a>
+                                        { if let Some(source_page_url) = selected_card.source_page_url.as_ref() {
+                                            let needs_original = selected_card.media_kind == GalleryMediaKind::Image
+                                                && selected_card.preview.is_none();
+                                            html! {
+                                                <a
+                                                    id="preview-source-link"
+                                                    href={source_page_url.clone()}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                >{
+                                                    if needs_original {
+                                                        "Open source image to capture original"
+                                                    } else {
+                                                        "Open source page"
+                                                    }
+                                                }</a>
+                                            }
+                                        } else if selected_card.media_kind == GalleryMediaKind::Image && selected_card.preview.is_none() {
+                                            html! { <p role="status">{ "Original not captured · historic source link unavailable" }</p> }
+                                        } else {
+                                            Html::default()
+                                        }}
                                         { if object_label(&selected_card) == "Object unavailable" {
                                             html! {
                                                 <section class="ximg-preview__unavailable" role="status" aria-live="polite">
@@ -1432,6 +1453,7 @@ mod tests {
             catalogue_id: "media-1".into(),
             title: "Synthetic redistributable image".into(),
             source_label: "Example website".into(),
+            source_page_url: Some("https://example.invalid/gallery".into()),
             source_kind: GallerySourceKind::Website,
             media_kind: GalleryMediaKind::Image,
             review_state: GalleryReviewState::New,
