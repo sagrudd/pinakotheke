@@ -2,7 +2,7 @@
 
 Status: dependency-ordered planning backlog
 
-Version: 1.22.9
+Version: 1.22.10
 
 Updated: 2026-07-19
 
@@ -1797,7 +1797,12 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   fix ``ff320d4`` is pushed; Mozilla-signed ``1.22.9`` passed permanent-install
   verification and the matching server plus XPI are active on DASServer.
   Installed-browser gallery framing and opened-original settlement remain the
-  closing proof.
+  closing proof. The next live check proved newly settled frames but no
+  earlier-session frames; server telemetry showed explicit capture traffic
+  and zero evidence requests. Version ``1.22.10`` removes the obsolete client
+  gate on the legacy display-only instance identifier while preserving Monas
+  host authentication and scoped pairing at the evidence endpoint. Signed
+  deployment and restart-spanning browser proof remain.
 - [ ] **XIMG-202 P3 — Add perceptual duplicate grouping.**
 - [ ] **XIMG-203 P3 — Add collections, tags, and saved searches.**
 - [ ] **XIMG-204 P3 — Add provenance-linked derivatives/transcodes.**

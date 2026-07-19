@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.22.10 - 2026-07-19
+
+- Restore authoritative prior-session cache-evidence lookups for paired
+  extensions whose legacy display-only instance identifier is absent; Monas
+  host context and the scoped pairing remain mandatory server-side.
+
 ## 1.22.9 - 2026-07-19
 
 - Fix X gallery evidence framing with a browser-only, pointer-transparent

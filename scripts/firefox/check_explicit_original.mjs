@@ -81,6 +81,10 @@ const fetchFixture = async (url, options) => {
   if (String(url).includes("/capture-plans/")) {
     return { ok: true, async json() { return { schema_version: "pinakotheke.capture-plan-status.v1", state: "stored" }; } };
   }
+  if (String(url).includes("/cache-aliases/lookup")) {
+    captures.push({ url: String(url), options });
+    return { ok: true, async json() { return { schema_version: "x-img.cache-alias-result.v1", outcome: "miss" }; } };
+  }
   captures.push({ url: String(url), options });
   return { ok: true, async json() { return { plan_id: "capture-plan-fixture" }; } };
 };
@@ -148,8 +152,11 @@ await messageListener(
   { tab: { id: 8, url: "https://x.com/home" } },
 );
 await new Promise(resolve => setImmediate(resolve));
-assert.equal(captures.length, 1, "a merely visible opted-in X thumbnail must be submitted");
-const observedBody = JSON.parse(captures[0].options.body);
+assert.equal(captures.length, 2, "paired historical lookup and visible X capture must both run without legacy instance id");
+const evidenceBody = JSON.parse(captures[0].options.body);
+assert.equal(evidenceBody.instance_id, "");
+assert.equal(evidenceBody.canonical_alias, "https://pbs.twimg.com/media/visible-thumbnail.jpg?format=jpg&name=small");
+const observedBody = JSON.parse(captures[1].options.body);
 assert.equal(observedBody.capture_kind, "observed_thumbnail");
 assert.equal(observedBody.media_url, "https://pbs.twimg.com/media/visible-thumbnail.jpg?format=jpg&name=small");
 assert.equal(observedBody.presentation_url, "https://x.com/FixtureArtist/status/42");

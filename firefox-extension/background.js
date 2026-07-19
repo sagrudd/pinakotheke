@@ -692,17 +692,19 @@ async function runCacheForTab(tab, contentImages = null) {
     const images = eligibleObservedImages(origin, rule, displayed);
     await traceEvent("viewport_scan", "complete", `${displayed.length} visible image(s); ${images.length} eligible`, origin);
     for (const observed of images) {
-      if (instanceId) {
-        try {
-          const alias = canonicalAlias(observed.url);
-          const evidence = await lookupAlias(instanceUrl, instanceId, pairId, origin, adapter, alias);
-          if (evidence?.outcome === "hit") {
-            const framing = await browser.tabs.sendMessage(tab.id, { command: "frame-stored", mediaUrl: observed.url, mediaToken: observed.mediaToken });
-            await traceEvent("stored_frame", framing?.matched ? "applied" : "unmatched", `${framing?.matched || 0} page element(s)`, origin);
-          }
-        } catch (error) {
-          await traceEvent("cache_evidence", "error", String(error?.message || "lookup failed"), origin);
+      // Pairing plus the Monas-authenticated host context are authoritative for
+      // this instance-scoped evidence route. Older installations may not have
+      // persisted the legacy display-only instanceId; that must never suppress
+      // lookup of objects already settled in an earlier browsing session.
+      try {
+        const alias = canonicalAlias(observed.url);
+        const evidence = await lookupAlias(instanceUrl, instanceId || "", pairId, origin, adapter, alias);
+        if (evidence?.outcome === "hit") {
+          const framing = await browser.tabs.sendMessage(tab.id, { command: "frame-stored", mediaUrl: observed.url, mediaToken: observed.mediaToken });
+          await traceEvent("stored_frame", framing?.matched ? "applied" : "unmatched", `${framing?.matched || 0} page element(s)`, origin);
         }
+      } catch (error) {
+        await traceEvent("cache_evidence", "error", String(error?.message || "lookup failed"), origin);
       }
       if (rule.capture && adapter.capabilities.observed_thumbnail) {
         void captureAndFrame(
