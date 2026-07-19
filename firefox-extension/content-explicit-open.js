@@ -123,8 +123,14 @@
       const images = visibleImages();
       const fingerprint = images.map(image => `${canonical(image.url)}|${image.mediaToken}`).join("\n");
       if (fingerprint === lastVisibleFingerprint) return;
-      lastVisibleFingerprint = fingerprint;
-      void browser.runtime.sendMessage({ command: "visible-media-changed", images });
+      void browser.runtime.sendMessage({ command: "visible-media-changed", images })
+        .then(result => {
+          if (result?.completed) lastVisibleFingerprint = fingerprint;
+        })
+        .catch(() => {
+          // Keep the fingerprint retryable after extension reload or a
+          // temporarily unavailable background/host connection.
+        });
     }, 250);
   };
   new MutationObserver(observed).observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ["src", "srcset"] });

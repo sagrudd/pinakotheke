@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.22.13 - 2026-07-19
+
+- Make visible-media fingerprint delivery acknowledgement-driven so an early
+  skipped or failed background scan remains retryable instead of suppressing
+  all subsequent historical-evidence checks for that viewport.
+
 ## 1.22.12 - 2026-07-19
 
 - Add a bounded, fingerprint-deduplicated visible-media safety scan to recover

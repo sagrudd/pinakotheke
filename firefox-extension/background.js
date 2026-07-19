@@ -683,27 +683,27 @@ async function runCacheForTab(tab, contentImages = null) {
   try {
     if (!tab.id || !tab.url) {
       await traceEvent("viewport_scan", "skipped", "tab identity unavailable");
-      return;
+      return { completed: false, outcome: "tab_unavailable" };
     }
     const origin = new URL(tab.url).origin;
     const { instanceUrl, instanceId, pairId, sites = [] } = await browser.storage.local.get(["instanceUrl", "instanceId", "pairId", "sites"]);
     const rule = sites.find(site => site.origin === origin);
     if (!rule) {
       await traceEvent("viewport_scan", "skipped", "origin is not enabled", origin);
-      return;
+      return { completed: false, outcome: "origin_not_enabled" };
     }
     if (!rule.capture && !rule.substitution) {
       await traceEvent("viewport_scan", "skipped", "capture and substitution are paused", origin);
-      return;
+      return { completed: false, outcome: "capture_paused" };
     }
     if (!instanceUrl || !pairId) {
       await traceEvent("viewport_scan", "skipped", "Pinakotheke pairing is incomplete", origin);
-      return;
+      return { completed: false, outcome: "pairing_incomplete" };
     }
     const adapter = await matchingAdapter(tab.url);
     if (!adapter) {
       await traceEvent("viewport_scan", "skipped", "no eligible adapter", origin);
-      return;
+      return { completed: false, outcome: "adapter_unavailable" };
     }
     const reported = validatedObservedImages(contentImages);
     const displayed = rule.media.includes("images")
@@ -810,6 +810,10 @@ async function runCacheForTab(tab, contentImages = null) {
         });
       }
     }
+    return {
+      completed: images.length > 0,
+      outcome: images.length > 0 ? "visible_media_processed" : "no_eligible_media",
+    };
   } catch (_) {
     if (tab?.url) {
       try {
@@ -825,6 +829,7 @@ async function runCacheForTab(tab, contentImages = null) {
         // Non-Web tabs have no site policy or diagnostic record.
       }
     }
+    return { completed: false, outcome: "scan_error" };
   }
 }
 
@@ -860,8 +865,7 @@ browser.runtime.onMessage.addListener(async (message, sender) => {
   }
   if (message?.command === "visible-media-changed" && sender?.tab) {
     await traceEvent("content_observer", "signal", "visible media changed", new URL(sender.tab.url).origin);
-    await runCacheForTab(sender.tab, message.images);
-    return { completed: true };
+    return runCacheForTab(sender.tab, message.images);
   }
   if (message?.command === "explicit-video-unresolved" && sender?.tab?.url) {
     const origin = new URL(sender.tab.url).origin;

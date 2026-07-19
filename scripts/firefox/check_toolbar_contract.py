@@ -60,6 +60,8 @@ def main() -> int:
     assert "mediaToken" in content
     assert "lastVisibleFingerprint" in content
     assert "setInterval(observed, 2000)" in content
+    assert "if (result?.completed) lastVisibleFingerprint = fingerprint" in content
+    assert 'outcome: "pairing_incomplete"' in background
     assert 'lookupAlias(instanceUrl, instanceId || "", pairId' in background
     assert "browser.tabs.onUpdated.addListener" in background
     assert "browser.tabs.onActivated.addListener" in background

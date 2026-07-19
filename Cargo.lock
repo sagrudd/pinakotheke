@@ -1091,7 +1091,7 @@ checksum = "a89322df9ebe1c1578d689c92318e070967d1042b512afbe49518723f4e6d5cd"
 
 [[package]]
 name = "pinakotheke-api"
-version = "1.22.12"
+version = "1.22.13"
 dependencies = [
  "axum",
  "pinakotheke-core",
@@ -1104,7 +1104,7 @@ dependencies = [
 
 [[package]]
 name = "pinakotheke-cli"
-version = "1.22.12"
+version = "1.22.13"
 dependencies = [
  "axum",
  "axum-server",
@@ -1122,7 +1122,7 @@ dependencies = [
 
 [[package]]
 name = "pinakotheke-core"
-version = "1.22.12"
+version = "1.22.13"
 dependencies = [
  "pinakotheke-model",
  "serde",
@@ -1133,14 +1133,14 @@ dependencies = [
 
 [[package]]
 name = "pinakotheke-model"
-version = "1.22.12"
+version = "1.22.13"
 dependencies = [
  "serde",
 ]
 
 [[package]]
 name = "pinakotheke-web"
-version = "1.22.12"
+version = "1.22.13"
 dependencies = [
  "gloo-net",
  "pinakotheke-core",
