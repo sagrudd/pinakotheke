@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.20.4 - 2026-07-19
+
+- Derive normalized-video availability and ObjectStore provenance from the
+  committed video representation rather than an optional poster thumbnail.
+- Stop reporting a range-readable committed MP4 as unavailable merely because
+  no separate poster object was generated.
+
 ## 1.20.3 - 2026-07-19
 
 - Preserve Firefox's user-action eligibility by invoking the X media-origin

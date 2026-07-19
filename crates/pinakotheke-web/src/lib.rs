@@ -273,7 +273,8 @@ fn review_label(item: &GalleryItem) -> &'static str {
 }
 
 fn object_label(item: &GalleryItem) -> &'static str {
-    if item.thumbnail.availability == GalleryObjectAvailability::Unavailable {
+    let primary = primary_representation(item);
+    if primary.availability == GalleryObjectAvailability::Unavailable {
         "Object unavailable"
     } else if item
         .preview
@@ -283,6 +284,14 @@ fn object_label(item: &GalleryItem) -> &'static str {
         "Stored in ObjectStore"
     } else {
         "Previously observed"
+    }
+}
+
+fn primary_representation(item: &GalleryItem) -> &GalleryRepresentation {
+    if item.media_kind == GalleryMediaKind::NormalizedVideo {
+        item.preview.as_ref().unwrap_or(&item.thumbnail)
+    } else {
+        &item.thumbnail
     }
 }
 
@@ -1334,8 +1343,8 @@ pub fn app() -> Html {
                                                     <div><dt>{ "Normalization" }</dt><dd>{ "Ready · Firefox verified" }</dd></div>
                                                 </>
                                             }).unwrap_or_default() }
-                                            <div><dt>{ "Endpoint / ObjectStore" }</dt><dd>{ format!("{} / {}", selected_card.thumbnail.endpoint_id, selected_card.thumbnail.object_store_id) }</dd></div>
-                                            <div><dt>{ "Object version" }</dt><dd>{ selected_card.thumbnail.object_version }</dd></div>
+                                            <div><dt>{ "Endpoint / ObjectStore" }</dt><dd>{ format!("{} / {}", primary_representation(&selected_card).endpoint_id, primary_representation(&selected_card).object_store_id) }</dd></div>
+                                            <div><dt>{ "Object version" }</dt><dd>{ primary_representation(&selected_card).object_version }</dd></div>
                                         </dl>
                                         <a id="preview-source-link" href={format!("#catalogue-{}", selected_card.catalogue_id)}>{ "View catalogue metadata" }</a>
                                         { if object_label(&selected_card) == "Object unavailable" {
@@ -1425,6 +1434,30 @@ mod tests {
         media.thumbnail = representation(GalleryObjectAvailability::Unavailable, None);
         assert_eq!(object_label(&media), "Object unavailable");
         assert_eq!(ready_path(&media.thumbnail), None);
+    }
+
+    #[test]
+    fn normalized_video_uses_ready_preview_when_poster_is_unavailable() {
+        let mut media = item();
+        media.media_kind = GalleryMediaKind::NormalizedVideo;
+        media.thumbnail = representation(GalleryObjectAvailability::Unavailable, None);
+        let mut video = representation(
+            GalleryObjectAvailability::Ready,
+            Some("/products/pinakotheke/api/gallery/v1/objects/video-1/video"),
+        );
+        video.endpoint_id = "video-endpoint".into();
+        video.object_store_id = "video-store".into();
+        video.object_version = 42;
+        video.content_type = "video/mp4".into();
+        media.preview = Some(video);
+
+        assert_eq!(object_label(&media), "Stored in ObjectStore");
+        assert_eq!(primary_representation(&media).endpoint_id, "video-endpoint");
+        assert_eq!(
+            primary_representation(&media).object_store_id,
+            "video-store"
+        );
+        assert_eq!(primary_representation(&media).object_version, 42);
     }
 
     #[test]
