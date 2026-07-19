@@ -1978,7 +1978,7 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   after a future out-of-band DAS deletion remains required before this item can
   be closed.
 - [ ] **XIMG-202 P3 — Add perceptual duplicate grouping.**
-- [ ] **XIMG-129 P0 — Generalize trusted-play video capture and feedback.** On
+- [x] **XIMG-129 P0 — Generalize trusted-play video capture and feedback.** On
   any explicitly enabled HTTPS origin, admit only a video selected by a trusted
   play action. Discover bounded progressive or already-observed segmented
   candidates, display a browser-only ``Video is downloading`` graphic with
@@ -1990,9 +1990,15 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   creator folder, using ``_unattributed`` instead of guessing. Acceptance
   requires deterministic trusted-play, progress-protocol, video-thumbnail
   framing, creator-key, fail-open, full local quality, deployment, and one real
-  installed-Firefox capture on an enabled non-X origin. Implementation and
-  deterministic evidence are prepared for version ``1.25.0``; the live
-  installed-Firefox capture remains before closure.
+  installed-Firefox capture on an enabled non-X origin. Completed in
+  ``1ae81c2``. All 238 Rust tests, strict Clippy, Wasm compilation, Firefox
+  contracts, repository quality checks, and the pinned Sphinx build/dummy run
+  pass locally. A real installed Firefox process proved trusted video capture
+  and verified stored framing against an enabled ephemeral non-X HTTPS origin.
+  The x86_64 DEB and checksum-identical unsigned test XPI are deployed on
+  DASServer as ``1.25.0``; the backend health response and served XPI manifest
+  both report that version. The served XPI SHA-256 is
+  ``859a38e7eb370785b516527ad0b462b4bbfdf1fce788619e291554c54bb6d62e``.
 - [ ] **XIMG-203 P3 — Add collections, tags, and saved searches.**
 - [ ] **XIMG-204 P3 — Add provenance-linked derivatives/transcodes.**
 - [x] **XIMG-205 P0 — Consume audience-bound Prosopikon host identity.**

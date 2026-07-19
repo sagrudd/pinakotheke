@@ -1381,6 +1381,13 @@ browse/play cycle demonstrating the frames and settled toolbar transition.
 - A bounded semantic creator/uploader hint groups generic-site objects beneath
   ``sites/<site-id>/<creator>/<capture-kind>/``. Missing identity is visibly
   quarantined under ``_unattributed`` rather than guessed.
+- Release evidence: implementation ``1ae81c2`` is pushed; local native,
+  WebAssembly, Firefox, quality, and pinned documentation checks pass; a real
+  installed Firefox completed the enabled non-X HTTPS fixture; and DASServer
+  runs the matching ``1.25.0`` x86_64 package while serving the
+  checksum-identical test XPI. User-driven production-origin evidence remains
+  operational assurance, not an unrepresented prerequisite to the generic
+  implementation.
 
 ## 1.23.3 — Deep-timeline explicit image capture
 
