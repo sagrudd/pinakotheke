@@ -25,7 +25,7 @@ pub(crate) fn backend(
 ) -> io::Result<HostCaptureAcquireBackend> {
     validate_helper(helper)?;
     let helper = helper.to_owned();
-    Ok(HostCaptureAcquireBackend::new(Box::new(
+    Ok(HostCaptureAcquireBackend::new(std::sync::Arc::new(
         move |actor_ref, plan| {
             acquire(&helper, actor_ref, plan, &endpoint_id, &object_store_id)
                 .map_err(|error| error.to_string())

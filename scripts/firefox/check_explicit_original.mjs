@@ -126,6 +126,10 @@ assert.equal(typeof startupListener, "function");
 assert.equal(typeof completedRequestListener, "function");
 assert.equal(typeof tabUpdatedListener, "function");
 assert.equal(typeof tabActivatedListener, "function");
+assert.equal(vm.runInContext("captureStatusPollDelay(0)", backgroundContext), 100);
+assert.equal(vm.runInContext("captureStatusPollDelay(19)", backgroundContext), 100);
+assert.equal(vm.runInContext("captureStatusPollDelay(20)", backgroundContext), 250);
+assert.equal(vm.runInContext("captureStatusPollDelay(40)", backgroundContext), 1000);
 
 backgroundContext.document.images = [{
   complete: true,

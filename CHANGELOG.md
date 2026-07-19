@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.23.1 - 2026-07-19
+
+- Removed the global capture-worker mutex and introduced separate bounded
+  four-worker lanes for observed thumbnails and explicitly opened media, so
+  background thumbnail work cannot queue an opened original or video.
+- Reduced initial Firefox settlement polling from one second to 100 ms, then
+  backs off to 250 ms and one second while preserving verified-commit-only
+  green framing.
+- Added concurrency and adaptive-polling regressions.
+
 ## 1.23.0 - 2026-07-19
 
 - Replaced sequential per-image cache-evidence requests with one bounded batch

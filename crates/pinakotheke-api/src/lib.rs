@@ -103,7 +103,7 @@ pub struct ExtensionOnboardingAuthority {
 
 /// Process-isolated callback that returns verified authority metadata only.
 pub type HostCaptureAcquire =
-    Box<dyn FnMut(&str, &CapturePlan) -> Result<VerifiedCaptureCompletion, String> + Send>;
+    Arc<dyn Fn(&str, &CapturePlan) -> Result<VerifiedCaptureCompletion, String> + Send + Sync>;
 
 /// Current host-authority facts for the exact destination named by a capture
 /// plan. The browser inventory is never accepted as authority.
@@ -148,6 +148,7 @@ pub struct HostCaptureDestinationRevalidateBackend {
 }
 
 /// Host adapter wrapping one process-isolated acquisition callback.
+#[derive(Clone)]
 pub struct HostCaptureAcquireBackend {
     acquire: HostCaptureAcquire,
 }
@@ -156,7 +157,9 @@ struct CaptureCompletionRuntime {
     authority: CaptureCompletionAuthority,
     plans: CapturePlans,
     gallery: MonasGalleryCatalogue,
-    acquire: Option<Mutex<HostCaptureAcquireBackend>>,
+    acquire: Option<HostCaptureAcquireBackend>,
+    observed_capture_permits: Arc<Semaphore>,
+    explicit_capture_permits: Arc<Semaphore>,
     reviewed_destinations: Option<ReviewedDestinations>,
     destination_revalidator: Option<Mutex<HostCaptureDestinationRevalidateBackend>>,
     in_flight: Mutex<BTreeSet<String>>,
@@ -409,7 +412,7 @@ impl HostCaptureAcquireBackend {
     }
 
     fn acquire(
-        &mut self,
+        &self,
         actor_ref: &str,
         plan: &CapturePlan,
     ) -> Result<VerifiedCaptureCompletion, String> {
@@ -1008,7 +1011,9 @@ pub fn monolith_router_with_gallery_web_delivery_and_capture_authority(
                 authority,
                 plans: capture_plans,
                 gallery,
-                acquire: acquire.map(Mutex::new),
+                acquire,
+                observed_capture_permits: Arc::new(Semaphore::new(4)),
+                explicit_capture_permits: Arc::new(Semaphore::new(4)),
                 reviewed_destinations,
                 destination_revalidator: destination_revalidator.map(Mutex::new),
                 in_flight: Mutex::new(BTreeSet::new()),
@@ -1907,8 +1912,19 @@ fn schedule_capture_runtime(
         return Ok(false);
     };
     let runtime = Arc::clone(runtime);
+    let acquire_handle = handle.clone();
     handle.spawn_blocking(move || {
-        let acquired = acquire_capture_with_retry(&runtime, &actor_id, &plan);
+        let permits = match plan.capture_kind {
+            CaptureKind::ObservedThumbnail => Arc::clone(&runtime.observed_capture_permits),
+            CaptureKind::ExplicitOriginal | CaptureKind::ExplicitVideo => {
+                Arc::clone(&runtime.explicit_capture_permits)
+            }
+        };
+        let permit = acquire_handle.block_on(permits.acquire_owned());
+        let acquired = match permit {
+            Ok(_permit) => acquire_capture_with_retry(&runtime, &actor_id, &plan),
+            Err(_) => Err(String::from("capture worker pool unavailable")),
+        };
         match acquired {
             Ok(evidence) => match settle_capture_runtime(&runtime, &actor_id, evidence) {
                 Ok(_) => eprintln!(
@@ -1944,8 +1960,6 @@ fn acquire_capture_with_retry(
             .acquire
             .as_ref()
             .ok_or_else(|| String::from("acquire backend unavailable"))?
-            .lock()
-            .map_err(|_| String::from("acquire backend lock poisoned"))?
             .acquire(actor_id, plan);
         match result {
             Ok(evidence) => return Ok(evidence),
@@ -2785,6 +2799,52 @@ mod tests {
         assert!(maximum.load(Ordering::SeqCst) >= 4);
     }
 
+    #[test]
+    fn capture_backend_allows_bounded_workers_to_run_concurrently() {
+        let active = Arc::new(AtomicUsize::new(0));
+        let maximum = Arc::new(AtomicUsize::new(0));
+        let active_for_acquire = Arc::clone(&active);
+        let maximum_for_acquire = Arc::clone(&maximum);
+        let backend = HostCaptureAcquireBackend::new(Arc::new(move |_, _| {
+            let current = active_for_acquire.fetch_add(1, Ordering::SeqCst) + 1;
+            maximum_for_acquire.fetch_max(current, Ordering::SeqCst);
+            std::thread::sleep(Duration::from_millis(75));
+            active_for_acquire.fetch_sub(1, Ordering::SeqCst);
+            Err(String::from("synthetic completion"))
+        }));
+        let mut plans = capture_plans();
+        let plan = plans
+            .plan(
+                "synthetic-monas-user",
+                1,
+                CapturePlanRequest {
+                    schema_version: CAPTURE_REQUEST_SCHEMA_VERSION.into(),
+                    pairing_id: "pair-0".into(),
+                    origin: "https://example.invalid".into(),
+                    page_url: "https://example.invalid/gallery".into(),
+                    adapter_kind: AdapterKind::ExperimentalGeneric,
+                    adapter_version: "1.0.0".into(),
+                    capture_kind: CaptureKind::ObservedThumbnail,
+                    media_url: "https://example.invalid/concurrent.jpg".into(),
+                    presentation_url: None,
+                    width: 320,
+                    height: 200,
+                },
+            )
+            .unwrap();
+        let workers = (0..8)
+            .map(|_| {
+                let backend = backend.clone();
+                let plan = plan.clone();
+                std::thread::spawn(move || backend.acquire("synthetic-monas-user", &plan))
+            })
+            .collect::<Vec<_>>();
+        for worker in workers {
+            assert!(worker.join().unwrap().is_err());
+        }
+        assert!(maximum.load(Ordering::SeqCst) >= 4);
+    }
+
     use axum::{
         Extension,
         body::{Body, to_bytes},
@@ -3299,6 +3359,8 @@ mod tests {
             plans: Arc::new(Mutex::new(plans)),
             gallery: Arc::new(Mutex::new(GalleryCatalogue::default())),
             acquire: None,
+            observed_capture_permits: Arc::new(tokio::sync::Semaphore::new(4)),
+            explicit_capture_permits: Arc::new(tokio::sync::Semaphore::new(4)),
             reviewed_destinations: Some(Arc::clone(&stores)),
             destination_revalidator: None,
             in_flight: Mutex::new(std::collections::BTreeSet::new()),
@@ -4537,7 +4599,7 @@ mod tests {
         let worker = "synthetic-capture-worker-token-0001";
         let attempts = Arc::new(AtomicUsize::new(0));
         let attempts_for_acquire = Arc::clone(&attempts);
-        let acquire = HostCaptureAcquireBackend::new(Box::new(move |_, plan| {
+        let acquire = HostCaptureAcquireBackend::new(Arc::new(move |_, plan| {
             if attempts_for_acquire.fetch_add(1, Ordering::SeqCst) == 0 {
                 return Err("capture helper rejected the plan: object_upload".into());
             }
@@ -4652,7 +4714,7 @@ mod tests {
                         .unwrap(),
                     ),
                 )
-                .with_acquire(HostCaptureAcquireBackend::new(Box::new(|_, _| {
+                .with_acquire(HostCaptureAcquireBackend::new(Arc::new(|_, _| {
                     Err("synthetic helper failure".into())
                 }))),
                 root.join("destinations.json"),
@@ -4750,7 +4812,7 @@ mod tests {
         let restarted = CapturePlanService::with_journal(pairings(), sites(), &journal).unwrap();
         let store = GalleryCatalogueStore::new(root.join("gallery.json"));
         let dispatch = "synthetic-monas-dispatch-token-0001";
-        let acquire = HostCaptureAcquireBackend::new(Box::new(|_, plan| {
+        let acquire = HostCaptureAcquireBackend::new(Arc::new(|_, plan| {
             Ok(VerifiedCaptureCompletion {
                 plan_id: plan.plan_id.clone(),
                 catalogue_id: "startup-card-1".into(),

@@ -2,7 +2,7 @@
 
 Status: 1.0 stable release
 
-Version: 1.23.0
+Version: 1.23.1
 
 Updated: 2026-07-19
 
@@ -1347,6 +1347,18 @@ The implementation is pushed in ``9e874df`` and the Mozilla-signed XPI passed
 permanent installation. DASServer serves the checksum-matching artifact and
 runs the ``1.22.0`` package; final milestone evidence is one user-driven X
 browse/play cycle demonstrating the frames and settled toolbar transition.
+
+## 1.23.1 — Bounded capture-to-green latency
+
+- Observed-thumbnail acquisition and explicitly opened image/video acquisition
+  use separate bounded four-worker lanes. Background browsing cannot serialize
+  or starve an intentional original capture.
+- Firefox checks settlement every 100 ms during the first two seconds, every
+  250 ms during the next five seconds, and then once per second. Green remains
+  reserved for verified settlement and gallery admission.
+- Release evidence includes concurrent acquisition proof, deterministic polling
+  cadence assertions, DASServer deployment, and measured installed-Firefox
+  capture-to-green timing.
 
 ## 1.23.0 — Viewport-fast cache evidence
 

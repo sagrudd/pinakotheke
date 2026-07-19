@@ -63,6 +63,18 @@ gallery size. ``Pending`` means that a plan has been durably accepted but has
 not yet passed ObjectStore commit verification and gallery admission; it is
 not evidence that bytes were stored.
 
+Capture latency
+---------------
+
+Pinakotheke reserves separate bounded acquisition capacity for observed
+thumbnails and explicitly opened images or videos. A busy scrolling page must
+therefore not queue an intentional original behind its thumbnail backlog.
+Firefox checks the verified plan state every 100 milliseconds during the normal
+two-second settlement window, backs off to 250 milliseconds for the following
+five seconds, and then checks once per second. The selected/downloading frame
+may appear immediately, but the green frame is still applied only after the
+DASObjectStore commit is verified and the gallery record is live.
+
 ObjectStore layout
 ------------------
 

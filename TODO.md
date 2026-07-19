@@ -2,7 +2,7 @@
 
 Status: dependency-ordered planning backlog
 
-Version: 1.23.0
+Version: 1.23.1
 
 Updated: 2026-07-19
 
@@ -1906,6 +1906,14 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   unchecked gate is installation and real-Firefox proof of the matching 1.23.0
   extension; Mozilla signing credentials are not currently available in the
   development environment, so this is not falsely recorded as deployed.
+- [ ] **XIMG-124 P0 — Bound capture-to-green latency.** Remove global
+  acquisition serialization, reserve a bounded worker lane for explicitly
+  opened images/videos so thumbnail traffic cannot starve it, and poll rapidly
+  during the normal short settlement window before backing off. Green must
+  continue to require verified DASObjectStore settlement and gallery admission;
+  selected/downloading uses non-green progress state. Acceptance requires
+  concurrent-worker regression proof, adaptive polling proof, full local
+  verification, deployment, and measured real-Firefox capture-to-green timing.
 - [ ] **XIMG-202 P3 — Add perceptual duplicate grouping.**
 - [ ] **XIMG-203 P3 — Add collections, tags, and saved searches.**
 - [ ] **XIMG-204 P3 — Add provenance-linked derivatives/transcodes.**

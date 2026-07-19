@@ -319,6 +319,12 @@ async function submitCapture(instanceUrl, pairId, origin, pageUrl, adapter, capt
   });
 }
 
+function captureStatusPollDelay(attempt) {
+  if (attempt < 20) return 100;
+  if (attempt < 40) return 250;
+  return 1000;
+}
+
 async function captureAndFrame(tabId, instanceUrl, pairId, origin, pageUrl, adapter, captureKind, media) {
   const key = `${origin}|${captureKind}|${canonicalAlias(media.url)}`;
   if (captureInFlight.has(key)) {
@@ -358,13 +364,13 @@ async function captureAndFrame(tabId, instanceUrl, pairId, origin, pageUrl, adap
           return { outcome: "stored" };
         }
       }
-      if (attempt === 1) {
+      if (attempt === 3) {
         await recordMediaCapture(origin, plan.plan_id, captureKind, "downloading", "Acquisition and ObjectStore settlement are in progress");
         if (decoratePageMedia) {
           await notifyCaptureState(tabId, media, "downloading", "Download in progress");
         }
       }
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, captureStatusPollDelay(attempt)));
     }
     await traceEvent("capture_status", "pending", `${captureKind}; ${plan.plan_id}`, origin);
     await recordMediaCapture(origin, plan.plan_id, captureKind, "pending", "Server is still processing; status will reconcile on the next check");
