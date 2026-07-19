@@ -1738,6 +1738,9 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   ``name=900x900`` while page thumbnails used ``small`` or ``medium``. The
   evidence identity now binds the stable ``pbs.twimg.com/media/<asset>`` path
   while acquisition and provenance retain the exact rendition URL.
+  The correction is pushed in ``4a16175`` and the matching Mozilla-signed
+  ``1.22.2`` server/extension pair is deployed on DASServer. A repeated browse
+  remains the final visual acceptance check.
 - [ ] **XIMG-202 P3 — Add perceptual duplicate grouping.**
 - [ ] **XIMG-203 P3 — Add collections, tags, and saved searches.**
 - [ ] **XIMG-204 P3 — Add provenance-linked derivatives/transcodes.**
