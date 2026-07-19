@@ -921,7 +921,7 @@ pub fn monolith_router_with_gallery_web_delivery_and_capture_authority(
             )
             .route(
                 "/products/pinakotheke/api/extension/v1/cache-aliases/lookup",
-                post(capture_alias_evidence),
+                post(capture_alias_evidence).layer(Extension(Arc::clone(&gallery))),
             );
         if let Some(onboarding) = onboarding.clone() {
             protected = protected
@@ -2644,7 +2644,6 @@ mod tests {
         ObjectDeliveryPool, VerifiedCaptureCompletion, monolith_router,
         monolith_router_with_authorities, monolith_router_with_gallery_authority,
         monolith_router_with_gallery_delivery_authority,
-        monolith_router_with_gallery_web_and_capture_authority,
         monolith_router_with_gallery_web_delivery_and_capture_authority,
         monolith_router_with_gallery_web_delivery_authority, monolith_router_with_storage,
         revalidate_capture_destination, router, router_with_cache_aliases,
@@ -4038,15 +4037,16 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn monolith_mounts_capture_plans_only_behind_monas_dispatch() {
+    async fn production_monolith_mounts_capture_and_evidence_behind_monas_dispatch() {
         let token = "synthetic-monas-dispatch-token-0001";
         let router = || {
-            monolith_router_with_gallery_web_and_capture_authority(
+            monolith_router_with_gallery_web_delivery_and_capture_authority(
                 true,
                 Some(MonasDispatchVerifier::new(token.into()).unwrap()),
                 GalleryCatalogue::default(),
                 None,
-                capture_plans(),
+                gallery_image_backend(),
+                Some(CapturePlanComposition::new(capture_plans(), None)),
             )
         };
         let direct = router()
@@ -4075,6 +4075,35 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(admitted.status(), StatusCode::OK);
+
+        let evidence = router()
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/products/pinakotheke/api/extension/v1/cache-aliases/lookup")
+                    .header("content-type", "application/json")
+                    .header("x-monas-dispatch-token", token)
+                    .header("x-monas-host-context", MONAS_CONTEXT)
+                    .body(Body::from(
+                        serde_json::to_vec(&serde_json::json!({
+                            "schema_version": "x-img.cache-alias-lookup.v1",
+                            "pairing_id": "pair-0",
+                            "instance_id": "pinakotheke-monolith",
+                            "origin": "https://example.invalid",
+                            "canonical_alias": "https://example.invalid/not-stored.jpg",
+                            "adapter_id": "generic-observed-image",
+                            "adapter_version": "1.0.0"
+                        }))
+                        .unwrap(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(evidence.status(), StatusCode::OK);
+        let evidence: serde_json::Value =
+            serde_json::from_slice(&to_bytes(evidence.into_body(), 4_096).await.unwrap()).unwrap();
+        assert_eq!(evidence["outcome"], "miss");
     }
 
     #[tokio::test]

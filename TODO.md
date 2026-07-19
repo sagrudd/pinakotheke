@@ -2,7 +2,7 @@
 
 Status: dependency-ordered planning backlog
 
-Version: 1.22.5
+Version: 1.22.6
 
 Updated: 2026-07-19
 
@@ -1762,6 +1762,12 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   Firefox installation check passed, and the matching package plus
   checksum-identical XPI are active on DASServer. A repeat browse is the
   remaining visual acceptance evidence.
+  That live pass reached the production route but exposed HTTP 500 before the
+  handler: the cache-evidence route was added after Axum's gallery extension
+  layer and therefore lacked the authoritative catalogue required to prove a
+  hit. Version ``1.22.6`` attaches that exact shared catalogue to the route and
+  adds a production-monolith regression request; deployment and repeat browse
+  remain.
 - [ ] **XIMG-202 P3 — Add perceptual duplicate grouping.**
 - [ ] **XIMG-203 P3 — Add collections, tags, and saved searches.**
 - [ ] **XIMG-204 P3 — Add provenance-linked derivatives/transcodes.**

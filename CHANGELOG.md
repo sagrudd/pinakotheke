@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.22.6 - 2026-07-19
+
+- Attach the authoritative gallery catalogue to the production monolith's
+  extension cache-evidence route so settled aliases return evidence instead
+  of failing Axum extraction before lookup.
+
 ## 1.22.5 - 2026-07-19
 
 - Restore authoritative evidence lookup and observed-image capture when X
