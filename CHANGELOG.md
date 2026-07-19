@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.23.2 - 2026-07-19
+
+- Repairs stored-image frames locally when X disconnects and reuses a known
+  media node, without waiting for or repeating a server lookup.
+- Raises the bounded visible-image window from 16 to 64 while retaining one
+  batch evidence request.
+- Adds hit counts to redacted client/server batch diagnostics so large-page
+  misses can be distinguished from DOM framing failures.
+
 ## 1.23.1 - 2026-07-19
 
 - Removed the global capture-worker mutex and introduced separate bounded

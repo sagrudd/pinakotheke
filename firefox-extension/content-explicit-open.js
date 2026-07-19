@@ -26,6 +26,8 @@
   const mediaTokens = new WeakMap();
   const storedOverlays = new WeakMap();
   const storedMedia = new Set();
+  const storedImageIdentities = new Set();
+  const storedImageIdentityOrder = [];
   const framedTargets = new WeakMap();
   const isXMediaUrl = raw => {
     try {
@@ -136,6 +138,30 @@
   const refreshStoredOverlays = () => {
     for (const media of [...storedMedia]) positionStoredOverlay(media);
   };
+  const applyStoredFrame = media => {
+    const targets = framingTargets(media);
+    framedTargets.set(media, targets);
+    for (const target of targets) {
+      target.classList.remove("pinakotheke-capture-selected");
+      target.classList.add("pinakotheke-stored-object");
+    }
+    media.dataset.pinakothekeCaptureState = "Stored in ObjectStore";
+    positionStoredOverlay(media);
+  };
+  const rememberStoredImageIdentity = raw => {
+    const identity = canonical(raw);
+    if (storedImageIdentities.has(identity)) return;
+    storedImageIdentities.add(identity);
+    storedImageIdentityOrder.push(identity);
+    while (storedImageIdentityOrder.length > 4096) {
+      storedImageIdentities.delete(storedImageIdentityOrder.shift());
+    }
+  };
+  const repairKnownStoredFrame = media => {
+    if (!media.currentSrc || !storedImageIdentities.has(canonical(media.currentSrc))) return false;
+    applyStoredFrame(media);
+    return true;
+  };
   document.addEventListener("scroll", refreshStoredOverlays, { passive: true, capture: true });
   globalThis.addEventListener?.("resize", refreshStoredOverlays, { passive: true });
   const visibleImages = () => [...document.images]
@@ -151,15 +177,19 @@
         && style.display !== "none" && style.visibility !== "hidden"
         && Number(style.opacity) > 0 && inViewport;
     })
-    .map(image => ({
-      url: image.currentSrc,
-      presentationUrl: presentationUrlFor(image),
-      width: image.naturalWidth || Math.round(image.getBoundingClientRect().width),
-      height: image.naturalHeight || Math.round(image.getBoundingClientRect().height),
-      mediaToken: mediaTokenFor(image),
-    }))
+    .map(image => {
+      const mediaToken = mediaTokenFor(image);
+      repairKnownStoredFrame(image);
+      return {
+        url: image.currentSrc,
+        presentationUrl: presentationUrlFor(image),
+        width: image.naturalWidth || Math.round(image.getBoundingClientRect().width),
+        height: image.naturalHeight || Math.round(image.getBoundingClientRect().height),
+        mediaToken,
+      };
+    })
     .sort((left, right) => Number(isXMediaUrl(right.url)) - Number(isXMediaUrl(left.url)))
-    .slice(0, 16);
+    .slice(0, 64);
   const visibleVideos = () => [...document.querySelectorAll("video")]
     .filter(video => isVisibleVideo(video))
     .map(video => ({
@@ -220,16 +250,12 @@
         const matches = wanted ? urlMatches : tokenMatches;
         if (!matches) continue;
         matched += 1;
-        const targets = framingTargets(media);
-        framedTargets.set(media, targets);
         if (message.command === "frame-stored" || message.state === "stored") {
-          for (const target of targets) {
-            target.classList.remove("pinakotheke-capture-selected");
-            target.classList.add("pinakotheke-stored-object");
-          }
-          media.dataset.pinakothekeCaptureState = "Stored in ObjectStore";
-          positionStoredOverlay(media);
+          if (wanted && !(media instanceof HTMLVideoElement)) rememberStoredImageIdentity(wanted);
+          applyStoredFrame(media);
         } else {
+          const targets = framingTargets(media);
+          framedTargets.set(media, targets);
           for (const target of targets) target.classList.add("pinakotheke-capture-selected");
           media.dataset.pinakothekeCaptureState = message.label || "Selected for download";
         }

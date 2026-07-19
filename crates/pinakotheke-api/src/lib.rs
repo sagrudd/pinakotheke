@@ -2349,8 +2349,12 @@ async fn capture_alias_evidence_batch(
             evidence,
         });
     }
+    let hits = results
+        .iter()
+        .filter(|result| result.evidence.outcome == "hit")
+        .count();
     eprintln!(
-        "pinakotheke_cache_evidence outcome=batch_complete count={}",
+        "pinakotheke_cache_evidence outcome=batch_complete count={} hits={hits}",
         results.len()
     );
     Ok(Json(CacheAliasBatchLookupResponse {

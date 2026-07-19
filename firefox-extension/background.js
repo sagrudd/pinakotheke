@@ -529,7 +529,7 @@ function displayedImages() {
       };
       return Number(isXMedia(right.url)) - Number(isXMedia(left.url));
     })
-    .slice(0, 16);
+    .slice(0, 64);
 }
 
 function eligibleObservedImages(origin, rule, images) {
@@ -686,7 +686,8 @@ async function lookupAliases(instanceUrl, instanceId, pairId, origin, adapter, q
   if (body.schema_version !== "x-img.cache-alias-batch-result.v1" || !Array.isArray(body.results)) {
     throw new Error("batch cache lookup returned an incompatible result");
   }
-  await traceEvent("cache_evidence", "batch", `${body.results.length} identities in one request`, origin);
+  const hits = body.results.filter(result => result.outcome === "hit").length;
+  await traceEvent("cache_evidence", "batch", `${hits}/${body.results.length} identities stored`, origin);
   return new Map(body.results.map(result => [result.canonical_alias, result]));
 }
 
@@ -732,7 +733,7 @@ async function recordSegmentedOriginFallback(origin, kind) {
 
 function validatedObservedImages(images) {
   if (!Array.isArray(images)) return null;
-  return images.slice(0, 16).flatMap(image => {
+  return images.slice(0, 64).flatMap(image => {
     try {
       const url = new URL(image.url);
       const presentation = new URL(image.presentationUrl || image.url);

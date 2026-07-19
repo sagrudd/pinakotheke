@@ -61,6 +61,9 @@ def main() -> int:
     assert 'url.pathname.startsWith("/media/")' in content + background
     assert "mediaToken" in content
     assert "lastVisibleFingerprint" in content
+    assert "storedImageIdentities" in content
+    assert "repairKnownStoredFrame(image)" in content
+    assert ".slice(0, 64)" in content + background
     assert "setInterval(observed, 2000)" in content
     assert "if (result?.completed) lastVisibleFingerprint = fingerprint" in content
     assert 'outcome: "pairing_incomplete"' in background
@@ -68,7 +71,7 @@ def main() -> int:
     assert "if (xMedia) return inViewport" in background
     assert 'lookupAliases(' in background
     assert 'cache-aliases/lookup-batch' in background
-    assert '`${body.results.length} identities in one request`' in background
+    assert '`${hits}/${body.results.length} identities stored`' in background
     assert "canonical_presentation: presentation" in background
     assert 'command: "visible-media-changed", images, videos' in content
     assert 'evidence.media_class === "original_image"' in background

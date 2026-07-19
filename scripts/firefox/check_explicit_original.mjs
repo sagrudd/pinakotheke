@@ -214,7 +214,7 @@ cacheResult = {
   outcome: "hit",
   media_class: "original_image",
 };
-const largeViewport = Array.from({ length: 16 }, (_, index) => ({
+const largeViewport = Array.from({ length: 32 }, (_, index) => ({
   url: `https://pbs.twimg.com/media/batch-${index}.jpg?name=small`,
   presentationUrl: `https://x.com/FixtureArtist/status/${index}`,
   width: 640,
@@ -228,10 +228,10 @@ await messageListener(
 );
 assert.equal(captures.length, 1, "a large viewport must use one bounded evidence request");
 assert.match(captures[0].url, /lookup-batch$/);
-assert.equal(JSON.parse(captures[0].options.body).aliases.length, 16);
+assert.equal(JSON.parse(captures[0].options.body).aliases.length, 32);
 assert.equal(
   framedMessages.length - frameCountBeforeBatch,
-  16,
+  32,
   "every settled original in the batch must receive stored-frame feedback",
 );
 captures.length = 0;
@@ -570,5 +570,8 @@ assert.equal(
   "a replacement modal node displaying the same stable media must receive the stored frame",
 );
 assert.equal(replacementModalImage.classList.contains("pinakotheke-stored-object"), true);
+assert.match(contentSource, /repairKnownStoredFrame\(image\)/);
+assert.match(contentSource, /storedImageIdentityOrder\.length > 4096/);
+assert.match(contentSource, /\.slice\(0, 64\)/);
 
 console.log("Firefox explicit-media contract passed: persistent observer, trusted image/video activation, identity-bound stored frames");

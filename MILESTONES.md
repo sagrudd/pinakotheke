@@ -2,7 +2,7 @@
 
 Status: 1.0 stable release
 
-Version: 1.23.1
+Version: 1.23.2
 
 Updated: 2026-07-19
 
@@ -1347,6 +1347,16 @@ The implementation is pushed in ``9e874df`` and the Mozilla-signed XPI passed
 permanent installation. DASServer serves the checksum-matching artifact and
 runs the ``1.22.0`` package; final milestone evidence is one user-driven X
 browse/play cycle demonstrating the frames and settled toolbar transition.
+
+## 1.23.2 — Long-timeline frame continuity
+
+- Firefox retains at most 4,096 server-confirmed canonical image identities in
+  process memory and repairs their browser-only green frames after X disconnects
+  and reuses DOM nodes.
+- A changed media identity still clears the prior frame and cannot inherit a
+  stored claim.
+- Up to 64 visible images participate in one bounded evidence batch, and
+  redacted diagnostics report hit counts without browsing URLs.
 
 ## 1.23.1 — Bounded capture-to-green latency
 

@@ -2,7 +2,7 @@
 
 Status: dependency-ordered planning backlog
 
-Version: 1.23.1
+Version: 1.23.2
 
 Updated: 2026-07-19
 
@@ -1920,6 +1920,15 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   real-Firefox capture; the currently installed older extension retains its
   one-second polling cadence even though it benefits from the server worker
   lanes immediately.
+- [ ] **XIMG-125 P0 — Preserve green framing through long X timelines.** X
+  virtualizes and disconnects media nodes after prolonged scrolling. Retain a
+  bounded browser-session set of server-confirmed image identities and repair
+  their browser-only frame when the same identity returns, without repeating a
+  lookup or carrying a frame onto different media. Raise the bounded viewport
+  ceiling to 64 identities and report redacted batch hit counts. Acceptance
+  requires same-identity repair and changed-identity rejection regressions,
+  one-request large-viewport proof, deployment, and real-Firefox long-timeline
+  assurance.
 - [ ] **XIMG-202 P3 — Add perceptual duplicate grouping.**
 - [ ] **XIMG-203 P3 — Add collections, tags, and saved searches.**
 - [ ] **XIMG-204 P3 — Add provenance-linked derivatives/transcodes.**

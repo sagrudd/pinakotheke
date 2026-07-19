@@ -49,6 +49,14 @@ response drives both stored framing and optional substitution; a miss or an
 unavailable batch fails open to the website. The legacy single-identity route
 remains available only for extension-version compatibility during rollout.
 
+Long X timelines reuse and temporarily disconnect image elements. The
+extension therefore remembers up to 4,096 server-confirmed canonical image
+identities for the current browser process and repairs the green frame when the
+same identity reappears. A different identity clears the frame. This metadata
+cache contains no image bytes and does not survive as an independent storage
+authority. One viewport batch covers up to 64 visible images, and redacted
+diagnostics report only the number of stored hits versus requested identities.
+
 Clicking an eligible linked image retains the stricter explicit-original path
 and uses the same verified status before framing. Firefox sends the rendered
 image URL as the byte source and records an enclosing link, such as an X status
