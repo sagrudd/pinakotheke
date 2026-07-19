@@ -1750,6 +1750,9 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   Because that check still showed no frame, ``1.22.4`` adds redacted server
   hit/miss-stage telemetry and extension lookup/frame-application counts. It
   also reinforces the non-destructive marker against site layout clipping.
+  Instrumentation commit ``e83e010`` and the matching signed ``1.22.4`` pair
+  are deployed. The next browse must be diagnosed from server telemetry and
+  the popup's recent ``cache_evidence``/``stored_frame`` events.
 - [ ] **XIMG-202 P3 — Add perceptual duplicate grouping.**
 - [ ] **XIMG-203 P3 — Add collections, tags, and saved searches.**
 - [ ] **XIMG-204 P3 — Add provenance-linked derivatives/transcodes.**
