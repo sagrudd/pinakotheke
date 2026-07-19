@@ -313,6 +313,9 @@ fn gallery_source(plan: &CapturePlan) -> (String, GallerySourceKind) {
             return (format!("X / @{account}"), GallerySourceKind::XAccount);
         }
     }
+    if let Some(creator) = plan.creator_hint.as_deref() {
+        return (format!("Website / {creator}"), GallerySourceKind::Website);
+    }
     (
         format!("Website / {}", plan.site_id),
         GallerySourceKind::Website,
@@ -398,6 +401,7 @@ mod tests {
             retrieval_media_url: format!("https://example.invalid/{media}.jpg"),
             destination: None,
             canonical_presentation_url: format!("https://example.invalid/{media}.jpg"),
+            creator_hint: None,
             catalogue_id: "gallery-image-1".into(),
             adapter_kind: AdapterKind::ExperimentalGeneric,
             adapter_version: "1.0.0".into(),

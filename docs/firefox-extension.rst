@@ -100,6 +100,22 @@ must authenticate and authorize either plan before it enters the shared
 scheduler; this is never a direct browser payload upload. See
 :doc:`firefox-capture` for the endpoint, policy, and fail-open contract.
 
+For video, the enabled page may expose a progressive HTTPS resource or an
+already-observed HLS/DASH manifest after the trusted play. Firefox sends only
+that bounded retrieval candidate and semantic creator/uploader metadata to the
+paired Pinakotheke instance. An in-page graphic communicates download,
+normalization, ObjectStore commit, and final availability without reading site
+cookies or changing the origin's stored media. Previously committed
+presentation pages frame their visible poster thumbnails through one bounded
+Pinakotheke evidence lookup.
+
+The compatibility baseline reviewed for this slice is Mnemosyne design
+language ``fbfa28e55d1c8111ef95a139d83927c231534b5f``, Monas
+``dac0e113c8b197cb06abc38187d72f27e562ad63``, DASObjectStore
+``89347a18d53da56d8a3e7da87b31e9f86aaddb66``, and the future Mnemosyne host
+contract ``2244a49f5057ef6251b2760bd0729de8e2207f56``. Pinakotheke continues to
+consume only the repository's versioned wire contracts and fixtures.
+
 The toolbar now opens the explicit per-site cache control and diagnostic
 surface described in :doc:`firefox-toolbar`. Image, normalized-MP4, and
 fail-closed segmented behavior remain governed by their adapter/authority gates.

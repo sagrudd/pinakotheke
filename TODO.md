@@ -2,7 +2,7 @@
 
 Status: dependency-ordered planning backlog
 
-Version: 1.24.0
+Version: 1.25.0
 
 Updated: 2026-07-19
 
@@ -1978,6 +1978,21 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   after a future out-of-band DAS deletion remains required before this item can
   be closed.
 - [ ] **XIMG-202 P3 — Add perceptual duplicate grouping.**
+- [ ] **XIMG-129 P0 — Generalize trusted-play video capture and feedback.** On
+  any explicitly enabled HTTPS origin, admit only a video selected by a trusted
+  play action. Discover bounded progressive or already-observed segmented
+  candidates, display a browser-only ``Video is downloading`` graphic with
+  measured transfer/phase progress, and transition to ``Committed to
+  DASObjectStore`` only after verified settlement. Previously committed video
+  presentation pages must frame their navigation thumbnails through the
+  in-memory batch evidence index. Preserve a bounded semantic creator/uploader
+  hint through the restart-safe plan and commit generic objects beneath a
+  creator folder, using ``_unattributed`` instead of guessing. Acceptance
+  requires deterministic trusted-play, progress-protocol, video-thumbnail
+  framing, creator-key, fail-open, full local quality, deployment, and one real
+  installed-Firefox capture on an enabled non-X origin. Implementation and
+  deterministic evidence are prepared for version ``1.25.0``; the live
+  installed-Firefox capture remains before closure.
 - [ ] **XIMG-203 P3 — Add collections, tags, and saved searches.**
 - [ ] **XIMG-204 P3 — Add provenance-linked derivatives/transcodes.**
 - [x] **XIMG-205 P0 — Consume audience-bound Prosopikon host identity.**

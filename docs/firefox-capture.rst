@@ -37,9 +37,20 @@ unavailable, rejected, and timeout states remain unframed and origin-served.
 Evidence lookup is independent of substitution. A user may leave origin
 delivery enabled while Pinakotheke asks its paired server whether a displayed
 alias is already settled. A positive authoritative answer adds the same
-two-pixel green frame. User-selected videos receive a dashed in-progress frame
-while acquisition runs and the green stored frame after settlement. These
-frames remain browser-only.
+two-pixel green frame. User-selected videos receive a browser-only status
+graphic over the playing element while acquisition runs and the green stored
+frame after settlement. The graphic says ``Video is downloading``, shows
+measured progress when the origin exposes a reliable response length,
+identifies normalization and ObjectStore commit phases, and ends with ``Video
+committed to DASObjectStore``. Segmented media without a trustworthy total
+uses honest phase progress rather than a fabricated byte percentage. These
+overlays and frames remain browser-only.
+
+A navigation-page poster may be an ``img`` even though its presentation page
+identifies a previously committed video. The same bounded evidence batch sends
+both the image alias and presentation identity; a settled normalized video
+therefore adds the two-pixel green frame to that poster on later visits without
+reading or listing DASObjectStore.
 
 Cache evidence never performs an ObjectStore read or listing. DASObjectStore
 remains authoritative for committed bytes, while Pinakotheke keeps settled
@@ -107,7 +118,11 @@ canonical X status-page presentation URL, not guessed from the image CDN URL.
 Handles are normalized to lowercase. If an observed CDN image has no account
 link, Pinakotheke uses the explicit ``x.com/_unattributed/...`` quarantine
 prefix rather than assigning it to the wrong creator. Generic enabled sites
-use ``sites/<site-id>/<capture-kind>/<sha256>``. These are DASObjectStore keys,
+use ``sites/<site-id>/<creator-or-_unattributed>/<capture-kind>/<sha256>``.
+Firefox supplies only a bounded semantic author/uploader label exposed by the
+enabled page; the server validates it and the helper converts it to a safe
+folder segment. It never guesses an identity from an unrelated CDN hostname.
+These are DASObjectStore keys,
 not unmanaged local directories, and the checksum suffix preserves idempotent
 byte identity.
 
@@ -144,15 +159,15 @@ On the DASServer inspect them with:
    journalctl -u pinakotheke-preview.service --since "10 minutes ago" \
      --no-pager | grep pinakotheke_ingress
 
-A trusted video ``play``
-gesture is detected. A trusted pointer or keyboard activation must be followed
-by playback, and Firefox must have exposed an HTTPS progressive response in
-that activation window. The URL may have an opaque path and a short-lived query;
-no website catalogue or filename suffix is used to recognize it. That candidate
-is routed through the capture worker, profile-verified, committed, admitted,
-and reported through an equivalent verified status. Blob-only or segmented/MSE
-playback remains origin-served and produces a redacted diagnostic; it is not
-silently described as captured.
+A trusted video ``play`` gesture is detected. A trusted pointer or keyboard
+activation must be followed by playback, and Firefox must have exposed an
+HTTPS progressive response or an already-observed HLS/DASH manifest in that
+activation window. The URL may have an opaque path and a short-lived query; no
+website catalogue is traversed. That candidate is routed through the capture
+worker, profile-verified, normalized when required, committed, admitted, and
+reported through verified progress status. Blob-only playback with no bounded
+retrieval candidate remains origin-served and produces a redacted diagnostic;
+it is not silently described as captured.
 
 XIMG-064 adds the first server-side admission boundary for Firefox observed
 media. It is deliberately a **capture plan**, not a browser upload or a

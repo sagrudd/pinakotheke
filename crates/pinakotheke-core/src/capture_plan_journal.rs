@@ -98,6 +98,8 @@ struct StoredCapturePlan {
     #[serde(default)]
     canonical_presentation_url: Option<String>,
     #[serde(default)]
+    creator_hint: Option<String>,
+    #[serde(default)]
     catalogue_id: Option<String>,
     adapter_kind: AdapterKind,
     adapter_version: String,
@@ -314,6 +316,7 @@ impl StoredCapturePlan {
             retrieval_media_url,
             destination: self.destination,
             canonical_presentation_url,
+            creator_hint: self.creator_hint,
             catalogue_id,
             adapter_kind: self.adapter_kind,
             adapter_version: self.adapter_version,
@@ -343,6 +346,7 @@ impl From<&PendingCapturePlan> for StoredPendingPlan {
                 retrieval_media_url: Some(plan.retrieval_media_url.clone()),
                 destination: plan.destination.clone(),
                 canonical_presentation_url: Some(plan.canonical_presentation_url.clone()),
+                creator_hint: plan.creator_hint.clone(),
                 catalogue_id: Some(plan.catalogue_id.clone()),
                 adapter_kind: plan.adapter_kind,
                 adapter_version: plan.adapter_version.clone(),
@@ -410,6 +414,7 @@ mod tests {
                     selection_revision: 7,
                 }),
                 canonical_presentation_url: "https://media.example.invalid/thumb.jpg".into(),
+                creator_hint: None,
                 catalogue_id,
                 adapter_kind: AdapterKind::ExperimentalGeneric,
                 adapter_version: "1.0.0".into(),

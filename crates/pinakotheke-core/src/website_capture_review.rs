@@ -146,6 +146,7 @@ mod tests {
             retrieval_media_url: "https://example.invalid/media/thumbnail.webp".into(),
             destination: None,
             canonical_presentation_url: "https://example.invalid/media/thumbnail.webp".into(),
+            creator_hint: None,
             catalogue_id: "website-card-1".into(),
             adapter_kind: AdapterKind::ExperimentalGeneric,
             adapter_version: "1.0.0".into(),

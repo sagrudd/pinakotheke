@@ -1062,6 +1062,7 @@ mod tests {
                     capture_kind: CaptureKind::ObservedThumbnail,
                     media_url: "https://example.invalid/thumb.jpg".into(),
                     presentation_url: None,
+                    creator_hint: None,
                     width: 320,
                     height: 200,
                 },

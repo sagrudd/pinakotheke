@@ -2,7 +2,7 @@
 
 Status: 1.0 stable release
 
-Version: 1.24.0
+Version: 1.25.0
 
 Updated: 2026-07-19
 
@@ -1365,6 +1365,22 @@ browse/play cycle demonstrating the frames and settled toolbar transition.
   copy; this is an explicit per-store policy, not a global DAS default.
 - Release evidence compares total and unique plan admissions during a prolonged
   timeline scroll and requires no repeated worker execution for settled media.
+
+## 1.25.0 — Generic trusted-play video acquisition
+
+- A trusted user play on an explicitly enabled HTTPS origin can select a
+  progressive video or an already-observed HLS/DASH manifest without any
+  background crawling, cookie extraction, or automatic playback.
+- The playing element is covered by an accessible browser-only status graphic
+  while Pinakotheke downloads, validates, normalizes when necessary, and
+  commits the video. Measured bytes and response length drive progress when the
+  origin exposes a reliable total; segmented media uses honest phase progress.
+- ``Stored in ObjectStore`` remains the sole authority for the two-pixel green
+  frame. A settled video's presentation identity also frames its navigation
+  thumbnail on later visits using one bounded in-memory evidence batch.
+- A bounded semantic creator/uploader hint groups generic-site objects beneath
+  ``sites/<site-id>/<creator>/<capture-kind>/``. Missing identity is visibly
+  quarantined under ``_unattributed`` rather than guessed.
 
 ## 1.23.3 — Deep-timeline explicit image capture
 

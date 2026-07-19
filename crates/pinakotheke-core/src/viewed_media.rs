@@ -49,6 +49,8 @@ pub struct CapturePlanRequest {
     pub media_url: String,
     #[serde(default)]
     pub presentation_url: Option<String>,
+    #[serde(default)]
+    pub creator_hint: Option<String>,
     pub width: u32,
     pub height: u32,
 }
@@ -71,6 +73,7 @@ pub struct CapturePlan {
     /// execute them until they are replaced by a newly admitted bound plan.
     pub destination: Option<CaptureDestinationSnapshot>,
     pub canonical_presentation_url: String,
+    pub creator_hint: Option<String>,
     pub catalogue_id: String,
     pub adapter_kind: AdapterKind,
     pub adapter_version: String,
@@ -543,6 +546,11 @@ impl CapturePlanService {
             Some(value) => canonical_media_url(value).ok_or(CapturePlanError::InvalidRequest)?,
             None => canonical_media.clone(),
         };
+        let creator_hint = request
+            .creator_hint
+            .as_deref()
+            .map(str::trim)
+            .map(str::to_owned);
         if let Some(index) = self.accepted.iter().position(|pending| {
             pending.actor_id == actor_id
                 && pending.plan.site_id == site.site_id
@@ -625,6 +633,7 @@ impl CapturePlanService {
             destination,
             catalogue_id,
             canonical_presentation_url,
+            creator_hint,
             adapter_kind: request.adapter_kind,
             adapter_version: request.adapter_version,
             capture_kind: request.capture_kind,
@@ -712,6 +721,10 @@ fn validate_request(request: &CapturePlanRequest) -> Result<(), CapturePlanError
             .presentation_url
             .as_deref()
             .is_some_and(|value| canonical_media_url(value).is_none())
+        || request.creator_hint.as_deref().is_some_and(|value| {
+            let value = value.trim();
+            value.is_empty() || value.len() > 128 || value.chars().any(char::is_control)
+        })
         || request.width == 0
         || request.height == 0
         || request.width > 32_768
@@ -907,6 +920,7 @@ mod tests {
             capture_kind: CaptureKind::ObservedThumbnail,
             media_url: "https://example.invalid/media/thumbnail.webp?rotating=signature".into(),
             presentation_url: None,
+            creator_hint: None,
             width: 320,
             height: 240,
         }

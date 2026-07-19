@@ -25,6 +25,7 @@ const REQUEST_SCHEMA: &str = "pinakotheke.capture-acquire-helper.v1";
 const CONFIG_SCHEMA: &str = "pinakotheke.das-capture-helper.v1";
 const DEFAULT_MAX_BYTES: u64 = 64 * 1024 * 1024;
 const DEFAULT_MAX_VIDEO_BYTES: u64 = 1024 * 1024 * 1024;
+type ProgressSink<'a> = dyn FnMut(&str, u8, Option<u64>, Option<u64>) + 'a;
 
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -40,6 +41,8 @@ struct Request {
     #[serde(default)]
     retrieval_media_url: String,
     canonical_presentation_url: String,
+    #[serde(default)]
+    creator_hint: Option<String>,
     capture_kind: String,
     width: u32,
     height: u32,
@@ -169,6 +172,37 @@ struct Failed {
     reason_code: &'static str,
 }
 
+#[derive(Debug, Serialize)]
+#[serde(tag = "outcome", rename_all = "snake_case")]
+struct Progress<'a> {
+    schema_version: &'static str,
+    phase: &'a str,
+    progress_percent: u8,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    bytes_downloaded: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    bytes_total: Option<u64>,
+}
+
+fn emit_protocol_progress(
+    phase: &str,
+    progress_percent: u8,
+    bytes_downloaded: Option<u64>,
+    bytes_total: Option<u64>,
+) {
+    let _ = serde_json::to_writer(
+        io::stderr().lock(),
+        &Progress {
+            schema_version: REQUEST_SCHEMA,
+            phase,
+            progress_percent,
+            bytes_downloaded,
+            bytes_total,
+        },
+    );
+    eprintln!();
+}
+
 pub(crate) fn run_protocol() -> Result<(), Box<dyn std::error::Error>> {
     match run() {
         Ok(()) => Ok(()),
@@ -230,7 +264,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         .ok_or("PINAKOTHEKE_DAS_HELPER_CONFIG or HOME is required")?;
     let request: Request = serde_json::from_reader(io::stdin().lock())?;
     let config = load_config(&config_path)?;
-    let receipt = acquire(&request, &config)?;
+    let receipt = acquire_with_progress(&request, &config, &mut emit_protocol_progress)?;
     serde_json::to_writer(io::stderr().lock(), &receipt)?;
     eprintln!();
     Ok(())
@@ -416,7 +450,96 @@ fn validate_container_execution(
     Ok(())
 }
 
+fn retrieve_progressive(
+    config: &Config,
+    retrieval_url: &str,
+    payload: &Path,
+    scratch: &Path,
+    max_bytes: u64,
+    progress: &mut ProgressSink<'_>,
+) -> Result<String, Box<dyn std::error::Error>> {
+    let headers = scratch.join("retrieval-headers");
+    let max_bytes_text = max_bytes.to_string();
+    let mut child = Command::new(&config.curl_executable)
+        .args([
+            "--fail",
+            "--silent",
+            "--show-error",
+            "--location",
+            "--proto",
+            "=https",
+            "--proto-redir",
+            "=https",
+            "--max-redirs",
+            "5",
+            "--connect-timeout",
+            "15",
+            "--max-time",
+            "300",
+            "--max-filesize",
+            &max_bytes_text,
+            "--dump-header",
+        ])
+        .arg(&headers)
+        .arg("--output")
+        .arg(payload)
+        .args(["--write-out", "%{content_type}"])
+        .arg(retrieval_url)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::null())
+        .spawn()?;
+    let mut last_percent = 0_u8;
+    loop {
+        let downloaded = fs::metadata(payload)
+            .ok()
+            .map(|value| value.len())
+            .unwrap_or(0);
+        let total = response_content_length(&headers);
+        let percent = total
+            .filter(|total| *total > 0)
+            .map(|total| ((downloaded.saturating_mul(65) / total).min(65) as u8).saturating_add(5))
+            .unwrap_or(5);
+        if percent != last_percent {
+            progress("downloading", percent, Some(downloaded), total);
+            last_percent = percent;
+        }
+        if child.try_wait()?.is_some() {
+            break;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(200));
+    }
+    let output = child.wait_with_output()?;
+    if !output.status.success() || output.stdout.len() > 128 {
+        return Err("HTTPS media retrieval failed".into());
+    }
+    let downloaded = fs::metadata(payload)?.len();
+    progress("downloading", 70, Some(downloaded), Some(downloaded));
+    Ok(String::from_utf8(output.stdout)?
+        .trim()
+        .to_ascii_lowercase())
+}
+
+fn response_content_length(path: &Path) -> Option<u64> {
+    let headers = fs::read_to_string(path).ok()?;
+    headers.lines().rev().find_map(|line| {
+        let (name, value) = line.split_once(':')?;
+        name.trim()
+            .eq_ignore_ascii_case("content-length")
+            .then(|| value.trim().parse::<u64>().ok())
+            .flatten()
+    })
+}
+
+#[cfg_attr(not(test), allow(dead_code))]
 fn acquire(request: &Request, config: &Config) -> Result<Committed, Box<dyn std::error::Error>> {
+    acquire_with_progress(request, config, &mut |_, _, _, _| {})
+}
+
+fn acquire_with_progress(
+    request: &Request,
+    config: &Config,
+    progress: &mut ProgressSink<'_>,
+) -> Result<Committed, Box<dyn std::error::Error>> {
     validate_request(request, config)?;
     let video = request.capture_kind == "explicit_video";
     let scratch = if video {
@@ -446,39 +569,24 @@ fn acquire(request: &Request, config: &Config) -> Result<Committed, Box<dyn std:
     };
     let segmented_manifest = video && is_segmented_manifest(retrieval_media_url);
     let content_type = if segmented_manifest {
+        progress("downloading", 5, None, None);
         assemble_segmented_video(config, retrieval_media_url, &payload, max_bytes)?;
+        progress(
+            "downloading",
+            70,
+            fs::metadata(&payload).ok().map(|value| value.len()),
+            None,
+        );
         "video/mp4".to_owned()
     } else {
-        let max_bytes_text = max_bytes.to_string();
-        let mut curl = Command::new(&config.curl_executable);
-        curl.args([
-            "--fail",
-            "--silent",
-            "--show-error",
-            "--location",
-            "--proto",
-            "=https",
-            "--proto-redir",
-            "=https",
-            "--max-redirs",
-            "5",
-            "--connect-timeout",
-            "15",
-            "--max-time",
-            "300",
-            "--max-filesize",
-            &max_bytes_text,
-            "--output",
-        ])
-        .arg(&payload)
-        .args(["--write-out", "%{content_type}"])
-        .arg(retrieval_media_url)
-        .stderr(Stdio::null());
-        let (curl_status, curl_stdout) = output_bounded(&mut curl, 128)?;
-        if !curl_status.success() {
-            return Err("HTTPS media retrieval failed".into());
-        }
-        String::from_utf8(curl_stdout)?.trim().to_ascii_lowercase()
+        retrieve_progressive(
+            config,
+            retrieval_media_url,
+            &payload,
+            &scratch.path,
+            max_bytes,
+            progress,
+        )?
     };
     if (!video && !content_type.starts_with("image/"))
         || (video && !content_type.starts_with("video/"))
@@ -502,6 +610,7 @@ fn acquire(request: &Request, config: &Config) -> Result<Committed, Box<dyn std:
         std::os::unix::fs::chown(&payload, None, Some(daemon_group))?;
     }
     if video {
+        progress("probing", 72, Some(metadata.len()), Some(metadata.len()));
         let probe = probe_video(
             config
                 .ffprobe_executable
@@ -510,6 +619,12 @@ fn acquire(request: &Request, config: &Config) -> Result<Committed, Box<dyn std:
             &payload,
         )?;
         if !firefox_compatible(&content_type, &probe) {
+            progress(
+                "normalizing",
+                75,
+                Some(metadata.len()),
+                Some(metadata.len()),
+            );
             return normalize_incompatible_video(request, config, scratch, payload, probe);
         }
     }
@@ -524,6 +639,7 @@ fn acquire(request: &Request, config: &Config) -> Result<Committed, Box<dyn std:
         &object_key,
         &content_type,
     )?;
+    progress("committing", 85, Some(metadata.len()), Some(metadata.len()));
     let (upload_status, upload_stdout) = output_bounded(&mut upload, 64 * 1024)?;
     if !upload_status.success() {
         return Err("DASObjectStore remote upload failed".into());
@@ -538,6 +654,7 @@ fn acquire(request: &Request, config: &Config) -> Result<Committed, Box<dyn std:
         return Err("DASObjectStore did not report verified completion".into());
     }
     let video_metadata = if video {
+        progress("committing", 95, Some(metadata.len()), Some(metadata.len()));
         Some(create_and_commit_video_poster(
             request,
             config,
@@ -877,10 +994,32 @@ fn object_key(request: &Request, checksum: &str) -> String {
             request.capture_kind
         );
     }
+    let creator = request
+        .creator_hint
+        .as_deref()
+        .map(folder_segment)
+        .filter(|value| !value.is_empty())
+        .unwrap_or_else(|| "_unattributed".into());
     format!(
-        "sites/{}/{}/{checksum}",
-        request.site_id, request.capture_kind
+        "sites/{}/{}/{}/{checksum}",
+        request.site_id, creator, request.capture_kind
     )
+}
+
+fn folder_segment(value: &str) -> String {
+    let mut output = String::with_capacity(value.len().min(80));
+    for character in value.trim().chars() {
+        let character = character.to_ascii_lowercase();
+        if character.is_ascii_alphanumeric() || matches!(character, '-' | '_') {
+            output.push(character);
+        } else if !output.ends_with('-') {
+            output.push('-');
+        }
+        if output.len() >= 80 {
+            break;
+        }
+    }
+    output.trim_matches('-').to_owned()
 }
 
 fn x_account(url: &str) -> Option<String> {
@@ -1475,6 +1614,7 @@ mod tests {
             canonical_media_url: "https://media.invalid/video.mp4".into(),
             retrieval_media_url: "https://media.invalid/video.mp4".into(),
             canonical_presentation_url: "https://x.com/artist/status/1".into(),
+            creator_hint: None,
             capture_kind: "explicit_video".into(),
             width: 64,
             height: 48,
@@ -1647,6 +1787,7 @@ print(json.dumps({'schema_version':h['schema_version'],'endpoint_id':h['endpoint
             canonical_media_url: "https://media.invalid/video.webm".into(),
             retrieval_media_url: "https://media.invalid/video.webm".into(),
             canonical_presentation_url: "https://example.invalid/watch/1".into(),
+            creator_hint: None,
             capture_kind: "explicit_video".into(),
             width: 64,
             height: 48,
@@ -1717,7 +1858,7 @@ print(json.dumps({'schema_version':h['schema_version'],'endpoint_id':h['endpoint
         );
         executable(
             &remote,
-            "#!/bin/sh\nprintf '%s' \"$*\" | grep -q -- '--config .* upload store-1 --bucket dos-store-1 --source .* --key sites/site-1/observed_thumbnail/.* --content-type image/png --no-progress --submit-to-daemon --daemon-socket' || exit 9\nprintf 'Daemon remote upload job submitted\\nFinal: job state=Complete stage=remote_s3_transfer_complete\\n'\n",
+            "#!/bin/sh\nprintf '%s' \"$*\" | grep -q -- '--config .* upload store-1 --bucket dos-store-1 --source .* --key sites/site-1/_unattributed/observed_thumbnail/.* --content-type image/png --no-progress --submit-to-daemon --daemon-socket' || exit 9\nprintf 'Daemon remote upload job submitted\\nFinal: job state=Complete stage=remote_s3_transfer_complete\\n'\n",
         );
         let remote_config = root.join("remote.json");
         fs::write(&remote_config, "{}").unwrap();
@@ -1749,6 +1890,7 @@ print(json.dumps({'schema_version':h['schema_version'],'endpoint_id':h['endpoint
             canonical_media_url: "https://media.invalid/image.png".into(),
             retrieval_media_url: "https://media.invalid/image.png".into(),
             canonical_presentation_url: "https://example.invalid/artists/example/status/1".into(),
+            creator_hint: None,
             capture_kind: "observed_thumbnail".into(),
             width: 10,
             height: 10,
@@ -1772,7 +1914,7 @@ print(json.dumps({'schema_version':h['schema_version'],'endpoint_id':h['endpoint
         assert!(
             receipt
                 .object_key
-                .starts_with("sites/site-1/observed_thumbnail/")
+                .starts_with("sites/site-1/_unattributed/observed_thumbnail/")
         );
         assert!(receipt.object_version > 0);
         assert_eq!(receipt.catalogue_id, catalogue_id(&request));
@@ -1803,6 +1945,7 @@ print(json.dumps({'schema_version':h['schema_version'],'endpoint_id':h['endpoint
             canonical_media_url: "https://media.invalid/image.png".into(),
             retrieval_media_url: "https://media.invalid/image.png".into(),
             canonical_presentation_url: "https://example.invalid/artists/example/status/1".into(),
+            creator_hint: None,
             capture_kind: "explicit_original".into(),
             width: 10,
             height: 10,
@@ -1842,6 +1985,7 @@ print(json.dumps({'schema_version':h['schema_version'],'endpoint_id':h['endpoint
             canonical_media_url: "https://cdn.example.invalid/media/1.mp4".into(),
             retrieval_media_url: "https://cdn.example.invalid/media/1.mp4?token=test".into(),
             canonical_presentation_url: "https://media.example.invalid/watch/1".into(),
+            creator_hint: None,
             capture_kind: "explicit_video".into(),
             width: 1280,
             height: 720,
@@ -1901,6 +2045,7 @@ print(json.dumps({'schema_version':h['schema_version'],'endpoint_id':h['endpoint
             canonical_media_url: "https://pbs.twimg.com/media/image".into(),
             retrieval_media_url: "https://pbs.twimg.com/media/image".into(),
             canonical_presentation_url: "https://x.com/Example_Artist/status/42".into(),
+            creator_hint: None,
             capture_kind: "observed_thumbnail".into(),
             width: 640,
             height: 480,
@@ -1911,6 +2056,32 @@ print(json.dumps({'schema_version':h['schema_version'],'endpoint_id':h['endpoint
         assert_eq!(
             object_key(&request, "abc123"),
             "x.com/example_artist/observed_thumbnail/abc123"
+        );
+    }
+
+    #[test]
+    fn generic_object_keys_use_a_bounded_creator_folder() {
+        let request = Request {
+            schema_version: REQUEST_SCHEMA.into(),
+            plan_id: "plan-1".into(),
+            actor_ref: "actor-1".into(),
+            site_id: "site-1".into(),
+            origin: "https://example.invalid".into(),
+            canonical_page_url: "https://example.invalid/watch/1".into(),
+            canonical_media_url: "https://media.example.invalid/video.mp4".into(),
+            retrieval_media_url: "https://media.example.invalid/video.mp4".into(),
+            canonical_presentation_url: "https://example.invalid/watch/1".into(),
+            creator_hint: Some("Fixture Creator".into()),
+            capture_kind: "explicit_video".into(),
+            width: 1280,
+            height: 720,
+            adapter_version: "1.0.0".into(),
+            endpoint_id: "endpoint-1".into(),
+            object_store_id: "store-1".into(),
+        };
+        assert_eq!(
+            object_key(&request, "abc123"),
+            "sites/site-1/fixture-creator/explicit_video/abc123"
         );
     }
 
@@ -1983,6 +2154,7 @@ print(json.dumps({'schema_version':h['schema_version'],'endpoint_id':h['endpoint
             canonical_media_url: "https://media.invalid/image.png".into(),
             retrieval_media_url: "https://media.invalid/image.png".into(),
             canonical_presentation_url: "https://example.invalid/artists/example/status/1".into(),
+            creator_hint: None,
             capture_kind: "explicit_original".into(),
             width: 10,
             height: 10,

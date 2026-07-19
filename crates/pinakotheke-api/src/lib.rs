@@ -102,8 +102,30 @@ pub struct ExtensionOnboardingAuthority {
 }
 
 /// Process-isolated callback that returns verified authority metadata only.
-pub type HostCaptureAcquire =
-    Arc<dyn Fn(&str, &CapturePlan) -> Result<VerifiedCaptureCompletion, String> + Send + Sync>;
+pub type HostCaptureAcquire = Arc<
+    dyn Fn(&str, &CapturePlan, &HostCaptureProgress) -> Result<VerifiedCaptureCompletion, String>
+        + Send
+        + Sync,
+>;
+
+/// Bounded authority progress emitted by the isolated acquisition helper.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CaptureProgressUpdate {
+    /// Current bounded acquisition phase.
+    pub phase: String,
+    /// Overall plan completion percentage, always below 100 until settlement.
+    pub progress_percent: u8,
+    #[serde(default)]
+    /// Bytes downloaded from the enabled origin when known.
+    pub bytes_downloaded: Option<u64>,
+    #[serde(default)]
+    /// Authoritative response length when the origin exposes one.
+    pub bytes_total: Option<u64>,
+}
+
+/// Callback used only for status; it never carries media payload bytes.
+pub type HostCaptureProgress = Arc<dyn Fn(CaptureProgressUpdate) + Send + Sync>;
 
 /// Current host-authority facts for the exact destination named by a capture
 /// plan. The browser inventory is never accepted as authority.
@@ -163,6 +185,7 @@ struct CaptureCompletionRuntime {
     reviewed_destinations: Option<ReviewedDestinations>,
     destination_revalidator: Option<Mutex<HostCaptureDestinationRevalidateBackend>>,
     in_flight: Mutex<BTreeSet<String>>,
+    progress: Arc<Mutex<std::collections::BTreeMap<String, CaptureProgressUpdate>>>,
 }
 
 const CACHE_LOOKUP_SCHEMA_VERSION: &str = "x-img.cache-alias-lookup.v1";
@@ -415,8 +438,9 @@ impl HostCaptureAcquireBackend {
         &self,
         actor_ref: &str,
         plan: &CapturePlan,
+        progress: &HostCaptureProgress,
     ) -> Result<VerifiedCaptureCompletion, String> {
-        (self.acquire)(actor_ref, plan)
+        (self.acquire)(actor_ref, plan, progress)
     }
 }
 
@@ -454,6 +478,10 @@ struct CapturePlanStatusResponse {
     plan_id: String,
     catalogue_id: String,
     state: &'static str,
+    phase: String,
+    progress_percent: u8,
+    bytes_downloaded: Option<u64>,
+    bytes_total: Option<u64>,
 }
 
 #[derive(Debug, Serialize)]
@@ -1017,6 +1045,7 @@ pub fn monolith_router_with_gallery_web_delivery_and_capture_authority(
                 reviewed_destinations,
                 destination_revalidator: destination_revalidator.map(Mutex::new),
                 in_flight: Mutex::new(BTreeSet::new()),
+                progress: Arc::new(Mutex::new(std::collections::BTreeMap::new())),
             });
             for (actor_id, plan) in recoverable {
                 let _ = schedule_capture_runtime(&runtime, actor_id, plan);
@@ -1858,11 +1887,27 @@ async fn capture_plan_state(
             .items()
             .iter()
             .any(|item| item.catalogue_id == plan.catalogue_id);
+    let progress = runtime
+        .progress
+        .lock()
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .get(&format!("{}:{plan_id}", context.actor_id()))
+        .cloned()
+        .unwrap_or(CaptureProgressUpdate {
+            phase: if stored { "stored" } else { "queued" }.into(),
+            progress_percent: if stored { 100 } else { 0 },
+            bytes_downloaded: None,
+            bytes_total: None,
+        });
     Ok(Json(CapturePlanStatusResponse {
         schema_version: "pinakotheke.capture-plan-status.v1",
         plan_id,
         catalogue_id: plan.catalogue_id,
         state: if stored { "stored" } else { "pending" },
+        phase: progress.phase,
+        progress_percent: progress.progress_percent,
+        bytes_downloaded: progress.bytes_downloaded,
+        bytes_total: progress.bytes_total,
     }))
 }
 
@@ -1916,6 +1961,15 @@ fn schedule_capture_runtime(
     {
         return Ok(false);
     }
+    runtime.progress.lock().map_err(|_| ())?.insert(
+        key.clone(),
+        CaptureProgressUpdate {
+            phase: "queued".into(),
+            progress_percent: 0,
+            bytes_downloaded: None,
+            bytes_total: None,
+        },
+    );
     let Ok(handle) = tokio::runtime::Handle::try_current() else {
         runtime.in_flight.lock().map_err(|_| ())?.remove(&key);
         return Ok(false);
@@ -1936,10 +1990,18 @@ fn schedule_capture_runtime(
         };
         match acquired {
             Ok(evidence) => match settle_capture_runtime(&runtime, &actor_id, evidence) {
-                Ok(_) => eprintln!(
-                    "pinakotheke_ingress event=gallery_admitted plan_id={} kind={:?}",
-                    plan.plan_id, plan.capture_kind
-                ),
+                Ok(_) => {
+                    if let Ok(mut progress) = runtime.progress.lock() {
+                        progress.insert(key.clone(), CaptureProgressUpdate {
+                            phase: "stored".into(), progress_percent: 100,
+                            bytes_downloaded: None, bytes_total: None,
+                        });
+                    }
+                    eprintln!(
+                        "pinakotheke_ingress event=gallery_admitted plan_id={} kind={:?}",
+                        plan.plan_id, plan.capture_kind
+                    );
+                }
                 Err(error) => eprintln!(
                     "pinakotheke_ingress event=settlement_failed plan_id={} kind={:?} reason={error:?}",
                     plan.plan_id, plan.capture_kind
@@ -1965,11 +2027,20 @@ fn acquire_capture_with_retry(
     const MAX_ATTEMPTS: usize = 6;
     for attempt in 0..MAX_ATTEMPTS {
         revalidate_capture_destination(runtime, actor_id, plan)?;
+        let progress_map = Arc::clone(&runtime.progress);
+        let progress_key = format!("{actor_id}:{}", plan.plan_id);
+        let progress: HostCaptureProgress = Arc::new(move |update| {
+            if update.progress_percent <= 99
+                && let Ok(mut map) = progress_map.lock()
+            {
+                map.insert(progress_key.clone(), update);
+            }
+        });
         let result = runtime
             .acquire
             .as_ref()
             .ok_or_else(|| String::from("acquire backend unavailable"))?
-            .acquire(actor_id, plan);
+            .acquire(actor_id, plan, &progress);
         match result {
             Ok(evidence) => return Ok(evidence),
             Err(reason) if transient_capture_failure(&reason) && attempt + 1 < MAX_ATTEMPTS => {
@@ -2818,7 +2889,7 @@ mod tests {
         let maximum = Arc::new(AtomicUsize::new(0));
         let active_for_acquire = Arc::clone(&active);
         let maximum_for_acquire = Arc::clone(&maximum);
-        let backend = HostCaptureAcquireBackend::new(Arc::new(move |_, _| {
+        let backend = HostCaptureAcquireBackend::new(Arc::new(move |_, _, _| {
             let current = active_for_acquire.fetch_add(1, Ordering::SeqCst) + 1;
             maximum_for_acquire.fetch_max(current, Ordering::SeqCst);
             std::thread::sleep(Duration::from_millis(75));
@@ -2840,6 +2911,7 @@ mod tests {
                     capture_kind: CaptureKind::ObservedThumbnail,
                     media_url: "https://example.invalid/concurrent.jpg".into(),
                     presentation_url: None,
+                    creator_hint: None,
                     width: 320,
                     height: 200,
                 },
@@ -2849,7 +2921,10 @@ mod tests {
             .map(|_| {
                 let backend = backend.clone();
                 let plan = plan.clone();
-                std::thread::spawn(move || backend.acquire("synthetic-monas-user", &plan))
+                let progress: crate::HostCaptureProgress = Arc::new(|_| {});
+                std::thread::spawn(move || {
+                    backend.acquire("synthetic-monas-user", &plan, &progress)
+                })
             })
             .collect::<Vec<_>>();
         for worker in workers {
@@ -3354,6 +3429,7 @@ mod tests {
             capture_kind: CaptureKind::ObservedThumbnail,
             media_url: "https://example.invalid/thumbnail.webp".into(),
             presentation_url: None,
+            creator_hint: None,
             width: 320,
             height: 200,
         };
@@ -3377,6 +3453,7 @@ mod tests {
             reviewed_destinations: Some(Arc::clone(&stores)),
             destination_revalidator: None,
             in_flight: Mutex::new(std::collections::BTreeSet::new()),
+            progress: Arc::new(Mutex::new(std::collections::BTreeMap::new())),
         };
         assert!(revalidate_capture_destination(&runtime, "synthetic-monas-user", &plan).is_err());
         store
@@ -3424,6 +3501,7 @@ mod tests {
                 capture_kind: CaptureKind::ObservedThumbnail,
                 media_url: "https://example.invalid/thumbnail.webp?signature=redacted".into(),
                 presentation_url: None,
+                creator_hint: None,
                 width: 320,
                 height: 200,
             })
@@ -4612,7 +4690,7 @@ mod tests {
         let worker = "synthetic-capture-worker-token-0001";
         let attempts = Arc::new(AtomicUsize::new(0));
         let attempts_for_acquire = Arc::clone(&attempts);
-        let acquire = HostCaptureAcquireBackend::new(Arc::new(move |_, plan| {
+        let acquire = HostCaptureAcquireBackend::new(Arc::new(move |_, plan, _| {
             if attempts_for_acquire.fetch_add(1, Ordering::SeqCst) == 0 {
                 return Err("capture helper rejected the plan: object_upload".into());
             }
@@ -4748,9 +4826,9 @@ mod tests {
                         .unwrap(),
                     ),
                 )
-                .with_acquire(HostCaptureAcquireBackend::new(Arc::new(|_, _| {
-                    Err("synthetic helper failure".into())
-                }))),
+                .with_acquire(HostCaptureAcquireBackend::new(Arc::new(
+                    |_, _, _| Err("synthetic helper failure".into()),
+                ))),
                 root.join("destinations.json"),
             )),
         );
@@ -4832,6 +4910,7 @@ mod tests {
                     capture_kind: CaptureKind::ObservedThumbnail,
                     media_url: "https://example.invalid/startup.jpg".into(),
                     presentation_url: None,
+                    creator_hint: None,
                     width: 320,
                     height: 200,
                 },
@@ -4846,7 +4925,7 @@ mod tests {
         let restarted = CapturePlanService::with_journal(pairings(), sites(), &journal).unwrap();
         let store = GalleryCatalogueStore::new(root.join("gallery.json"));
         let dispatch = "synthetic-monas-dispatch-token-0001";
-        let acquire = HostCaptureAcquireBackend::new(Arc::new(|_, plan| {
+        let acquire = HostCaptureAcquireBackend::new(Arc::new(|_, plan, _| {
             Ok(VerifiedCaptureCompletion {
                 plan_id: plan.plan_id.clone(),
                 catalogue_id: "startup-card-1".into(),

@@ -11,6 +11,8 @@
   style.textContent = [
     ".pinakotheke-capture-selected { box-sizing: border-box !important; outline: 2px dashed #1769aa !important; outline-offset: -2px !important; }",
     ".pinakotheke-stored-object { box-sizing: border-box !important; border: 2px solid #238636 !important; outline: 2px solid #238636 !important; outline-offset: -2px !important; box-shadow: inset 0 0 0 2px #238636 !important; }",
+    ".pinakotheke-video-capture-overlay { position: fixed; z-index: 2147483646; display: grid; place-content: center; gap: 10px; padding: 24px; box-sizing: border-box; background: #111827; color: #f9fafb; text-align: center; font: 600 16px/1.4 system-ui, sans-serif; pointer-events: none; }",
+    ".pinakotheke-video-capture-overlay progress { width: min(320px, 80%); height: 12px; margin: 0 auto; accent-color: #238636; }",
   ].join("\n");
   (document.head || document.documentElement).append(style);
   for (const stale of document.querySelectorAll(
@@ -25,6 +27,7 @@
   const canonical = raw => { const url = new URL(raw); url.search = ""; url.hash = ""; return url.href; };
   const mediaTokens = new WeakMap();
   const storedOverlays = new WeakMap();
+  const captureOverlays = new WeakMap();
   const storedMedia = new Set();
   const storedImageIdentities = new Set();
   const storedImageIdentityOrder = [];
@@ -41,6 +44,15 @@
   const presentationUrlFor = image => image.closest("a[href]")?.href
     || image.closest("article")?.querySelector?.('a[href*="/status/"]')?.href
     || location.href;
+  const creatorHintFor = media => {
+    const scope = media.closest("article, [itemscope], figure") || document;
+    const candidate = scope.querySelector?.('[itemprop="author"], a[rel~="author"]')
+      || document.querySelector?.('meta[name="author"]');
+    const value = candidate?.content || candidate?.getAttribute?.("content")
+      || candidate?.textContent || "";
+    const normalized = value.replace(/\s+/g, " ").trim();
+    return normalized && normalized.length <= 128 ? normalized : null;
+  };
   const xOriginalUrl = raw => {
     const url = new URL(raw);
     if (!isXMediaUrl(url.href)) return url.href;
@@ -137,6 +149,47 @@
   };
   const refreshStoredOverlays = () => {
     for (const media of [...storedMedia]) positionStoredOverlay(media);
+    for (const media of document.querySelectorAll("video")) {
+      const overlay = captureOverlays.get(media);
+      if (!overlay) continue;
+      const rect = media.getBoundingClientRect();
+      if (!media.isConnected || rect.width <= 0 || rect.height <= 0) {
+        overlay.remove();
+        captureOverlays.delete(media);
+      } else {
+        Object.assign(overlay.style, {
+          left: `${rect.left}px`, top: `${rect.top}px`,
+          width: `${rect.width}px`, height: `${rect.height}px`,
+          borderRadius: getComputedStyle(media).borderRadius,
+        });
+      }
+    }
+  };
+  const showVideoCaptureOverlay = (video, message) => {
+    let overlay = captureOverlays.get(video);
+    if (!overlay) {
+      overlay = document.createElement("div");
+      overlay.className = "pinakotheke-video-capture-overlay";
+      overlay.setAttribute("role", "status");
+      overlay.innerHTML = '<div data-pinakotheke-video-title>Video is downloading</div><progress max="100"></progress><div data-pinakotheke-video-detail></div>';
+      (document.body || document.documentElement).append(overlay);
+      captureOverlays.set(video, overlay);
+    }
+    const percent = Number.isInteger(message.progressPercent)
+      ? Math.max(0, Math.min(100, message.progressPercent)) : null;
+    const progress = overlay.querySelector("progress");
+    if (percent === null) progress.removeAttribute("value");
+    else progress.value = percent;
+    overlay.querySelector("[data-pinakotheke-video-title]").textContent = message.state === "stored"
+      ? "Video committed to DASObjectStore" : "Video is downloading";
+    overlay.querySelector("[data-pinakotheke-video-detail]").textContent = message.state === "stored"
+      ? "Available in Pinakotheke"
+      : `${message.label || "Preparing media"}${percent === null ? "" : ` · ${percent}%`}`;
+    refreshStoredOverlays();
+    if (message.state === "stored") setTimeout(() => {
+      overlay.remove();
+      captureOverlays.delete(video);
+    }, 2200);
   };
   const applyStoredFrame = media => {
     const targets = framingTargets(media);
@@ -183,6 +236,7 @@
       return {
         url: image.currentSrc,
         presentationUrl: presentationUrlFor(image),
+        creatorHint: creatorHintFor(image),
         width: image.naturalWidth || Math.round(image.getBoundingClientRect().width),
         height: image.naturalHeight || Math.round(image.getBoundingClientRect().height),
         mediaToken,
@@ -194,6 +248,7 @@
     .filter(video => isVisibleVideo(video))
     .map(video => ({
       presentationUrl: presentationUrlFor(video),
+      creatorHint: creatorHintFor(video),
       width: video.videoWidth || Math.round(video.getBoundingClientRect().width),
       height: video.videoHeight || Math.round(video.getBoundingClientRect().height),
       mediaToken: mediaTokenFor(video),
@@ -247,13 +302,22 @@
         // supplied; the element token is only a fallback for URL-less state
         // messages. A different rendered media identity still cannot inherit
         // the frame from a recycled node.
-        const matches = wanted ? urlMatches : tokenMatches;
+        const matches = wanted
+          ? (urlMatches || (media instanceof HTMLVideoElement && tokenMatches))
+          : tokenMatches;
         if (!matches) continue;
         matched += 1;
         if (message.command === "frame-stored" || message.state === "stored") {
+          if (media instanceof HTMLVideoElement && message.command === "media-capture-state") {
+            showVideoCaptureOverlay(media, message);
+          }
           if (wanted && !(media instanceof HTMLVideoElement)) rememberStoredImageIdentity(wanted);
           applyStoredFrame(media);
         } else {
+          if (media instanceof HTMLVideoElement) {
+            showVideoCaptureOverlay(media, message);
+            continue;
+          }
           const targets = framingTargets(media);
           framedTargets.set(media, targets);
           for (const target of targets) target.classList.add("pinakotheke-capture-selected");
@@ -299,6 +363,7 @@
       width: image.naturalWidth,
       height: image.naturalHeight,
       mediaToken: mediaTokenFor(image),
+      creatorHint: creatorHintFor(image),
     };
   };
   const submitExplicitImage = capture => browser.runtime.sendMessage({
@@ -370,7 +435,6 @@
     try {
       const url = new URL(entry.name);
       return url.protocol === "https:"
-        && url.hostname === "video.twimg.com"
         && /\.(?:m3u8|mpd)$/i.test(url.pathname);
     } catch (_) {
       return false;
@@ -423,10 +487,11 @@
         .slice(0, 24)
         .map(entry => entry.name);
       const recentFamilies = new Set(recentResources.map(entry => mediaFamily(entry.name)).filter(Boolean));
-      const manifest = preferMasterManifest(allResources.filter(entry => {
+      const relatedManifest = preferMasterManifest(allResources.filter(entry => {
         const family = mediaFamily(entry.name);
         return family && recentFamilies.has(family);
       }));
+      const manifest = relatedManifest || preferMasterManifest(recentResources);
       let backgroundManifest = null;
       try {
         const resolved = await browser.runtime.sendMessage({
@@ -450,6 +515,7 @@
           width: video.videoWidth || video.clientWidth,
           height: video.videoHeight || video.clientHeight,
           mediaToken,
+          creatorHint: creatorHintFor(video),
         });
         videoResolutions.delete(video);
         return;

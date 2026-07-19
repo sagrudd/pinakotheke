@@ -193,6 +193,7 @@ mod tests {
                     capture_kind: CaptureKind::ObservedThumbnail,
                     media_url: "https://pbs.twimg.com/media/fixture?name=small&format=jpg".into(),
                     presentation_url: Some("https://media.example.invalid/original.jpg".into()),
+                    creator_hint: None,
                     width: 320,
                     height: 200,
                 },
@@ -241,6 +242,7 @@ mod tests {
                     presentation_url: Some(
                         "https://media.example.invalid/original.jpg?different=token".into(),
                     ),
+                    creator_hint: None,
                     width: 1920,
                     height: 1080,
                 },

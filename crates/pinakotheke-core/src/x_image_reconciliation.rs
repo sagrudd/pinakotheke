@@ -367,6 +367,7 @@ mod tests {
                     .into(),
                 destination: None,
                 canonical_presentation_url: format!("https://x.com/fixture/status/{id}"),
+                creator_hint: None,
                 catalogue_id: id.into(),
                 adapter_kind: AdapterKind::ExperimentalGeneric,
                 adapter_version: "1.0.0".into(),

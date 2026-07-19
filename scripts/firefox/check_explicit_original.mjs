@@ -256,7 +256,7 @@ assert.equal(
   "https://pbs.twimg.com/media/fixture?format=jpg&name=small",
 );
 
-storage.sites.push({ origin: "https://x.com", capture: true, media: ["videos"] });
+storage.sites.push({ origin: "https://x.com", capture: true, media: ["images", "videos"] });
 cacheResult = {
   schema_version: "x-img.cache-alias-result.v1",
   outcome: "hit",
@@ -276,6 +276,22 @@ const videoEvidenceBody = JSON.parse(captures.at(-1).options.body);
 assert.equal(videoEvidenceBody.aliases[0].canonical_presentation, "https://x.com/FixtureArtist/status/42");
 assert.equal(framedMessages.at(-1).command, "frame-stored");
 assert.equal(framedMessages.at(-1).mediaToken, "video-token-42");
+captures.length = 0;
+const videoThumbnailFrameCount = framedMessages.length;
+await messageListener(
+  { command: "visible-media-changed", images: [{
+    url: "https://media.example.invalid/video-poster.jpg",
+    presentationUrl: "https://x.com/FixtureArtist/status/42",
+    width: 640,
+    height: 360,
+    mediaToken: "video-poster-token-42",
+  }], videos: [] },
+  { tab: { id: 91, url: "https://x.com/home" } },
+);
+const videoThumbnailEvidence = JSON.parse(captures.at(-1).options.body);
+assert.equal(videoThumbnailEvidence.aliases[0].canonical_presentation, "https://x.com/FixtureArtist/status/42");
+assert.equal(framedMessages.length, videoThumbnailFrameCount + 1);
+assert.equal(framedMessages.at(-1).mediaToken, "video-poster-token-42");
 completedRequestListener({ tabId: 91, url: "https://video.twimg.com/amplify_video/42/pl/avc1/video.m3u8" });
 completedRequestListener({ tabId: -1, url: "https://video.twimg.com/amplify_video/42/pl/master.m3u8" });
 await new Promise(resolve => setImmediate(resolve));

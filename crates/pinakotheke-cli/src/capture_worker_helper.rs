@@ -8,7 +8,7 @@ use std::{
 };
 
 use serde::{Deserialize, Serialize};
-use x_img_api::HostCaptureAcquireBackend;
+use x_img_api::{CaptureProgressUpdate, HostCaptureAcquireBackend, HostCaptureProgress};
 use x_img_core::{
     capture_completion::VerifiedCaptureCompletion,
     persistent_gallery_admission::GalleryVideoCompletion,
@@ -26,9 +26,16 @@ pub(crate) fn backend(
     validate_helper(helper)?;
     let helper = helper.to_owned();
     Ok(HostCaptureAcquireBackend::new(std::sync::Arc::new(
-        move |actor_ref, plan| {
-            acquire(&helper, actor_ref, plan, &endpoint_id, &object_store_id)
-                .map_err(|error| error.to_string())
+        move |actor_ref, plan, progress| {
+            acquire_with_progress(
+                &helper,
+                actor_ref,
+                plan,
+                &endpoint_id,
+                &object_store_id,
+                progress,
+            )
+            .map_err(|error| error.to_string())
         },
     )))
 }
@@ -45,6 +52,7 @@ struct AcquireRequest<'a> {
     canonical_media_url: &'a str,
     retrieval_media_url: &'a str,
     canonical_presentation_url: &'a str,
+    creator_hint: Option<&'a str>,
     capture_kind: CaptureKind,
     width: u32,
     height: u32,
@@ -56,6 +64,15 @@ struct AcquireRequest<'a> {
 #[derive(Debug, Deserialize)]
 #[serde(tag = "outcome", rename_all = "snake_case", deny_unknown_fields)]
 enum AcquireResponse {
+    Progress {
+        schema_version: String,
+        phase: String,
+        progress_percent: u8,
+        #[serde(default)]
+        bytes_downloaded: Option<u64>,
+        #[serde(default)]
+        bytes_total: Option<u64>,
+    },
     Committed {
         schema_version: String,
         #[serde(rename = "catalogue_id")]
@@ -96,6 +113,25 @@ pub(crate) fn acquire(
     endpoint_id: &str,
     object_store_id: &str,
 ) -> io::Result<VerifiedCaptureCompletion> {
+    let progress: HostCaptureProgress = std::sync::Arc::new(|_| {});
+    acquire_with_progress(
+        helper,
+        actor_ref,
+        plan,
+        endpoint_id,
+        object_store_id,
+        &progress,
+    )
+}
+
+fn acquire_with_progress(
+    helper: &Path,
+    actor_ref: &str,
+    plan: &CapturePlan,
+    endpoint_id: &str,
+    object_store_id: &str,
+    progress: &HostCaptureProgress,
+) -> io::Result<VerifiedCaptureCompletion> {
     validate_helper(helper)?;
     let mut child = Command::new(helper)
         .arg("acquire-image-v1")
@@ -113,6 +149,7 @@ pub(crate) fn acquire(
         canonical_media_url: &plan.canonical_media_url,
         retrieval_media_url: &plan.retrieval_media_url,
         canonical_presentation_url: &plan.canonical_presentation_url,
+        creator_hint: plan.creator_hint.as_deref(),
         capture_kind: plan.capture_kind,
         width: plan.width,
         height: plan.height,
@@ -131,21 +168,53 @@ pub(crate) fn acquire(
         .stderr
         .take()
         .ok_or_else(|| io::Error::other("capture helper response unavailable"))?;
-    let mut response = String::new();
-    BufReader::new(stderr)
-        .take(RESPONSE_LIMIT + 1)
-        .read_line(&mut response)?;
-    if response.len() as u64 > RESPONSE_LIMIT || !response.ends_with('\n') {
-        terminate(&mut child);
-        return Err(io::Error::new(
-            io::ErrorKind::InvalidData,
-            "capture helper response is missing or oversized",
-        ));
-    }
-    let parsed: AcquireResponse = serde_json::from_str(&response).map_err(|error| {
-        terminate(&mut child);
-        io::Error::new(io::ErrorKind::InvalidData, error)
-    })?;
+    let mut reader = BufReader::new(stderr).take(RESPONSE_LIMIT + 1);
+    let parsed = loop {
+        let mut response = String::new();
+        reader.read_line(&mut response)?;
+        if response.is_empty() || !response.ends_with('\n') {
+            terminate(&mut child);
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "capture helper response is missing",
+            ));
+        }
+        let parsed: AcquireResponse = serde_json::from_str(&response).map_err(|error| {
+            terminate(&mut child);
+            io::Error::new(io::ErrorKind::InvalidData, error)
+        })?;
+        match parsed {
+            AcquireResponse::Progress {
+                schema_version,
+                phase,
+                progress_percent,
+                bytes_downloaded,
+                bytes_total,
+            } => {
+                if schema_version != SCHEMA
+                    || progress_percent > 99
+                    || phase.is_empty()
+                    || phase.len() > 32
+                    || !phase
+                        .bytes()
+                        .all(|byte| byte.is_ascii_lowercase() || byte == b'_')
+                {
+                    terminate(&mut child);
+                    return Err(io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        "capture helper progress is invalid",
+                    ));
+                }
+                progress(CaptureProgressUpdate {
+                    phase,
+                    progress_percent,
+                    bytes_downloaded,
+                    bytes_total,
+                });
+            }
+            terminal => break terminal,
+        }
+    };
     let mut stdout = child
         .stdout
         .take()
@@ -164,6 +233,7 @@ pub(crate) fn acquire(
     }
     let schema = match &parsed {
         AcquireResponse::Committed { schema_version, .. }
+        | AcquireResponse::Progress { schema_version, .. }
         | AcquireResponse::PolicyBlocked { schema_version, .. }
         | AcquireResponse::Unavailable { schema_version, .. }
         | AcquireResponse::Rejected { schema_version, .. } => schema_version,
@@ -175,6 +245,7 @@ pub(crate) fn acquire(
         ));
     }
     match parsed {
+        AcquireResponse::Progress { .. } => unreachable!("terminal response was required"),
         AcquireResponse::Committed {
             _catalogue_id: _,
             title,
@@ -278,6 +349,7 @@ mod tests {
             retrieval_media_url: "https://example.invalid/thumb.jpg".into(),
             destination: None,
             canonical_presentation_url: "https://example.invalid/thumb.jpg".into(),
+            creator_hint: None,
             catalogue_id: "website-card-1".into(),
             adapter_kind: AdapterKind::ExperimentalGeneric,
             adapter_version: "1.0.0".into(),
@@ -306,14 +378,29 @@ mod tests {
 test "$1" = acquire-image-v1 || exit 2
 read request
 printf '%s' "$request" | grep -q '"canonical_media_url":"https://example.invalid/thumb.jpg"' || exit 3
+printf '%s\n' '{"outcome":"progress","schema_version":"pinakotheke.capture-acquire-helper.v1","phase":"downloading","progress_percent":42,"bytes_downloaded":21,"bytes_total":50}' >&2
 printf '%s\n' '{"outcome":"committed","schema_version":"pinakotheke.capture-acquire-helper.v1","catalogue_id":"card-1","title":"Synthetic image","content_type":"image/jpeg","content_length":42,"endpoint_id":"endpoint-1","object_store_id":"store-1","object_key":"object-1","object_version":2,"checksum_sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","verified_at_epoch_seconds":42}' >&2
 "##,
         )
         .unwrap();
         std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o700)).unwrap();
-        let receipt = acquire(&path, "actor-1", &plan(), "endpoint-1", "store-1").unwrap();
+        let updates = std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
+        let updates_for_callback = std::sync::Arc::clone(&updates);
+        let progress: HostCaptureProgress = std::sync::Arc::new(move |update| {
+            updates_for_callback.lock().unwrap().push(update);
+        });
+        let receipt = acquire_with_progress(
+            &path,
+            "actor-1",
+            &plan(),
+            "endpoint-1",
+            "store-1",
+            &progress,
+        )
+        .unwrap();
         assert_eq!(receipt.object_version, 2);
         assert_eq!(receipt.content_length, 42);
+        assert_eq!(updates.lock().unwrap()[0].progress_percent, 42);
         let _ = std::fs::remove_file(path);
     }
 }

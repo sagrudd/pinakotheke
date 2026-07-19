@@ -53,11 +53,11 @@ async function recordMediaCapture(origin, planId, kind, state, detail) {
   await browser.storage.local.set({ mediaCaptureStates: next.slice(-24) });
 }
 
-async function notifyCaptureState(tabId, media, state, label) {
+async function notifyCaptureState(tabId, media, state, label, progressPercent = null) {
   try {
     await browser.tabs.sendMessage(tabId, {
       command: "media-capture-state", mediaUrl: media.url,
-      mediaToken: media.mediaToken, state, label,
+      mediaToken: media.mediaToken, state, label, progressPercent,
     });
   } catch (_) { /* the originating tab may have closed */ }
 }
@@ -313,6 +313,7 @@ async function submitCapture(instanceUrl, pairId, origin, pageUrl, adapter, capt
       capture_kind: captureKind,
       media_url: media.url,
       presentation_url: media.presentationUrl || media.url,
+      creator_hint: media.creatorHint || null,
       width: media.width,
       height: media.height,
     }),
@@ -349,12 +350,34 @@ async function captureAndFrame(tabId, instanceUrl, pairId, origin, pageUrl, adap
     if (decoratePageMedia) {
       await notifyCaptureState(tabId, media, "selected", "Selected for download");
     }
+    let lastProgress = null;
     for (let attempt = 0; attempt < 180; attempt += 1) {
       const status = await fetch(`${instanceUrl}/products/pinakotheke/api/extension/v1/capture-plans/${encodeURIComponent(plan.plan_id)}`, { cache: "no-store", headers: { "x-pinakotheke-pairing": pairId } });
       if (status.ok) {
         const state = await status.json();
+        if (decoratePageMedia && state.progress_percent !== lastProgress) {
+          lastProgress = state.progress_percent;
+          const label = state.phase === "committing"
+            ? "Committing to DASObjectStore"
+            : state.phase === "normalizing"
+              ? "Preparing browser-compatible video"
+              : captureKind === "explicit_video" ? "Downloading video" : "Downloading image";
+          await notifyCaptureState(
+            tabId, media, "downloading", label, state.progress_percent,
+          );
+          await recordMediaCapture(
+            origin,
+            plan.plan_id,
+            captureKind,
+            "downloading",
+            `${label}${Number.isInteger(state.progress_percent) ? ` · ${state.progress_percent}%` : ""}`,
+          );
+        }
         if (state.schema_version === "pinakotheke.capture-plan-status.v1" && state.state === "stored") {
           if (decoratePageMedia) {
+            await notifyCaptureState(
+              tabId, media, "stored", "Committed to DASObjectStore", 100,
+            );
             await browser.tabs.sendMessage(tabId, {
               command: "frame-stored", mediaUrl: media.url, mediaToken: media.mediaToken,
             });
@@ -367,7 +390,7 @@ async function captureAndFrame(tabId, instanceUrl, pairId, origin, pageUrl, adap
       if (attempt === 3) {
         await recordMediaCapture(origin, plan.plan_id, captureKind, "downloading", "Acquisition and ObjectStore settlement are in progress");
         if (decoratePageMedia) {
-          await notifyCaptureState(tabId, media, "downloading", "Download in progress");
+          await notifyCaptureState(tabId, media, "downloading", "Downloading video");
         }
       }
       await new Promise(resolve => setTimeout(resolve, captureStatusPollDelay(attempt)));
@@ -740,7 +763,7 @@ function validatedObservedImages(images) {
       if (url.protocol !== "https:" || presentation.protocol !== "https:"
         || !Number.isInteger(image.width) || !Number.isInteger(image.height)
         || image.width < 1 || image.height < 1 || image.width > 32768 || image.height > 32768) return [];
-      return [{ url: url.href, presentationUrl: presentation.href, width: image.width, height: image.height, mediaToken: String(image.mediaToken || "").slice(0, 80) }];
+      return [{ url: url.href, presentationUrl: presentation.href, width: image.width, height: image.height, mediaToken: String(image.mediaToken || "").slice(0, 80), creatorHint: String(image.creatorHint || "").slice(0, 128) || null }];
     } catch (_) {
       return [];
     }
@@ -760,6 +783,7 @@ function validatedObservedVideos(videos) {
         width: video.width,
         height: video.height,
         mediaToken: String(video.mediaToken || "").slice(0, 80),
+        creatorHint: String(video.creatorHint || "").slice(0, 128) || null,
       }];
     } catch (_) {
       return [];
@@ -809,7 +833,10 @@ async function runCacheForTab(tab, contentImages = null, contentVideos = null) {
         origin,
         adapter,
         [
-          ...images.map(observed => ({ alias: canonicalAlias(observed.url) })),
+          ...images.map(observed => ({
+            alias: canonicalAlias(observed.url),
+            presentation: canonicalAlias(observed.presentationUrl),
+          })),
           ...videos.map(observed => {
             const presentation = canonicalAlias(observed.presentationUrl);
             return { alias: presentation, presentation };
@@ -826,7 +853,8 @@ async function runCacheForTab(tab, contentImages = null, contentVideos = null) {
       // lookup of objects already settled in an earlier browsing session.
       const alias = canonicalAlias(observed.url);
       const evidence = evidenceByAlias.get(alias);
-      if (evidence?.outcome === "hit" && evidence.media_class === "original_image") {
+      if (evidence?.outcome === "hit"
+        && ["original_image", "normalized_mp4"].includes(evidence.media_class)) {
         const framing = await browser.tabs.sendMessage(tab.id, { command: "frame-stored", mediaUrl: observed.url, mediaToken: observed.mediaToken });
         await traceEvent("stored_frame", framing?.matched ? "applied" : "unmatched", `${framing?.matched || 0} page element(s)`, origin);
       }
@@ -1026,7 +1054,7 @@ browser.runtime.onMessage.addListener(async (message, sender) => {
     }
     const capture = await captureAndFrame(
       sender.tab.id, instanceUrl, pairId, origin, sender.tab.url, adapter, video ? "explicit_video" : "explicit_original",
-      { url: mediaUrl, presentationUrl, width, height, mediaToken: String(message.mediaToken || "").slice(0, 80) },
+      { url: mediaUrl, presentationUrl, width, height, mediaToken: String(message.mediaToken || "").slice(0, 80), creatorHint: String(message.creatorHint || "").slice(0, 128) || null },
     );
     if (capture.outcome === "stored") {
       await recordSiteDiagnostic(origin, {

@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.25.0 - 2026-07-19
+
+- Adds generic trusted-play discovery for progressive and already-observed
+  segmented video on explicitly enabled HTTPS origins.
+- Shows a browser-only video download graphic with measured transfer progress,
+  normalization/ObjectStore phases, and verified committed state.
+- Frames navigation thumbnails for previously committed videos through the
+  existing bounded in-memory cache-evidence batch.
+- Preserves a bounded semantic creator/uploader hint and groups generic-site
+  objects by that identity, with an explicit unattributed fallback.
+
 ## 1.24.0 - 2026-07-19
 
 - Makes Firefox acquisition explicit-selection-only: displayed thumbnails are
