@@ -532,9 +532,22 @@
       return;
     }
     const video = event.target;
+    // Native video controls can consume the pointer event before it reaches
+    // the page, while Firefox still delivers a trusted play event. Its
+    // transient user-activation flag preserves the explicit user gesture
+    // without admitting autoplay or later script-triggered playback.
+    const nativeControlActivation = event.isTrusted
+      && navigator.userActivation?.isActive === true
+      && isVisibleVideo(video)
+      ? {
+          epochMilliseconds: Date.now(),
+          performanceMilliseconds: performance.now(),
+        }
+      : null;
     const activation = videoActivations.get(video)
       || (recentVisibleVideoActivation?.video === video
-        ? recentVisibleVideoActivation.activation : null);
+        ? recentVisibleVideoActivation.activation : null)
+      || nativeControlActivation;
     if (!activation || Date.now() - activation.epochMilliseconds > trustedPlayWindowMilliseconds) {
       void browser.runtime.sendMessage({ command: "explicit-video-observer", outcome: "missing_trusted_activation" });
       return;

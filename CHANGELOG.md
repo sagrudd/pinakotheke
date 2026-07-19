@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.27.2 - 2026-07-19
+
+- Admits a visible video's trusted native-control play when Firefox reports an
+  active transient user gesture, even if the page observer did not receive the
+  consumed pointer event.
+- Keeps autoplay, synthetic playback, hidden media, and expired activation out
+  of the explicit-capture path.
+- Pins admitted native-control and rejected no-activation behavior in the
+  deterministic Firefox extension fixture.
+
 ## 1.27.1 - 2026-07-19
 
 - Fixes capture-helper progress serialization so admitted explicit images no

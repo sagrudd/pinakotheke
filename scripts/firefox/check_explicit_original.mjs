@@ -383,6 +383,7 @@ const contentContext = vm.createContext({
   document: contentDocument,
   Element: FixtureElement,
   HTMLVideoElement: FixtureVideo,
+  navigator: { userActivation: { isActive: false } },
   MutationObserver: class { observe() {} },
   setTimeout() { return 1; },
   setInterval() { return 1; },
@@ -503,6 +504,24 @@ assert.equal(contentMessages.length, 3);
 assert.equal(contentMessages[2].command, "explicit-video-opened");
 assert.equal(contentMessages[2].width, 854);
 
+const nativeControlVideo = new FixtureVideo();
+nativeControlVideo.currentSrc = "blob:https://art.example.invalid/native-control";
+nativeControlVideo.videoWidth = 960;
+nativeControlVideo.videoHeight = 540;
+nativeControlVideo.clientWidth = 480;
+nativeControlVideo.clientHeight = 270;
+contentContext.navigator.userActivation.isActive = true;
+contentListeners.get("play")({ isTrusted: true, target: nativeControlVideo });
+contentContext.navigator.userActivation.isActive = false;
+await new Promise(resolve => setImmediate(resolve));
+assert.equal(contentMessages.length, 4);
+assert.equal(contentMessages[3].command, "explicit-video-opened");
+assert.equal(
+  contentMessages[3].mediaUrl,
+  "https://video.twimg.com/amplify_video/42/pl/master.m3u8",
+  "a visible trusted native-control play may use Firefox transient activation",
+);
+
 const delayedOverlayVideo = new FixtureVideo();
 delayedOverlayVideo.currentSrc = "blob:https://art.example.invalid/delayed-overlay";
 delayedOverlayVideo.videoWidth = 1920;
@@ -522,9 +541,9 @@ contentListeners.get("pointerdown")({
 });
 contentListeners.get("play")({ isTrusted: true, target: delayedOverlayVideo });
 await new Promise(resolve => setImmediate(resolve));
-assert.equal(contentMessages.length, 4);
-assert.equal(contentMessages[3].command, "explicit-video-observer");
-assert.equal(contentMessages[3].outcome, "missing_trusted_activation");
+assert.equal(contentMessages.length, 5);
+assert.equal(contentMessages[4].command, "explicit-video-observer");
+assert.equal(contentMessages[4].outcome, "missing_trusted_activation");
 
 const sender = { tab: { id: 7, url: "https://art.example.invalid:8443/gallery?private=drop" } };
 const result = await messageListener({

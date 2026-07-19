@@ -2,7 +2,7 @@
 
 Status: 1.0 stable release
 
-Version: 1.27.1
+Version: 1.27.2
 
 Updated: 2026-07-19
 
@@ -1408,6 +1408,17 @@ browse/play cycle demonstrating the frames and settled toolbar transition.
   ``pinakotheke_media`` store has no folder-profile binding and the current
   DASObjectStore application-auth surface has no exact-object delete operation;
   raw S3 deletion is explicitly not accepted as release evidence.
+
+## 1.27.2 — Native-control trusted video activation
+
+- A visible video's trusted ``play`` event may use Firefox's active transient
+  user-activation signal when native controls consume the pointer event before
+  it reaches the page observer.
+- Autoplay, synthetic play events, hidden video elements, and playback after
+  transient activation expires remain ineligible for capture.
+- Deterministic extension assurance covers both the admitted native-control
+  path and the rejected no-activation path without naming or special-casing a
+  source site.
 
 ## 1.27.1 — Explicit-image capture protocol recovery
 

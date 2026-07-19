@@ -175,14 +175,20 @@ On the DASServer inspect them with:
      --no-pager | grep pinakotheke_ingress
 
 A trusted video ``play`` gesture is detected. A trusted pointer or keyboard
-activation must be followed by playback, and Firefox must have exposed an
-HTTPS progressive response or an already-observed HLS/DASH manifest in that
-activation window. The URL may have an opaque path and a short-lived query; no
-website catalogue is traversed. That candidate is routed through the capture
-worker, profile-verified, normalized when required, committed, admitted, and
-reported through verified progress status. Blob-only playback with no bounded
-retrieval candidate remains origin-served and produces a redacted diagnostic;
-it is not silently described as captured.
+activation must be followed by playback. When Firefox's native video controls
+consume that input before the page observer receives it, a visible video's
+trusted ``play`` event is eligible only while Firefox reports active transient
+user activation. This narrow fallback does not use persistent activation:
+autoplay, synthetic playback, hidden video, and a later script-triggered play
+remain ineligible.
+
+Firefox must also expose an HTTPS progressive response or an already-observed
+HLS/DASH manifest in that activation window. The URL may have an opaque path
+and a short-lived query; no website catalogue is traversed. That candidate is
+routed through the capture worker, profile-verified, normalized when required,
+committed, admitted, and reported through verified progress status. Blob-only
+playback with no bounded retrieval candidate remains origin-served and produces
+a redacted diagnostic; it is not silently described as captured.
 
 XIMG-064 adds the first server-side admission boundary for Firefox observed
 media. It is deliberately a **capture plan**, not a browser upload or a
