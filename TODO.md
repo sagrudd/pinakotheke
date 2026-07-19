@@ -1956,7 +1956,11 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   deployment; and a prolonged installed-Firefox scroll showing no repeated
   helper execution for settled plans. Live diagnosis found 78 admissions for
   only 11 unique observed-thumbnail plans in seven minutes, including individual
-  settled plans replayed 28 and 20 times.
+  settled plans replayed 28 and 20 times. Implementation ``127b73d`` is pushed
+  and version ``1.24.0`` is deployed on DASServer. Local installed-Firefox
+  assurance proves zero capture from viewport observation followed by trusted
+  opened-image and played-video capture; the remaining acceptance evidence is
+  one prolonged user-driven X timeline session with the deployed extension.
 - [ ] **XIMG-128 P0 — Enforce DASObjectStore/gallery convergence.** Treat the
   live DASObjectStore catalogue as payload authority and Pinakotheke as its
   metadata projection. Reconcile at startup and after delete/commit events;
@@ -1967,7 +1971,12 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   and projected availability counts. On 2026-07-19 live reset evidence exposed
   397 Garage objects, 38 DAS-catalogued objects, and 308 Pinakotheke records;
   all three authorities were deliberately reset to zero while the writer was
-  stopped, and ``pinakotheke_media`` was changed from two copies to one.
+  stopped, and ``pinakotheke_media`` was changed from two copies to one. After
+  deploying and restarting ``1.24.0``, Garage, DASObjectStore catalogue,
+  Pinakotheke gallery, and capture-plan counts remained exactly zero; trusted
+  TLS readiness and the matching XPI route passed. Automatic reconciliation
+  after a future out-of-band DAS deletion remains required before this item can
+  be closed.
 - [ ] **XIMG-202 P3 — Add perceptual duplicate grouping.**
 - [ ] **XIMG-203 P3 — Add collections, tags, and saved searches.**
 - [ ] **XIMG-204 P3 — Add provenance-linked derivatives/transcodes.**
