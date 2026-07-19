@@ -39,6 +39,7 @@ use x_img_core::{
         GalleryMediaKind, GalleryObjectAvailability, GalleryPage, GalleryReviewState,
         GallerySourceKind,
     },
+    gallery_reconciliation::{AuthorityObject, GalleryConvergenceReport, reconcile_gallery},
     host_context::{
         AuthenticatedHostContext, HostContextAdapter, MonasHostContextAdapter, XIMG_ACCESS,
     },
@@ -72,6 +73,7 @@ type SynoptikonCatalogue = Arc<SynoptikonCatalogueProjection>;
 type MonasGalleryCatalogue = Arc<Mutex<GalleryCatalogue>>;
 type SiteCorpora = Arc<Mutex<SiteCorpusStore>>;
 type ReviewedDestinations = Arc<Mutex<ReviewedDestinationStore>>;
+type GalleryConvergence = Arc<Mutex<GalleryConvergenceReport>>;
 
 /// Private host-worker authority used only to report independently verified
 /// DASObjectStore image commits.
@@ -91,6 +93,7 @@ pub struct CapturePlanComposition {
     reviewed_destinations: Option<ReviewedDestinationStore>,
     destination_revalidator: Option<HostCaptureDestinationRevalidateBackend>,
     deletion: Option<GalleryDeletionAuthority>,
+    reconciliation: Option<GalleryReconciliationAuthority>,
 }
 
 /// Host-owned authoritative object deletion and persistent gallery projection.
@@ -98,6 +101,19 @@ pub struct CapturePlanComposition {
 pub struct GalleryDeletionAuthority {
     gallery_store: GalleryCatalogueStore,
     backend: HostObjectDeleteBackend,
+}
+
+/// Process-isolated callback returning the complete settled inventory for the
+/// configured Pinakotheke logical ObjectStore.
+pub type HostGalleryInventory = Arc<dyn Fn() -> Result<Vec<AuthorityObject>, String> + Send + Sync>;
+
+/// Periodic DASObjectStore-authority reconciliation for the gallery projection.
+#[derive(Clone)]
+pub struct GalleryReconciliationAuthority {
+    gallery_store: GalleryCatalogueStore,
+    inventory: HostGalleryInventory,
+    interval: std::time::Duration,
+    report: GalleryConvergence,
 }
 
 /// Idempotent result from deleting one exact DASObjectStore object version.
@@ -390,6 +406,7 @@ impl CapturePlanComposition {
             reviewed_destinations: None,
             destination_revalidator: None,
             deletion: None,
+            reconciliation: None,
         }
     }
 
@@ -397,6 +414,13 @@ impl CapturePlanComposition {
     #[must_use]
     pub fn with_deletion(mut self, deletion: GalleryDeletionAuthority) -> Self {
         self.deletion = Some(deletion);
+        self
+    }
+
+    /// Adds periodic authority-driven gallery convergence.
+    #[must_use]
+    pub fn with_reconciliation(mut self, reconciliation: GalleryReconciliationAuthority) -> Self {
+        self.reconciliation = Some(reconciliation);
         self
     }
 
@@ -456,6 +480,58 @@ impl GalleryDeletionAuthority {
             gallery_store,
             backend,
         }
+    }
+}
+
+impl GalleryReconciliationAuthority {
+    /// Creates a reconciliation authority with a bounded polling interval.
+    #[must_use]
+    pub fn new(gallery_store: GalleryCatalogueStore, inventory: HostGalleryInventory) -> Self {
+        Self {
+            gallery_store,
+            inventory,
+            interval: std::time::Duration::from_secs(10),
+            report: Arc::new(Mutex::new(GalleryConvergenceReport::default())),
+        }
+    }
+
+    /// Reconciles, persists, then publishes one complete authority snapshot.
+    pub fn reconcile(
+        &self,
+        gallery: &MonasGalleryCatalogue,
+    ) -> Result<GalleryConvergenceReport, String> {
+        let baseline = gallery
+            .lock()
+            .map_err(|_| "gallery reconciliation lock is unavailable".to_owned())?
+            .items()
+            .to_vec();
+        let objects = (self.inventory)()?;
+        let mut current = gallery
+            .lock()
+            .map_err(|_| "gallery reconciliation lock is unavailable".to_owned())?;
+        if current.items() != baseline {
+            return Err(
+                "gallery changed during authority inventory; reconciliation deferred".into(),
+            );
+        }
+        let mut candidate = current.clone();
+        let report = reconcile_gallery(&mut candidate, &objects);
+        if report.changed_representations > 0 {
+            self.gallery_store
+                .replace(candidate.items().to_vec())
+                .map_err(|error| format!("gallery reconciliation persistence failed: {error}"))?;
+            *current = candidate;
+        }
+        *self
+            .report
+            .lock()
+            .map_err(|_| "gallery reconciliation report lock is unavailable".to_owned())? =
+            report.clone();
+        Ok(report)
+    }
+
+    fn report(&self) -> GalleryConvergence {
+        Arc::clone(&self.report)
     }
 }
 
@@ -555,6 +631,12 @@ struct IngestionStatusResponse {
     stored: usize,
     gallery_items: usize,
     last_observed_at_epoch_seconds: Option<u64>,
+}
+
+#[derive(Debug, Serialize)]
+struct GalleryConvergenceResponse {
+    schema_version: &'static str,
+    report: GalleryConvergenceReport,
 }
 
 #[derive(Debug, Deserialize)]
@@ -1040,6 +1122,7 @@ pub fn monolith_router_with_gallery_web_delivery_and_capture_authority(
             reviewed_destinations,
             destination_revalidator,
             deletion,
+            reconciliation,
         } = capture;
         let capture_plans = Arc::new(Mutex::new(capture_plans));
         let reviewed_destinations = reviewed_destinations.map(|store| Arc::new(Mutex::new(store)));
@@ -1096,6 +1179,29 @@ pub fn monolith_router_with_gallery_web_delivery_and_capture_authority(
                 )
                 .layer(Extension(Arc::clone(&gallery)))
                 .layer(Extension(deletion));
+        }
+        if let Some(reconciliation) = reconciliation {
+            let convergence = reconciliation.report();
+            protected = protected
+                .route(
+                    "/products/pinakotheke/api/operations/v1/gallery-convergence",
+                    get(gallery_convergence),
+                )
+                .layer(Extension(Arc::clone(&convergence)));
+            let reconciler = reconciliation.clone();
+            let reconciled_gallery = Arc::clone(&gallery);
+            tokio::spawn(async move {
+                let mut interval = tokio::time::interval(reconciler.interval);
+                interval.tick().await;
+                loop {
+                    interval.tick().await;
+                    let authority = reconciler.clone();
+                    let gallery = Arc::clone(&reconciled_gallery);
+                    let result =
+                        tokio::task::spawn_blocking(move || authority.reconcile(&gallery)).await;
+                    let _ = result;
+                }
+            });
         }
         if let Some(authority) = completion_authority {
             let now = SystemTime::now()
@@ -1156,6 +1262,26 @@ pub fn monolith_router_with_gallery_web_delivery_and_capture_authority(
             }),
         )
         .merge(protected)
+}
+
+async fn gallery_convergence(
+    context: Option<Extension<AuthenticatedHostContext>>,
+    convergence: Option<Extension<GalleryConvergence>>,
+) -> Result<Json<GalleryConvergenceResponse>, StatusCode> {
+    let context = context.ok_or(StatusCode::UNAUTHORIZED)?.0;
+    if !context.permits(XIMG_ACCESS) {
+        return Err(StatusCode::FORBIDDEN);
+    }
+    let report = convergence
+        .ok_or(StatusCode::SERVICE_UNAVAILABLE)?
+        .0
+        .lock()
+        .map_err(|_| StatusCode::SERVICE_UNAVAILABLE)?
+        .clone();
+    Ok(Json(GalleryConvergenceResponse {
+        schema_version: "pinakotheke.gallery-convergence-response.v1",
+        report,
+    }))
 }
 
 async fn get_site_corpus(
@@ -3024,7 +3150,7 @@ mod tests {
             Arc, Mutex,
             atomic::{AtomicUsize, Ordering},
         },
-        time::Duration,
+        time::{Duration, SystemTime, UNIX_EPOCH},
     };
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
@@ -3141,6 +3267,7 @@ mod tests {
             GalleryObjectAvailability, GalleryRepresentation, GalleryRepresentationKind,
             GalleryReviewState, GallerySourceKind,
         },
+        gallery_reconciliation::{AuthorityObject, AuthorityObjectIdentity},
         host_context::{HostContextAdapter, MonasHostContextAdapter},
         object_read::{
             AuthorizedObjectReader, AuthorizedObjectReference, ObjectContentMetadata,
@@ -3164,9 +3291,9 @@ mod tests {
 
     use super::{
         CaptureCompletionAuthority, CaptureCompletionRuntime, CaptureDestinationAuthorityState,
-        CapturePlanComposition, ExtensionOnboardingAuthority, HostCaptureAcquireBackend,
-        HostCaptureDestinationRevalidateBackend, HostObjectReadBackend, MonasDispatchVerifier,
-        ObjectDeliveryPool, VerifiedCaptureCompletion, monolith_router,
+        CapturePlanComposition, ExtensionOnboardingAuthority, GalleryReconciliationAuthority,
+        HostCaptureAcquireBackend, HostCaptureDestinationRevalidateBackend, HostObjectReadBackend,
+        MonasDispatchVerifier, ObjectDeliveryPool, VerifiedCaptureCompletion, monolith_router,
         monolith_router_with_authorities, monolith_router_with_gallery_authority,
         monolith_router_with_gallery_delivery_authority,
         monolith_router_with_gallery_web_delivery_and_capture_authority,
@@ -3222,6 +3349,59 @@ mod tests {
             )),
         }])
         .unwrap()
+    }
+
+    #[test]
+    fn out_of_band_deletion_is_persisted_and_survives_restart() {
+        let root = std::env::temp_dir().join(format!(
+            "pinakotheke-gallery-reconciliation-{}-{}",
+            std::process::id(),
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let store = GalleryCatalogueStore::new(root.join("gallery.json"));
+        let gallery = gallery_catalogue();
+        store.replace(gallery.items().to_vec()).unwrap();
+        let inventory = Arc::new(Mutex::new(vec![AuthorityObject {
+            identity: AuthorityObjectIdentity {
+                endpoint_id: "endpoint-1".into(),
+                object_store_id: "store-1".into(),
+                object_key: "objects/media-1".into(),
+            },
+            state: "Protected".into(),
+            content_length: 12,
+        }]));
+        let inventory_for_backend = Arc::clone(&inventory);
+        let authority = GalleryReconciliationAuthority::new(
+            store.clone(),
+            Arc::new(move || Ok(inventory_for_backend.lock().unwrap().clone())),
+        );
+        let shared = Arc::new(Mutex::new(gallery));
+        let committed = authority.reconcile(&shared).unwrap();
+        assert_eq!(committed.authoritative_count, committed.projected_count);
+
+        inventory.lock().unwrap().clear();
+        let deleted = authority.reconcile(&shared).unwrap();
+        assert_eq!(deleted.authoritative_count, 0);
+        assert_eq!(deleted.projected_count, 0);
+        assert_eq!(deleted.stale_count, 1);
+        assert_eq!(
+            store.load_or_empty().unwrap().items()[0]
+                .thumbnail
+                .availability,
+            GalleryObjectAvailability::Unavailable
+        );
+
+        let restarted = Arc::new(Mutex::new(store.load_or_empty().unwrap()));
+        let restart_report = authority.reconcile(&restarted).unwrap();
+        assert_eq!(
+            restart_report.authoritative_count,
+            restart_report.projected_count
+        );
+        assert_eq!(restart_report.changed_representations, 0);
+        fs::remove_dir_all(root).unwrap();
     }
 
     fn gallery_image_backend() -> HostObjectReadBackend {

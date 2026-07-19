@@ -626,6 +626,10 @@ impl GalleryCatalogue {
         &self.items
     }
 
+    pub(crate) fn items_mut(&mut self) -> &mut [GalleryItem] {
+        &mut self.items
+    }
+
     /// Plans deletion of the selected asset and every duplicate catalogue row
     /// that shares one of its exact immutable object references.
     pub fn delete_plan(

@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/sagrudd/pinakotheke/contracts/dasobjectstore/pinakotheke-gallery-inventory-helper.v1.schema.json",
+  "title": "Pinakotheke gallery inventory helper v1",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "endpoint_id", "object_store_id"],
+      "properties": {
+        "schema_version": {"const": "pinakotheke.gallery-inventory-helper.v1"},
+        "endpoint_id": {"type": "string", "minLength": 1, "maxLength": 128},
+        "object_store_id": {"type": "string", "minLength": 1, "maxLength": 128}
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "objects"],
+      "properties": {
+        "schema_version": {"const": "pinakotheke.gallery-inventory-helper.v1"},
+        "objects": {
+          "type": "array",
+          "maxItems": 100000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["object_key", "state", "content_length"],
+            "properties": {
+              "object_key": {"type": "string", "minLength": 1, "maxLength": 2048},
+              "state": {"const": "Protected"},
+              "content_length": {"type": "integer", "minimum": 0}
+            }
+          }
+        }
+      }
+    }
+  ]
+}

@@ -11,7 +11,7 @@ members = [
 resolver = "3"
 
 [workspace.package]
-version = "1.26.0"
+version = "1.27.0"
 edition = "2024"
 rust-version = "1.95"
 license = "MPL-2.0"
@@ -36,7 +36,7 @@ serde_json = { version = "=1.0.150" }
 url = { version = "=2.5.7" }
 futures-core = "=0.3.32"
 sha2 = { version = "=0.10.9" }
-tokio = { version = "=1.52.3", features = ["macros", "net", "rt-multi-thread", "signal", "sync"] }
+tokio = { version = "=1.52.3", features = ["macros", "net", "rt-multi-thread", "signal", "sync", "time"] }
 tower-http = { version = "=0.6.8", default-features = false, features = ["fs"] }
 yew = { version = "=0.23.0", default-features = false, features = ["csr"] }
 wasm-bindgen-futures = "=0.4.76"

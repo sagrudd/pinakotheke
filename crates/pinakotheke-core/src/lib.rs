@@ -15,6 +15,7 @@ pub mod destination;
 pub mod destination_selection;
 pub mod extension_pairing;
 pub mod gallery_catalogue;
+pub mod gallery_reconciliation;
 pub mod host_context;
 pub mod host_product;
 pub mod instagram_discovery;
@@ -253,7 +254,7 @@ mod tests {
 
     #[test]
     fn summary_contains_the_workspace_version() {
-        assert_eq!(build_info().summary(), "Pinakotheke 1.26.0");
+        assert_eq!(build_info().summary(), "Pinakotheke 1.27.0");
     }
 
     #[test]

@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.27.0 - 2026-07-19
+
+- Reconciles gallery object availability from the authoritative DASObjectStore
+  catalogue at startup and every ten seconds.
+- Atomically tombstones representations removed out of band and restores them
+  only when the protected object returns to the same endpoint and ObjectStore.
+- Adds authenticated aggregate diagnostics for authoritative, projected,
+  orphan, stale, and changed object counts.
+- Defines a bounded inventory-helper contract backed by DASObjectStore's
+  catalogue rather than raw provider bucket listings.
+
 ## 1.26.0 - 2026-07-19
 
 - Adds an authenticated deletion review and confirmation action to image and

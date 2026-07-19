@@ -52,6 +52,7 @@ Configuration
    critical-vertical
    gallery-catalogue
    gallery-deduplication
+   gallery-convergence
    video-candidates
    normalized-video-profiles
    video-normalization

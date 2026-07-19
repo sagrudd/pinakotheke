@@ -43,6 +43,11 @@ origins, account or actor identity, source aliases, object keys, checksums,
 credentials, cookies, authorization headers, Monas sessions, DAS capabilities,
 signed queries, browsing history, media metadata, or payload bytes.
 
+Gallery convergence has a separate authenticated aggregate at
+``/products/pinakotheke/api/operations/v1/gallery-convergence``. It reports
+only authoritative, projected, orphan, stale, and changed counts. See
+:doc:`gallery-convergence` for its authority and failure semantics.
+
 Host composition
 ----------------
 

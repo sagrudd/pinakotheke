@@ -12,6 +12,7 @@ mod das_capture_helper;
 mod das_object_read_helper;
 mod das_stream_ingest_helper;
 mod destination_revalidation_helper;
+mod gallery_inventory_helper;
 mod launchd;
 mod local_objectstore;
 mod monolith;
@@ -89,13 +90,16 @@ enum Command {
     /// Internal DASObjectStore-backed streaming ingest helper protocol.
     #[command(name = "ingest-stream-v1", hide = true)]
     IngestStreamV1,
+    /// Internal DASObjectStore catalogue inventory helper protocol.
+    #[command(name = "gallery-inventory-v1", hide = true)]
+    GalleryInventoryV1,
     /// Strictly validate and inspect a local versioned configuration file.
     Config {
         #[command(subcommand)]
         command: ConfigCommand,
     },
     /// Run the local Pinakotheke monolith in the foreground.
-    Serve(monolith::ServeArgs),
+    Serve(Box<monolith::ServeArgs>),
     /// Provision and inspect monolith storage authorities.
     Storage {
         #[command(subcommand)]
@@ -172,7 +176,7 @@ pub fn run(invocation: Invocation, cli: Cli) -> Result<(), Box<dyn std::error::E
             build_info().product.version
         ),
         Some(Command::Config { command }) => run_config(command)?,
-        Some(Command::Serve(arguments)) => monolith::serve(arguments)?,
+        Some(Command::Serve(arguments)) => monolith::serve(*arguments)?,
         Some(Command::Storage { command }) => local_objectstore::run(command)?,
         Some(Command::Service { command }) => launchd::run(command)?,
         Some(Command::Capture { command }) => monolith::run_capture(command)?,
@@ -181,6 +185,7 @@ pub fn run(invocation: Invocation, cli: Cli) -> Result<(), Box<dyn std::error::E
         Some(Command::AcquireImageV1) => das_capture_helper::run_protocol()?,
         Some(Command::ReadObjectV1) => das_object_read_helper::run()?,
         Some(Command::IngestStreamV1) => das_stream_ingest_helper::run()?,
+        Some(Command::GalleryInventoryV1) => gallery_inventory_helper::run_protocol()?,
     }
     Ok(())
 }

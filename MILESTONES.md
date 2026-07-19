@@ -2,7 +2,7 @@
 
 Status: 1.0 stable release
 
-Version: 1.26.0
+Version: 1.27.0
 
 Updated: 2026-07-19
 
@@ -1408,6 +1408,23 @@ browse/play cycle demonstrating the frames and settled toolbar transition.
   ``pinakotheke_media`` store has no folder-profile binding and the current
   DASObjectStore application-auth surface has no exact-object delete operation;
   raw S3 deletion is explicitly not accepted as release evidence.
+
+## 1.27.0 — Authoritative gallery convergence
+
+- Startup fails closed if the configured DASObjectStore catalogue inventory
+  cannot be read; it never republishes unverified gallery availability.
+- A bounded ten-second reconciliation pass compares unique endpoint,
+  ObjectStore, and immutable object identifiers against ``Protected`` DAS
+  catalogue records without probing Garage or S3.
+- Out-of-band deletion atomically persists an ``Unavailable`` representation
+  before replacing the live gallery. Returned authority restores the local
+  delivery route; source-site fallback remains forbidden.
+- Authenticated diagnostics expose authoritative, projected, orphan, stale,
+  and changed counts without object identities or browsing data.
+- Compatibility-sensitive implementation records DASObjectStore commit
+  ``500aaf4bfcd75a5f954476d1f9c999ce5aa21a30``, Monas commit
+  ``dac0e113c8b197cb06abc38187d72f27e562ad63``, and design-language commit
+  ``fbfa28e55d1c8111ef95a139d83927c231534b5f``.
 
 ## 1.23.3 — Deep-timeline explicit image capture
 

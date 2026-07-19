@@ -54,6 +54,9 @@ pub(crate) struct ServeArgs {
     /// Absolute executable implementing authoritative object-delete helper v1.
     #[arg(long)]
     object_delete_helper: Option<PathBuf>,
+    /// Absolute executable implementing authoritative gallery-inventory helper v1.
+    #[arg(long)]
+    gallery_inventory_helper: Option<PathBuf>,
     /// Private metadata-only Firefox pairing/site authority document.
     #[arg(long)]
     capture_authority_file: Option<PathBuf>,
@@ -431,6 +434,23 @@ pub(crate) fn serve(arguments: ServeArgs) -> Result<(), Box<dyn std::error::Erro
             Ok::<_, io::Error>(store)
         })
         .transpose()?;
+    let gallery_inventory = arguments
+        .gallery_inventory_helper
+        .as_deref()
+        .map(|helper| {
+            let authority = capture_authority.as_ref().ok_or_else(|| {
+                io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    "gallery inventory requires capture destination authority",
+                )
+            })?;
+            crate::gallery_inventory_helper::backend(
+                helper,
+                authority.endpoint_id.clone(),
+                authority.object_store_id.clone(),
+            )
+        })
+        .transpose()?;
     if arguments.capture_completion_token_file.is_some()
         && (object_read_backend.is_none()
             || capture_authority.is_none()
@@ -523,9 +543,27 @@ pub(crate) fn serve(arguments: ServeArgs) -> Result<(), Box<dyn std::error::Erro
         // as ready makes Monas reject healthy remote/server deployments.
         let storage_ready =
             crate::local_objectstore::is_ready(&layout.root) || object_read_backend.is_some();
-        let gallery = gallery_store
+        let mut gallery = gallery_store
             .load_or_empty()
             .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?;
+        let reconciliation = gallery_inventory.map(|inventory| {
+            x_img_api::GalleryReconciliationAuthority::new(gallery_store.clone(), inventory)
+        });
+        if let Some(authority) = reconciliation.as_ref() {
+            let shared = std::sync::Arc::new(std::sync::Mutex::new(gallery));
+            let report = authority.reconcile(&shared).map_err(io::Error::other)?;
+            gallery = shared
+                .lock()
+                .map_err(|_| io::Error::other("gallery reconciliation lock failed"))?
+                .clone();
+            println!(
+                "gallery convergence: authority={} projected={} orphan={} stale={}",
+                report.authoritative_count,
+                report.projected_count,
+                report.orphan_count,
+                report.stale_count
+            );
+        }
         println!(
             "Pinakotheke {} listening on {}://{address}",
             env!("CARGO_PKG_VERSION"),
@@ -577,6 +615,10 @@ pub(crate) fn serve(arguments: ServeArgs) -> Result<(), Box<dyn std::error::Erro
                                     backend,
                                 ))
                             }
+                            None => composition,
+                        };
+                        let composition = match reconciliation {
+                            Some(authority) => composition.with_reconciliation(authority),
                             None => composition,
                         };
                         let composition = match capture_acquire {
@@ -905,6 +947,7 @@ mod tests {
             firefox_downloads_root: None,
             object_read_helper: None,
             object_delete_helper: None,
+            gallery_inventory_helper: None,
             capture_authority_file: None,
             capture_completion_token_file: None,
             capture_acquire_helper: None,
@@ -949,6 +992,7 @@ mod tests {
             firefox_downloads_root: None,
             object_read_helper: None,
             object_delete_helper: None,
+            gallery_inventory_helper: None,
             capture_authority_file: None,
             capture_completion_token_file: None,
             capture_acquire_helper: None,

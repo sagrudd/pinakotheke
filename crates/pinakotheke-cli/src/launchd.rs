@@ -56,6 +56,9 @@ pub(crate) struct InstallArgs {
     /// Optional absolute authoritative ObjectStore delete-helper executable.
     #[arg(long)]
     object_delete_helper: Option<PathBuf>,
+    /// Optional authoritative DASObjectStore catalogue inventory helper.
+    #[arg(long, requires = "capture_authority_file")]
+    gallery_inventory_helper: Option<PathBuf>,
     /// Absolute private Firefox capture pairing/site authority document.
     #[arg(long)]
     capture_authority_file: Option<PathBuf>,
@@ -160,6 +163,9 @@ fn install(layout: &ServiceLayout, args: &InstallArgs) -> io::Result<()> {
     if let Some(helper) = &args.object_delete_helper {
         validate_binary(helper)?;
     }
+    if let Some(helper) = &args.gallery_inventory_helper {
+        validate_binary(helper)?;
+    }
     if args.object_read_helper.is_some() != args.object_read_endpoint_id.is_some() {
         return Err(io::Error::new(
             io::ErrorKind::InvalidInput,
@@ -217,6 +223,7 @@ fn install(layout: &ServiceLayout, args: &InstallArgs) -> io::Result<()> {
             object_read_helper: args.object_read_helper.as_deref(),
             object_read_endpoint_id: args.object_read_endpoint_id.as_deref(),
             object_delete_helper: args.object_delete_helper.as_deref(),
+            gallery_inventory_helper: args.gallery_inventory_helper.as_deref(),
             capture_authority_file: args.capture_authority_file.as_deref(),
             capture_completion_token_file: args.capture_completion_token_file.as_deref(),
             capture_acquire_helper: args.capture_acquire_helper.as_deref(),
@@ -389,6 +396,7 @@ struct BackendPlistAdapters<'a> {
     object_read_helper: Option<&'a Path>,
     object_read_endpoint_id: Option<&'a str>,
     object_delete_helper: Option<&'a Path>,
+    gallery_inventory_helper: Option<&'a Path>,
     capture_authority_file: Option<&'a Path>,
     capture_completion_token_file: Option<&'a Path>,
     capture_acquire_helper: Option<&'a Path>,
@@ -416,6 +424,9 @@ fn backend_plist(
     }
     if let Some(helper) = adapters.object_delete_helper {
         arguments.extend(["--object-delete-helper", path_text_unchecked(helper)]);
+    }
+    if let Some(helper) = adapters.gallery_inventory_helper {
+        arguments.extend(["--gallery-inventory-helper", path_text_unchecked(helper)]);
     }
     if let Some(path) = adapters.capture_authority_file {
         arguments.extend(["--capture-authority-file", path_text_unchecked(path)]);
@@ -636,6 +647,7 @@ mod tests {
                 object_read_helper: Some(Path::new("/opt/bin/das-reader")),
                 object_read_endpoint_id: Some("endpoint-local"),
                 object_delete_helper: Some(Path::new("/opt/bin/das-deleter")),
+                gallery_inventory_helper: Some(Path::new("/opt/bin/pinakotheke")),
                 capture_authority_file: Some(Path::new(
                     "/Users/synthetic & user/.x-img/config/capture.json",
                 )),
@@ -653,6 +665,7 @@ mod tests {
         assert!(backend.contains("--object-read-helper"));
         assert!(backend.contains("/opt/bin/das-reader"));
         assert!(backend.contains("--object-delete-helper"));
+        assert!(backend.contains("--gallery-inventory-helper"));
         assert!(backend.contains("PINAKOTHEKE_OBJECT_READ_ENDPOINT_ID"));
         assert!(backend.contains("endpoint-local"));
         assert!(backend.contains("--capture-authority-file"));
