@@ -1808,8 +1808,11 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   visual proof. Live v1.22.10 telemetry then showed no evidence or capture
   traffic at all, proving the retained X tab had not delivered its dynamic
   observer signal. Version ``1.22.11`` adds independent bounded scans on tab
-  completion and activation. Signed deployment and historical-media visual
-  proof remain.
+  completion and activation. Fix ``3fe2a7a`` is pushed and all local release
+  checks pass. Mozilla rejected the unlisted signing request only because its
+  submission throttle reported a 6,085-second retry window; sign and deploy
+  the unchanged v1.22.11 source after that window, then obtain the
+  historical-media visual proof.
 - [ ] **XIMG-202 P3 — Add perceptual duplicate grouping.**
 - [ ] **XIMG-203 P3 — Add collections, tags, and saved searches.**
 - [ ] **XIMG-204 P3 — Add provenance-linked derivatives/transcodes.**
