@@ -1298,9 +1298,11 @@ after an awaited promise. ``1.20.3`` caches the inspected state while rendering
 and invokes the request synchronously from the button click.
 Mozilla signed ``1.20.3`` and the permanent-install fixture accepted its stable
 identity. DASServer serves the checksum-identical XPI as
-``application/x-xpinstall``. This release changes only the Firefox client; the
-compatible ``1.20.2`` server remains active after Docker Desktop failed to sync
-the otherwise compiled ``1.20.3`` package output.
+``application/x-xpinstall``. After Docker Desktop failed to sync the package
+output, the same pushed source was built in the DASServer Docker engine. The
+resulting package upgraded the backend and Yew assets to ``1.20.3`` so the
+authenticated onboarding response and web-application link identify the
+current signed extension.
 
 ## Post-1.0 candidates
 

@@ -1464,10 +1464,12 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   ``1.20.3`` caches the check during rendering and starts the request directly
   in the toolbar click handler. Implementation is pushed in ``b1a71fe``;
   Mozilla signing, permanent-install verification, and checksum-identical XPI
-  deployment are complete. The compatible ``1.20.2`` server remains active
-  because Docker Desktop returned an output-sync I/O error while packaging the
-  metadata-only server version bump. Live permission and settlement proof
-  remain.
+  deployment are complete. Docker Desktop returned an output-sync I/O error,
+  so the same pushed source was built with the DASServer Docker engine; the
+  resulting ``1.20.3`` package upgraded the backend and Yew web assets. Live
+  readiness reports Monas and DASObjectStore ``Ready``, and the authenticated
+  web application now receives the ``1.20.3`` XPI path from onboarding. Live
+  permission and settlement proof remain.
 
 - [x] **XIMG-115 P0 — Make Monas restart invalidate sessions and harden product
   forwarding.** Completed in Monas ``0.8.4`` commits ``624e7b4``,
