@@ -1785,8 +1785,11 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   unlinked ``img``. Version ``1.22.8`` prioritizes and admits only visible
   ``pbs.twimg.com/media`` assets for X evidence/capture, derives status-page
   provenance where available, and resolves a trusted click coordinate to the
-  visible X media beneath the overlay. Signed deployment and live verification
-  remain.
+  visible X media beneath the overlay. Fix ``ae3a108`` is pushed;
+  Mozilla-signed ``1.22.8`` passed permanent-install verification and the
+  matching package plus checksum-verified XPI are active on DASServer. The
+  installed-browser gallery-grid/open-original check remains the closing
+  visual proof.
 - [ ] **XIMG-202 P3 — Add perceptual duplicate grouping.**
 - [ ] **XIMG-203 P3 — Add collections, tags, and saved searches.**
 - [ ] **XIMG-204 P3 — Add provenance-linked derivatives/transcodes.**
