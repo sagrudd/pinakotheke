@@ -60,7 +60,12 @@ const browser = {
       async set(values) { Object.assign(storage, values); },
     },
   },
-  tabs: { async query() { return []; }, async get() { return null; } },
+  tabs: {
+    onUpdated: { addListener() {} },
+    onActivated: { addListener() {} },
+    async query() { return []; },
+    async get() { return null; },
+  },
   scripting: {
     async executeScript() { return []; },
     async getRegisteredContentScripts() { return registeredScripts; },

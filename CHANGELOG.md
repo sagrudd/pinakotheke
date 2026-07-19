@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.22.11 - 2026-07-19
+
+- Add bounded tab-completion and tab-activation cache scans so historical
+  ObjectStore evidence is refreshed even when a retained X tab does not emit
+  the dynamically registered content-observer signal.
+
 ## 1.22.10 - 2026-07-19
 
 - Restore authoritative prior-session cache-evidence lookups for paired

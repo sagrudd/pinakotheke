@@ -9,6 +9,8 @@ import vm from "node:vm";
 let messageListener;
 let startupListener;
 let completedRequestListener;
+let tabUpdatedListener;
+let tabActivatedListener;
 const captures = [];
 let registeredScripts = [];
 const fileInjections = [];
@@ -57,6 +59,8 @@ const browser = {
     },
   },
   tabs: {
+    onUpdated: { addListener(callback) { tabUpdatedListener = callback; } },
+    onActivated: { addListener(callback) { tabActivatedListener = callback; } },
     async query() { return [{ id: 73, url: "https://art.example.invalid:8443/gallery" }]; },
     async get(tabId) { return { id: tabId, url: tabId === 91 ? "https://x.com/home" : "https://art.example.invalid:8443/gallery" }; },
     async sendMessage() {},
@@ -105,6 +109,8 @@ vm.runInContext(source, backgroundContext);
 assert.equal(typeof messageListener, "function");
 assert.equal(typeof startupListener, "function");
 assert.equal(typeof completedRequestListener, "function");
+assert.equal(typeof tabUpdatedListener, "function");
+assert.equal(typeof tabActivatedListener, "function");
 
 backgroundContext.document.images = [{
   complete: true,

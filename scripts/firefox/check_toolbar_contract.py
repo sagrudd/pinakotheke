@@ -59,6 +59,9 @@ def main() -> int:
     assert 'url.pathname.startsWith("/media/")' in content + background
     assert "mediaToken" in content
     assert 'lookupAlias(instanceUrl, instanceId || "", pairId' in background
+    assert "browser.tabs.onUpdated.addListener" in background
+    assert "browser.tabs.onActivated.addListener" in background
+    assert "scheduleTabScan(tabId)" in background
     assert "recentPageActivation" not in content
     click_handler = popup_script[popup_script.index("run.onclick="):popup_script.index("toggle.onclick=")]
     assert "await needsXMediaPermission" not in click_handler

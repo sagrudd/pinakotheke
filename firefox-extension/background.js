@@ -18,7 +18,27 @@ browser.runtime.onStartup.addListener(syncExplicitOpenObservers);
 
 const EXPLICIT_OPEN_SCRIPT_ID = "pinakotheke-explicit-open-v1";
 const captureInFlight = new Set();
+const tabScanTimers = new Map();
 let segmentedManifests = [];
+
+function scheduleTabScan(tabId, delayMilliseconds = 350) {
+  if (!Number.isInteger(tabId) || tabId < 0) return;
+  clearTimeout(tabScanTimers.get(tabId));
+  tabScanTimers.set(tabId, setTimeout(async () => {
+    tabScanTimers.delete(tabId);
+    try {
+      const tab = await browser.tabs.get(tabId);
+      await runCacheForTab(tab);
+    } catch (_) {
+      // Closed, restricted, or unpaired tabs remain ordinary origin browsing.
+    }
+  }, delayMilliseconds));
+}
+
+browser.tabs.onUpdated.addListener((tabId, changeInfo) => {
+  if (changeInfo.status === "complete") scheduleTabScan(tabId);
+});
+browser.tabs.onActivated.addListener(({ tabId }) => scheduleTabScan(tabId));
 
 async function recordMediaCapture(origin, planId, kind, state, detail) {
   if (kind !== "explicit_video") return;
