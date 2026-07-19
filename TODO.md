@@ -1758,8 +1758,10 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   host. Version ``1.22.5`` accepts every bounded, visibly rendered HTTPS image
   from the explicitly opted-in X page for evidence lookup and plan submission;
   server policy remains authoritative and unknown aliases remain harmless
-  misses. Signed deployment and a repeat browse are the remaining acceptance
-  evidence.
+  misses. Fix ``86a513a`` is pushed; Mozilla signed ``1.22.5``, its permanent
+  Firefox installation check passed, and the matching package plus
+  checksum-identical XPI are active on DASServer. A repeat browse is the
+  remaining visual acceptance evidence.
 - [ ] **XIMG-202 P3 — Add perceptual duplicate grouping.**
 - [ ] **XIMG-203 P3 — Add collections, tags, and saved searches.**
 - [ ] **XIMG-204 P3 — Add provenance-linked derivatives/transcodes.**
