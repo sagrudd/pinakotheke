@@ -1776,7 +1776,9 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   wrappers could visually cover the framed ``img``. Version ``1.22.7`` applies
   the same reversible browser-only state to the image and only its bounded
   same-footprint wrapper chain; it never expands to the tweet or changes stored
-  bytes. Signed deployment and a repeat gallery-grid check remain.
+  bytes. Fix ``81bc048`` is pushed; Mozilla-signed ``1.22.7`` passed permanent
+  installation and is deployed with the matching DASServer package. A repeat
+  gallery-grid check remains.
 - [ ] **XIMG-202 P3 — Add perceptual duplicate grouping.**
 - [ ] **XIMG-203 P3 — Add collections, tags, and saved searches.**
 - [ ] **XIMG-204 P3 — Add provenance-linked derivatives/transcodes.**
