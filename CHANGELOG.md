@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.22.19 - 2026-07-19
+
+- Derive X image gallery identity from the immutable media path rather than a
+  transient page, gallery, presentation, or rendition URL.
+- Persist each plan's resolved catalogue identity and preserve historic video
+  suffixes when loading older capture-plan journals.
+- Add guarded dry-run/apply reconciliation for historic duplicate X cards. It
+  keeps the best verified representations, updates delivery paths and plan
+  bindings together, creates private metadata backups, and never deletes
+  DASObjectStore objects.
+
 ## 1.22.18 - 2026-07-19
 
 - Render the verified DASObjectStore thumbnail in quick preview when an image

@@ -2,7 +2,7 @@
 
 Status: dependency-ordered planning backlog
 
-Version: 1.22.18
+Version: 1.22.19
 
 Updated: 2026-07-19
 
@@ -1851,6 +1851,12 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   it renders the verified DASObjectStore thumbnail with an explicit
   original-not-captured status and reserves the unavailable state for records
   where neither stored representation is readable.
+  Version ``1.22.19`` closes the historic exact-identity duplicate defect: X
+  thumbnails and opened originals use one immutable media-path identity, plan
+  journals persist the resolved card binding, and a guarded dry-run/apply
+  command reconciles historic cards without deleting DASObjectStore objects.
+  Live pre-apply evidence on 2026-07-19 found 38 exact duplicate groups and 41
+  redundant cards; the copied-state apply and second dry run converged to zero.
 - [ ] **XIMG-202 P3 — Add perceptual duplicate grouping.**
 - [ ] **XIMG-203 P3 — Add collections, tags, and saved searches.**
 - [ ] **XIMG-204 P3 — Add provenance-linked derivatives/transcodes.**

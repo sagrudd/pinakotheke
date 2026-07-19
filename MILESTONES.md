@@ -2,7 +2,7 @@
 
 Status: 1.0 stable release
 
-Version: 1.22.18
+Version: 1.22.19
 
 Updated: 2026-07-19
 
@@ -1347,6 +1347,17 @@ The implementation is pushed in ``9e874df`` and the Mozilla-signed XPI passed
 permanent installation. DASServer serves the checksum-matching artifact and
 runs the ``1.22.0`` package; final milestone evidence is one user-driven X
 browse/play cycle demonstrating the frames and settled toolbar transition.
+
+## 1.22.19 — Exact X image gallery convergence
+
+Observed thumbnails and manually opened originals now resolve to one stable
+gallery identity derived from the immutable X media path. Transient home,
+status, photo-gallery, presentation, site-rule, and rendition differences no
+longer create additional cards. A guarded metadata-only maintenance command
+dry-runs and reconciles historic exact duplicates while preserving the best
+verified thumbnail/original references, conservative review state, private
+backups, endpoint/ObjectStore authority, and every DASObjectStore object.
+Perceptual similarity remains explicitly outside this exact-identity repair.
 
 ## Post-1.0 candidates
 

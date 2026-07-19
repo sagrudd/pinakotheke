@@ -51,6 +51,7 @@ Configuration
    quick-preview
    critical-vertical
    gallery-catalogue
+   gallery-deduplication
    video-candidates
    normalized-video-profiles
    video-normalization

@@ -39,6 +39,7 @@ pub mod viewed_media;
 pub mod website_capture_review;
 pub mod x_discovery;
 pub mod x_followed_accounts;
+pub mod x_image_reconciliation;
 pub mod x_oauth;
 
 use std::{
@@ -252,7 +253,7 @@ mod tests {
 
     #[test]
     fn summary_contains_the_workspace_version() {
-        assert_eq!(build_info().summary(), "Pinakotheke 1.22.18");
+        assert_eq!(build_info().summary(), "Pinakotheke 1.22.19");
     }
 
     #[test]

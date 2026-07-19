@@ -353,6 +353,9 @@ impl CapturePlanService {
     }
 
     #[must_use]
+    // This public policy boundary deliberately keeps every authority dimension
+    // explicit at the call site; bundling them would make omitted checks easier.
+    #[allow(clippy::too_many_arguments)]
     pub fn settled_for_alias_or_presentation(
         &self,
         actor_id: &str,
@@ -491,7 +494,8 @@ impl CapturePlanService {
         if let Some(index) = self.accepted.iter().position(|pending| {
             pending.actor_id == actor_id
                 && pending.plan.site_id == site.site_id
-                && pending.plan.canonical_media_url == canonical_media
+                && cache_alias_identity(&pending.plan.canonical_media_url)
+                    == cache_alias_identity(&canonical_media)
                 && pending.plan.capture_kind == request.capture_kind
                 && pending.plan.destination == destination
         }) {
@@ -530,16 +534,33 @@ impl CapturePlanService {
         self.next_plan = self.next_plan.saturating_add(1);
         let scheduler_job_id =
             self.schedule(actor_id, site.max_candidates_per_page, plan_id.clone())?;
-        let mut catalogue_id = capture_catalogue_id(
-            &site.site_id,
-            &canonical_page_url,
-            &canonical_presentation_url,
-        );
-        if request.capture_kind == CaptureKind::ExplicitVideo {
-            let digest = format!("{:x}", Sha256::digest(canonical_media.as_bytes()));
-            catalogue_id.push_str("-video-");
-            catalogue_id.push_str(&digest[..12]);
-        }
+        // Preserve an existing legacy card identity when the same immutable X
+        // image is promoted from an observed thumbnail to an opened original.
+        // New X image cards use a media-derived identity that is independent of
+        // transient page and presentation routes.
+        let related_x_image = x_image_catalogue_id(&canonical_media).and_then(|_| {
+            self.accepted
+                .iter()
+                .filter(|pending| {
+                    pending.actor_id == actor_id
+                        && pending.plan.site_id == site.site_id
+                        && pending.plan.destination == destination
+                        && pending.plan.capture_kind != CaptureKind::ExplicitVideo
+                        && cache_alias_identity(&pending.plan.canonical_media_url)
+                            == cache_alias_identity(&canonical_media)
+                })
+                .max_by_key(|pending| pending.settled)
+                .map(|pending| pending.plan.catalogue_id.clone())
+        });
+        let catalogue_id = related_x_image.unwrap_or_else(|| {
+            capture_catalogue_id_for_request(
+                &site.site_id,
+                &canonical_page_url,
+                &canonical_presentation_url,
+                &canonical_media,
+                request.capture_kind,
+            )
+        });
         let plan = CapturePlan {
             schema_version: CAPTURE_PLAN_SCHEMA_VERSION,
             plan_id,
@@ -605,7 +626,7 @@ impl CapturePlanService {
     }
 }
 
-fn cache_alias_identity(value: &str) -> &str {
+pub(crate) fn cache_alias_identity(value: &str) -> &str {
     if value.starts_with("https://pbs.twimg.com/media/") {
         value.split('?').next().unwrap_or(value)
     } else {
@@ -656,6 +677,46 @@ pub fn capture_catalogue_id(site_id: &str, page_url: &str, presentation_url: &st
     let identity = format!("{page_url}\n{presentation_url}");
     let digest = format!("{:x}", Sha256::digest(identity.as_bytes()));
     format!("website-{site_id}-{}", &digest[..24])
+}
+
+/// Stable catalogue identity for one X image, independent of rendition query,
+/// page route, gallery route, or the user-defined site rule name.
+#[must_use]
+pub fn x_image_catalogue_id(media_url: &str) -> Option<String> {
+    let canonical = canonical_media_url(media_url)?;
+    if !canonical.starts_with("https://pbs.twimg.com/media/") {
+        return None;
+    }
+    let identity = cache_alias_identity(&canonical);
+    let digest = format!(
+        "{:x}",
+        Sha256::digest(format!("pinakotheke:x-image:v1\n{identity}").as_bytes())
+    );
+    Some(format!("website-x-media-{}", &digest[..24]))
+}
+
+/// Catalogue identity for a newly admitted request. Generic-site image cards
+/// retain presentation grouping; X image cards use their immutable media path.
+#[must_use]
+pub fn capture_catalogue_id_for_request(
+    site_id: &str,
+    page_url: &str,
+    presentation_url: &str,
+    media_url: &str,
+    capture_kind: CaptureKind,
+) -> String {
+    if capture_kind != CaptureKind::ExplicitVideo
+        && let Some(identity) = x_image_catalogue_id(media_url)
+    {
+        return identity;
+    }
+    let mut identity = capture_catalogue_id(site_id, page_url, presentation_url);
+    if capture_kind == CaptureKind::ExplicitVideo {
+        let digest = format!("{:x}", Sha256::digest(media_url.as_bytes()));
+        identity.push_str("-video-");
+        identity.push_str(&digest[..12]);
+    }
+    identity
 }
 
 pub(crate) fn canonical_media_url(value: &str) -> Option<String> {
@@ -1011,6 +1072,30 @@ mod tests {
             canonical_media_url("https://example.invalid/image.jpg?token=secret"),
             Some("https://example.invalid/image.jpg".into())
         );
+    }
+
+    #[test]
+    fn x_image_catalogue_identity_ignores_page_rendition_and_site_rule_name() {
+        let small = capture_catalogue_id_for_request(
+            "first-rule",
+            "https://x.com/home",
+            "https://pbs.twimg.com/media/fixture?format=jpg&name=small",
+            "https://pbs.twimg.com/media/fixture?format=jpg&name=small",
+            CaptureKind::ObservedThumbnail,
+        );
+        let original = capture_catalogue_id_for_request(
+            "renamed-rule",
+            "https://x.com/fixture/status/42/photo/1",
+            "https://x.com/fixture/status/42/photo/1",
+            "https://pbs.twimg.com/media/fixture?format=jpg&name=orig",
+            CaptureKind::ExplicitOriginal,
+        );
+        assert_eq!(small, original);
+        assert!(small.starts_with("website-x-media-"));
+
+        let other = x_image_catalogue_id("https://pbs.twimg.com/media/other?format=jpg&name=small")
+            .unwrap();
+        assert_ne!(small, other);
     }
 
     #[test]

@@ -191,7 +191,7 @@ mod tests {
                     adapter_kind: AdapterKind::ExperimentalGeneric,
                     adapter_version: "1.0.0".into(),
                     capture_kind: CaptureKind::ObservedThumbnail,
-                    media_url: "https://example.invalid/thumb.jpg".into(),
+                    media_url: "https://pbs.twimg.com/media/fixture?name=small&format=jpg".into(),
                     presentation_url: Some("https://media.example.invalid/original.jpg".into()),
                     width: 320,
                     height: 200,

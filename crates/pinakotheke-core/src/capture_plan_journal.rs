@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::viewed_media::{
     AdapterKind, CAPTURE_PLAN_SCHEMA_VERSION, CaptureDestinationSnapshot, CaptureKind, CapturePlan,
-    CapturePlanState, canonical_media_url, capture_catalogue_id,
+    CapturePlanState, canonical_media_url, capture_catalogue_id_for_request,
 };
 
 const JOURNAL_SCHEMA: &str = "pinakotheke.capture-plan-journal.v1";
@@ -97,6 +97,8 @@ struct StoredCapturePlan {
     destination: Option<CaptureDestinationSnapshot>,
     #[serde(default)]
     canonical_presentation_url: Option<String>,
+    #[serde(default)]
+    catalogue_id: Option<String>,
     adapter_kind: AdapterKind,
     adapter_version: String,
     capture_kind: CaptureKind,
@@ -277,11 +279,30 @@ impl StoredCapturePlan {
         {
             return Err(CapturePlanJournalError::InvalidRecord);
         }
-        let catalogue_id = capture_catalogue_id(
-            &self.site_id,
-            &self.canonical_page_url,
-            &canonical_presentation_url,
-        );
+        let catalogue_id = self.catalogue_id.unwrap_or_else(|| {
+            // Historic image records must retain their page/presentation ID
+            // until the guarded gallery reconciliation updates both metadata
+            // documents together. Historic video records regain the suffix
+            // that was present at their original admission.
+            if self.capture_kind == CaptureKind::ExplicitVideo {
+                capture_catalogue_id_for_request(
+                    &self.site_id,
+                    &self.canonical_page_url,
+                    &canonical_presentation_url,
+                    &self.canonical_media_url,
+                    self.capture_kind,
+                )
+            } else {
+                crate::viewed_media::capture_catalogue_id(
+                    &self.site_id,
+                    &self.canonical_page_url,
+                    &canonical_presentation_url,
+                )
+            }
+        });
+        if !identifier(&catalogue_id) {
+            return Err(CapturePlanJournalError::InvalidRecord);
+        }
         Ok(CapturePlan {
             schema_version: CAPTURE_PLAN_SCHEMA_VERSION,
             plan_id: self.plan_id,
@@ -322,6 +343,7 @@ impl From<&PendingCapturePlan> for StoredPendingPlan {
                 retrieval_media_url: Some(plan.retrieval_media_url.clone()),
                 destination: plan.destination.clone(),
                 canonical_presentation_url: Some(plan.canonical_presentation_url.clone()),
+                catalogue_id: Some(plan.catalogue_id.clone()),
                 adapter_kind: plan.adapter_kind,
                 adapter_version: plan.adapter_version.clone(),
                 capture_kind: plan.capture_kind,
@@ -364,7 +386,7 @@ mod tests {
     use super::*;
 
     fn pending() -> PendingCapturePlan {
-        let catalogue_id = capture_catalogue_id(
+        let catalogue_id = crate::viewed_media::capture_catalogue_id(
             "site-1",
             "https://example.invalid/page",
             "https://media.example.invalid/thumb.jpg",
@@ -431,6 +453,10 @@ mod tests {
             .as_object_mut()
             .unwrap()
             .remove("canonical_presentation_url");
+        document["plans"][0]["plan"]
+            .as_object_mut()
+            .unwrap()
+            .remove("catalogue_id");
         fs::write(
             journal.path(),
             serde_json::to_vec_pretty(&document).unwrap(),
@@ -443,7 +469,7 @@ mod tests {
         );
         assert_eq!(
             loaded[0].plan.catalogue_id,
-            capture_catalogue_id(
+            crate::viewed_media::capture_catalogue_id(
                 &loaded[0].plan.site_id,
                 &loaded[0].plan.canonical_page_url,
                 &loaded[0].plan.canonical_media_url,
@@ -474,6 +500,47 @@ mod tests {
         .unwrap();
 
         assert_eq!(journal.load().unwrap()[0].plan.destination, None);
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn legacy_video_journal_reconstructs_its_original_suffixed_card_identity() {
+        let root = std::env::temp_dir().join(format!(
+            "pinakotheke-capture-journal-video-{}-{}",
+            std::process::id(),
+            TEMP_COUNTER.fetch_add(1, Ordering::Relaxed)
+        ));
+        let journal = CapturePlanJournal::new(root.join("journal.json"));
+        journal.replace(&[pending()]).unwrap();
+        let mut document: serde_json::Value =
+            serde_json::from_slice(&fs::read(journal.path()).unwrap()).unwrap();
+        let plan = document["plans"][0]["plan"].as_object_mut().unwrap();
+        plan.remove("catalogue_id");
+        plan.insert("capture_kind".into(), serde_json::json!("explicit_video"));
+        plan.insert(
+            "canonical_media_url".into(),
+            serde_json::json!("https://video.example.invalid/fixture.mp4"),
+        );
+        plan.insert(
+            "retrieval_media_url".into(),
+            serde_json::json!("https://video.example.invalid/fixture.mp4"),
+        );
+        fs::write(
+            journal.path(),
+            serde_json::to_vec_pretty(&document).unwrap(),
+        )
+        .unwrap();
+
+        let loaded = journal.load().unwrap();
+        let expected = capture_catalogue_id_for_request(
+            &loaded[0].plan.site_id,
+            &loaded[0].plan.canonical_page_url,
+            &loaded[0].plan.canonical_presentation_url,
+            &loaded[0].plan.canonical_media_url,
+            CaptureKind::ExplicitVideo,
+        );
+        assert_eq!(loaded[0].plan.catalogue_id, expected);
+        assert!(loaded[0].plan.catalogue_id.contains("-video-"));
         let _ = fs::remove_dir_all(root);
     }
 

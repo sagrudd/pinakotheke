@@ -7,6 +7,7 @@ use clap::{Args, CommandFactory, FromArgMatches, Parser, Subcommand};
 use x_img_core::{ConfigStore, build_info};
 
 mod capture_worker_helper;
+mod catalogue;
 mod das_capture_helper;
 mod das_object_read_helper;
 mod das_stream_ingest_helper;
@@ -109,6 +110,11 @@ enum Command {
         #[command(subcommand)]
         command: monolith::CaptureCommand,
     },
+    /// Inspect and reconcile private catalogue metadata.
+    Catalogue {
+        #[command(subcommand)]
+        command: catalogue::CatalogueCommand,
+    },
     /// Normalize a reviewed video and stream its derived objects to DASObjectStore.
     Video {
         #[command(subcommand)]
@@ -169,6 +175,7 @@ pub fn run(invocation: Invocation, cli: Cli) -> Result<(), Box<dyn std::error::E
         Some(Command::Storage { command }) => local_objectstore::run(command)?,
         Some(Command::Service { command }) => launchd::run(command)?,
         Some(Command::Capture { command }) => monolith::run_capture(command)?,
+        Some(Command::Catalogue { command }) => catalogue::run(command)?,
         Some(Command::Video { command }) => video_normalize::run(command)?,
         Some(Command::AcquireImageV1) => das_capture_helper::run_protocol()?,
         Some(Command::ReadObjectV1) => das_object_read_helper::run()?,
