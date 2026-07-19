@@ -1419,6 +1419,10 @@ browse/play cycle demonstrating the frames and settled toolbar transition.
 - Deterministic extension assurance covers both the admitted native-control
   path and the rejected no-activation path without naming or special-casing a
   source site.
+- Implementation ``fc81a7e`` passes native, Clippy, Wasm, extension, quality,
+  pinned container documentation, and isolated installed-Firefox capture
+  assurance. DASServer runs ``1.27.2`` and serves the matching unsigned test
+  XPI; permanent Mozilla signing is deliberately omitted at the user's request.
 
 ## 1.27.1 — Explicit-image capture protocol recovery
 

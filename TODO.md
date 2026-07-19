@@ -2004,14 +2004,20 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   ``capture-plan-54`` to verified gallery admission; the public inventory
   reports both exact keys as ``Protected`` at 362,285 and 202,745 bytes, and
   both gallery previews are ``ready`` with authenticated delivery paths.
-- [ ] **XIMG-132 P0 — Admit native-control trusted video play.** When Firefox
+- [x] **XIMG-132 P0 — Admit native-control trusted video play.** When Firefox
   native controls consume the pointer gesture before the page observer sees
   it, accept only a trusted play event on a visible video while Firefox reports
   active transient user activation. Preserve rejection of autoplay, synthetic
   events, hidden media, and stale activation. Acceptance requires deterministic
   admitted/rejected extension fixtures, full local quality and documentation
   evidence, a deployed matching extension, and a real installed-Firefox plan
-  reaching an observable terminal state.
+  reaching an observable terminal state. Implementation ``fc81a7e`` passes all
+  251 native tests, strict Clippy, Wasm, extension contracts, repository
+  quality, both pinned Sphinx container checks, and isolated installed-Firefox
+  capture with verified stored image/video frames. DASServer runs backend
+  ``1.27.2`` and serves the checksum-identical unsigned test XPI at the
+  versioned download route with SHA-256
+  ``e5034a041638497ffe905db4dd2664037e732563ccbeb88cd1b417f02f2891fc``.
 - [ ] **XIMG-202 P3 — Add perceptual duplicate grouping.**
 - [x] **XIMG-129 P0 — Generalize trusted-play video capture and feedback.** On
   any explicitly enabled HTTPS origin, admit only a video selected by a trusted
