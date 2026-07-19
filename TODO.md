@@ -1885,6 +1885,12 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   contention with destination revalidation on every attempt. Acceptance
   requires a synthetic node-replacement regression, selected-image toolbar
   state proof, live recovery of the user's pending original, and deployment.
+  Implementation and deterministic regressions were delivered in ``1efc7b0``.
+  Live plan ``capture-plan-321`` is an ``explicit_original`` and is settled;
+  the 1.22.21 server is deployed and active on the DASServer. The remaining
+  acceptance step is installation and real-Firefox proof of the 1.22.21
+  extension-side node-replacement frame fix; extension signing remains skipped
+  at the user's request rather than being represented as complete.
 - [ ] **XIMG-202 P3 — Add perceptual duplicate grouping.**
 - [ ] **XIMG-203 P3 — Add collections, tags, and saved searches.**
 - [ ] **XIMG-204 P3 — Add provenance-linked derivatives/transcodes.**
