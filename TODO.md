@@ -1940,6 +1940,10 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   synthetic/unrelated input, and emit redacted missing-target diagnostics.
   Acceptance requires a pointerdown/node-removal/click regression, deployment,
   and one installed-Firefox deep-timeline original settlement.
+  Implementation commit ``2ad2a16`` passes the deterministic replacement
+  regression and full local verification. Pinakotheke ``1.23.3`` and its
+  matching unsigned test XPI are deployed on DASServer; the remaining evidence
+  is one user-driven deep-timeline settlement in the installed Firefox.
 - [ ] **XIMG-202 P3 — Add perceptual duplicate grouping.**
 - [ ] **XIMG-203 P3 — Add collections, tags, and saved searches.**
 - [ ] **XIMG-204 P3 — Add provenance-linked derivatives/transcodes.**
