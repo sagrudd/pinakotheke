@@ -1230,7 +1230,10 @@ window. ``1.19.1`` preserves exact-video activation when available and adds an
 eight-second fallback from a genuine page pointer or Enter/Space activation to
 a visible trusted play. Playback without that user activation remains
 ineligible, and the server continues to enforce site policy and destination
-authority.
+authority. Mozilla signed ``1.19.1`` and the permanent-install fixture accepted
+its stable identity. DASServer now runs the matching ``1.19.1`` backend and
+serves the checksum-identical signed XPI as ``application/x-xpinstall``. A new
+installed-Firefox play remains the final settlement proof.
 
 ## Post-1.0 candidates
 
