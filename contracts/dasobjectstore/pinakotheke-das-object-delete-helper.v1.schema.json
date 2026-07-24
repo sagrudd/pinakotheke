@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/sagrudd/pinakotheke/contracts/dasobjectstore/pinakotheke-das-object-delete-helper.v1.schema.json",
+  "title": "Pinakotheke first-party DASObjectStore delete helper configuration v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "daemon_socket", "endpoint_id", "application_id", "session_file", "provider", "endpoint_url", "stores"],
+  "properties": {
+    "schema_version": {"const": "pinakotheke.das-object-delete-helper.v1"},
+    "daemon_socket": {"type": "string", "pattern": "^/"},
+    "endpoint_id": {"type": "string", "minLength": 1, "maxLength": 256},
+    "application_id": {"type": "string", "minLength": 1, "maxLength": 256},
+    "session_file": {"type": "string", "pattern": "^/"},
+    "provider": {"const": "garage"},
+    "endpoint_url": {"type": "string", "pattern": "^https?://"},
+    "stores": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 128,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["object_store_id", "bucket"],
+        "properties": {
+          "object_store_id": {"type": "string", "minLength": 1, "maxLength": 256},
+          "bucket": {"type": "string", "minLength": 3, "maxLength": 63}
+        }
+      }
+    }
+  }
+}

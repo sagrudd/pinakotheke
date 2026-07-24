@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.28.0 - 2026-07-24
+
+- Add a first-party, bounded Unix-socket adapter for DASObjectStore's
+  application-authorized exact-object deletion contract.
+- Include exact content length in the deletion helper request and derive the
+  DASObjectStore object ID from the upload-authoritative logical object key.
+- Keep paired session material in a separate private host file and reject
+  symlinks, permissive permissions, changed destination evidence, unknown
+  schemas, and mismatched daemon request identities.
+
 ## 1.27.7 - 2026-07-23
 
 - Record DASObjectStore 0.124.0's new application-authorized exact-object

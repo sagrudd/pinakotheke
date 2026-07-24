@@ -2,9 +2,9 @@
 
 Status: 1.0 stable release
 
-Version: 1.27.7
+Version: 1.28.0
 
-Updated: 2026-07-23
+Updated: 2026-07-24
 
 Product identity: Pinakotheke is canonical from v1.0.0 at
 `sagrudd/pinakotheke`; `x-img` remains only where documented compatibility or
@@ -1422,6 +1422,20 @@ browse/play cycle demonstrating the frames and settled toolbar transition.
 - The next slice implements the host helper against DASObjectStore
   ``dasobjectstore.application_object_delete.v1`` and proves a synthetic
   image/video deletion without touching user media.
+
+## 1.28.0 — First-party authoritative deletion transport
+
+- The installed Pinakotheke binary now implements its own strict ``delete-v1``
+  helper and sends the exact reviewed key/object ID, version, byte length,
+  checksum, store, provider, and endpoint to the DASObjectStore Unix socket.
+- A deterministic request identity makes retries inspectable and idempotent;
+  only matching ``deleted`` or ``already_absent`` authority responses permit
+  projection removal.
+- Pairing material remains in a separate mode-``0600`` host file. Browser
+  storage, site rules, logs, command arguments, and the public repository never
+  receive the session or renewal token.
+- XIMG-130 remains open for capacity-ledger reconciliation, package deployment,
+  and live generated image/video deletion evidence.
 
 ## 1.27.6 — Unambiguous daemon-authoritative capture completion
 

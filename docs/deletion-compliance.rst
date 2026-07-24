@@ -18,12 +18,13 @@ that share those immutable object references are disclosed and removed as one
 asset; unrelated records are not changed.
 
 The browser never deletes bytes itself. Pinakotheke sends only endpoint,
-ObjectStore, key, positive version, and SHA-256 evidence through the reviewed
-``pinakotheke.object-delete-helper.v1`` host adapter. DASObjectStore remains
-responsible for current actor/application authorization, retention policy,
-provider deletion, authoritative catalogue mutation, capacity reconciliation,
-and audit. A raw S3 delete is not a valid adapter implementation because it can
-leave the DASObjectStore catalogue inconsistent.
+ObjectStore, key/object ID, positive version, exact byte length, and SHA-256
+evidence through the reviewed ``pinakotheke.object-delete-helper.v1`` host
+adapter. DASObjectStore remains responsible for current actor/application
+authorization, retention policy, provider deletion, authoritative catalogue
+mutation, capacity reconciliation, and audit. A raw S3 delete is not a valid
+adapter implementation because it can leave the DASObjectStore catalogue
+inconsistent.
 
 Pinakotheke removes its persistent projection only after every exact object is
 reported ``deleted`` or ``already_absent``. If the helper is missing, rejects
@@ -86,10 +87,37 @@ SHA-256, Garage bucket/key, and provider metadata before mutation, verifies
 provider absence, then atomically withdraws the matching catalogue row and
 records a redacted audit event. Exact absence is idempotent success.
 
-The Pinakotheke helper transport and live synthetic deletion remain explicit
-integration work. Until that helper is configured, the deletion pane retains
-the record and reports the authority as unavailable. A raw S3 operation remains
-invalid even though the provider supports it.
+Pinakotheke ``1.28.0`` provides the first-party bounded Unix-socket transport.
+Configure ``--object-delete-helper`` with the installed ``pinakotheke`` binary
+and set ``PINAKOTHEKE_DAS_DELETE_HELPER_CONFIG`` to a mode-``0600`` regular
+file such as:
+
+.. code-block:: json
+
+   {
+     "schema_version": "pinakotheke.das-object-delete-helper.v1",
+     "daemon_socket": "/run/dasobjectstore/dasobjectstored.sock",
+     "endpoint_id": "reviewed-endpoint-id",
+     "application_id": "pinakotheke",
+     "session_file": "/private/runtime/pinakotheke-delete-session.json",
+     "provider": "garage",
+     "endpoint_url": "http://127.0.0.1:3900",
+     "stores": [
+       {"object_store_id": "reviewed-store-id", "bucket": "reviewed-bucket"}
+     ]
+   }
+
+The separately mode-``0600`` session file contains the paired session ID and
+renewal token using schema ``pinakotheke.das-object-delete-session.v1``. It is a
+host secret, must never be committed, logged, placed in browser storage, or
+included in the general site corpus, and should be replaced when the pairing
+rotates. The helper rejects symlinks, permissive files, changed endpoint/store
+evidence, unknown response schemas, and responses whose deterministic request
+identity does not match.
+
+Until both files and a delete-scoped application identity are configured, the
+deletion pane retains the record and reports the authority as unavailable. A
+raw S3 operation remains invalid even though the provider supports it.
 
 Local proof
 -----------
@@ -102,7 +130,8 @@ Run the focused contract tests with:
 
 They prove catalogue-only scope, required approval, tombstone-before-delete,
 pending/retry behavior, exact-object verification, replay idempotency, shared
-duplicate expansion, projection-after-authority ordering, and conflict on
-changed authority identity. The live DASObjectStore deletion adapter still
-has to prove authorization, policy, retention, provider absence, catalogue
-withdrawal, and audit immediately before Pinakotheke projection removal.
+duplicate expansion, projection-after-authority ordering, conflict on changed
+authority identity, and the strict first-party daemon exchange. Live synthetic
+evidence still has to prove authorization, policy, retention, provider absence,
+catalogue withdrawal, capacity reconciliation, and audit immediately before
+Pinakotheke projection removal.

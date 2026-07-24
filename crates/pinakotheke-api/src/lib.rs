@@ -35,9 +35,9 @@ use x_img_core::{
     },
     gallery_catalogue::{
         GalleryCatalogue, GalleryCatalogueError, GalleryCatalogueFilter, GalleryCatalogueStore,
-        GalleryDeletePlan, GalleryFolderPage, GalleryImageResolveError, GalleryImageRole,
-        GalleryMediaKind, GalleryObjectAvailability, GalleryPage, GalleryReviewState,
-        GallerySourceKind,
+        GalleryDeleteObject, GalleryDeletePlan, GalleryFolderPage, GalleryImageResolveError,
+        GalleryImageRole, GalleryMediaKind, GalleryObjectAvailability, GalleryPage,
+        GalleryReviewState, GallerySourceKind,
     },
     gallery_reconciliation::{AuthorityObject, GalleryConvergenceReport, reconcile_gallery},
     host_context::{
@@ -126,13 +126,8 @@ pub enum HostObjectDeleteOutcome {
 }
 
 /// Process-isolated callback which must delete through DASObjectStore authority.
-pub type HostObjectDelete = Arc<
-    dyn Fn(
-            &x_img_core::object_read::AuthorizedObjectReference,
-        ) -> Result<HostObjectDeleteOutcome, String>
-        + Send
-        + Sync,
->;
+pub type HostObjectDelete =
+    Arc<dyn Fn(&GalleryDeleteObject) -> Result<HostObjectDeleteOutcome, String> + Send + Sync>;
 
 /// Host adapter for one exact-object authoritative deletion operation.
 #[derive(Clone)]
@@ -3517,8 +3512,8 @@ mod tests {
         let authority = super::GalleryDeletionAuthority::new(
             store.clone(),
             super::HostObjectDeleteBackend::new(Arc::new(move |object| {
-                assert_eq!(object.endpoint_id, "endpoint-1");
-                assert_eq!(object.object_store_id, "store-1");
+                assert_eq!(object.object.endpoint_id, "endpoint-1");
+                assert_eq!(object.object.object_store_id, "store-1");
                 deleted_for_backend.fetch_add(1, Ordering::SeqCst);
                 Ok(super::HostObjectDeleteOutcome::Deleted)
             })),

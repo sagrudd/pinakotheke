@@ -2,9 +2,9 @@
 
 Status: dependency-ordered planning backlog
 
-Version: 1.27.7
+Version: 1.28.0
 
-Updated: 2026-07-23
+Updated: 2026-07-24
 
 ## How to use this backlog
 
@@ -2124,9 +2124,15 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   mutation, provider absence precedes atomic catalogue withdrawal, absence is
   idempotent, and a redacted audit event is written. Pinakotheke ``1.27.7``
   records that compatibility boundary. Do not substitute a raw S3 delete.
-  Remaining work is the narrow helper transport and capacity-ledger
-  reconciliation, followed by deployment and live synthetic image/video
-  deletion without touching user media.
+  Pinakotheke ``1.28.0`` implements the narrow first-party Unix-socket helper:
+  it adds exact byte length to the reviewed exchange, maps the
+  upload-authoritative logical key to the DAS object ID, uses a deterministic
+  request identity, accepts only matching ``deleted``/``already_absent``
+  responses, and isolates the paired session in a separate mode-``0600`` host
+  file. Changed destination evidence, permissive files, symlinks, unknown
+  schemas, and mismatched responses fail closed. Remaining work is
+  DASObjectStore capacity-ledger reconciliation, package deployment, and live
+  synthetic image/video deletion without touching user media.
 - [ ] **XIMG-203 P3 — Add collections, tags, and saved searches.**
 - [ ] **XIMG-204 P3 — Add provenance-linked derivatives/transcodes.**
 - [x] **XIMG-205 P0 — Consume audience-bound Prosopikon host identity.**

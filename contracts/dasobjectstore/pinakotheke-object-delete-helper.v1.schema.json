@@ -13,14 +13,15 @@
     "request": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["schema_version", "endpoint_id", "object_store_id", "object_key", "object_version", "checksum"],
+      "required": ["schema_version", "endpoint_id", "object_store_id", "object_key", "object_version", "checksum", "content_length"],
       "properties": {
         "schema_version": {"const": "pinakotheke.object-delete-helper.v1"},
         "endpoint_id": {"$ref": "#/$defs/identifier"},
         "object_store_id": {"$ref": "#/$defs/identifier"},
         "object_key": {"type": "string", "minLength": 1, "maxLength": 512},
         "object_version": {"type": "integer", "minimum": 1},
-        "checksum": {"$ref": "#/$defs/checksum"}
+        "checksum": {"$ref": "#/$defs/checksum"},
+        "content_length": {"type": "integer", "minimum": 1}
       }
     },
     "result": {

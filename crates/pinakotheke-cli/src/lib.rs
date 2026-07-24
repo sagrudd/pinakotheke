@@ -9,6 +9,7 @@ use x_img_core::{ConfigStore, build_info};
 mod capture_worker_helper;
 mod catalogue;
 mod das_capture_helper;
+mod das_object_delete_helper;
 mod das_object_read_helper;
 mod das_stream_ingest_helper;
 mod destination_revalidation_helper;
@@ -87,6 +88,9 @@ enum Command {
     /// Internal DASObjectStore-backed object read helper protocol.
     #[command(name = "read-v1", hide = true)]
     ReadObjectV1,
+    /// Internal DASObjectStore-backed exact-object deletion helper protocol.
+    #[command(name = "delete-v1", hide = true)]
+    DeleteObjectV1,
     /// Internal DASObjectStore-backed streaming ingest helper protocol.
     #[command(name = "ingest-stream-v1", hide = true)]
     IngestStreamV1,
@@ -184,6 +188,7 @@ pub fn run(invocation: Invocation, cli: Cli) -> Result<(), Box<dyn std::error::E
         Some(Command::Video { command }) => video_normalize::run(command)?,
         Some(Command::AcquireImageV1) => das_capture_helper::run_protocol()?,
         Some(Command::ReadObjectV1) => das_object_read_helper::run()?,
+        Some(Command::DeleteObjectV1) => das_object_delete_helper::run_protocol()?,
         Some(Command::IngestStreamV1) => das_stream_ingest_helper::run()?,
         Some(Command::GalleryInventoryV1) => gallery_inventory_helper::run_protocol()?,
     }
@@ -262,6 +267,13 @@ mod tests {
         let cli = parse_from(Invocation::Canonical, ["pinakotheke", "read-v1"])
             .expect("object read helper protocol parses");
         assert!(matches!(cli.command, Some(Command::ReadObjectV1)));
+    }
+
+    #[test]
+    fn packaged_binary_accepts_the_object_delete_helper_protocol_command() {
+        let cli = parse_from(Invocation::Canonical, ["pinakotheke", "delete-v1"])
+            .expect("object delete helper protocol parses");
+        assert!(matches!(cli.command, Some(Command::DeleteObjectV1)));
     }
 
     #[test]

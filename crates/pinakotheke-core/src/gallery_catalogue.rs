@@ -177,7 +177,14 @@ pub enum GalleryCatalogueError {
 pub struct GalleryDeletePlan {
     pub catalogue_id: String,
     pub affected_catalogue_ids: Vec<String>,
-    pub objects: Vec<AuthorizedObjectReference>,
+    pub objects: Vec<GalleryDeleteObject>,
+}
+
+/// Exact immutable authority evidence required for one object deletion.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct GalleryDeleteObject {
+    pub object: AuthorizedObjectReference,
+    pub content_length: u64,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -691,17 +698,18 @@ impl GalleryCatalogue {
     }
 }
 
-fn representation_objects(
-    item: &GalleryItem,
-) -> std::collections::BTreeSet<AuthorizedObjectReference> {
+fn representation_objects(item: &GalleryItem) -> std::collections::BTreeSet<GalleryDeleteObject> {
     std::iter::once(&item.thumbnail)
         .chain(item.preview.iter())
-        .map(|representation| AuthorizedObjectReference {
-            endpoint_id: representation.endpoint_id.clone(),
-            object_store_id: representation.object_store_id.clone(),
-            object_key: representation.object_key.clone(),
-            object_version: representation.object_version,
-            checksum: representation.checksum.clone(),
+        .map(|representation| GalleryDeleteObject {
+            object: AuthorizedObjectReference {
+                endpoint_id: representation.endpoint_id.clone(),
+                object_store_id: representation.object_store_id.clone(),
+                object_key: representation.object_key.clone(),
+                object_version: representation.object_version,
+                checksum: representation.checksum.clone(),
+            },
+            content_length: representation.content_length,
         })
         .collect()
 }

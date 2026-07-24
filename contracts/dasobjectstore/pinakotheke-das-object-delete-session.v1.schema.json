@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/sagrudd/pinakotheke/contracts/dasobjectstore/pinakotheke-das-object-delete-session.v1.schema.json",
+  "title": "Pinakotheke private DASObjectStore deletion session reference v1",
+  "description": "Host-private runtime material. Never commit an instance of this document.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "session_id", "renewal_token"],
+  "properties": {
+    "schema_version": {"const": "pinakotheke.das-object-delete-session.v1"},
+    "session_id": {"type": "string", "minLength": 1, "maxLength": 512},
+    "renewal_token": {"type": "string", "minLength": 1, "maxLength": 2048}
+  }
+}

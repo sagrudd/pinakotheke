@@ -9,7 +9,7 @@ use std::{
     time::{Duration, Instant},
 };
 use x_img_api::{HostObjectDeleteBackend, HostObjectDeleteOutcome};
-use x_img_core::object_read::AuthorizedObjectReference;
+use x_img_core::gallery_catalogue::GalleryDeleteObject;
 
 const SCHEMA: &str = "pinakotheke.object-delete-helper.v1";
 const RESPONSE_LIMIT: usize = 8 * 1024;
@@ -23,6 +23,7 @@ struct Request<'a> {
     object_key: &'a str,
     object_version: u64,
     checksum: &'a str,
+    content_length: u64,
 }
 
 #[derive(Deserialize)]
@@ -42,10 +43,8 @@ pub(crate) fn backend(path: &Path) -> io::Result<HostObjectDeleteBackend> {
     )))
 }
 
-fn invoke(
-    path: &Path,
-    object: &AuthorizedObjectReference,
-) -> Result<HostObjectDeleteOutcome, String> {
+fn invoke(path: &Path, deletion: &GalleryDeleteObject) -> Result<HostObjectDeleteOutcome, String> {
+    let object = &deletion.object;
     let mut child = Command::new(path)
         .arg("delete-v1")
         .stdin(Stdio::piped())
@@ -60,6 +59,7 @@ fn invoke(
         object_key: &object.object_key,
         object_version: object.object_version,
         checksum: &object.checksum,
+        content_length: deletion.content_length,
     };
     let mut stdin = child
         .stdin
