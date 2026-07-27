@@ -1500,9 +1500,12 @@ the exact bounded runtime preflight, and DASObjectStore ``0.145.4``
 (``3a58859a``) supplies store-global application-delete capacity convergence
 plus immutable local catalogue inventory evidence.
 RC-B implementation and deterministic isolated acceptance are delivered in
-``44c273f`` and ``2434d3e``; its deployed acceptance remains pending until the
-available DASServer is upgraded from DASObjectStore ``0.145.2`` to the verified
-``0.145.4`` minimum, without using an existing user gallery as test data.
+``44c273f`` and ``2434d3e``. DASServer now runs the verified DASObjectStore
+``0.145.4`` minimum, but a disposable generated-data profile could not acquire
+live daemon catalogue metadata after creation; its registry records were
+cleaned up and all production services were restored. RC-B deployed acceptance
+therefore remains pending that DASObjectStore defect fix, without using an
+existing user gallery as test data.
 The release-ready compatibility record, native dependency enforcement,
 canonical Firefox XPI, clean-source release preparation, exact artifact matrix,
 rollback binding, and checksum-verifiable sealing are now the sole RC release
