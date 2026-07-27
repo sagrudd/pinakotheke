@@ -95,8 +95,8 @@ enum Command {
     #[command(name = "ingest-stream-v1", hide = true)]
     IngestStreamV1,
     /// Internal DASObjectStore catalogue inventory helper protocol.
-    #[command(name = "gallery-inventory-v1", hide = true)]
-    GalleryInventoryV1,
+    #[command(name = "gallery-inventory-v2", hide = true)]
+    GalleryInventoryV2,
     /// Strictly validate and inspect a local versioned configuration file.
     Config {
         #[command(subcommand)]
@@ -190,7 +190,7 @@ pub fn run(invocation: Invocation, cli: Cli) -> Result<(), Box<dyn std::error::E
         Some(Command::ReadObjectV1) => das_object_read_helper::run()?,
         Some(Command::DeleteObjectV1) => das_object_delete_helper::run_protocol()?,
         Some(Command::IngestStreamV1) => das_stream_ingest_helper::run()?,
-        Some(Command::GalleryInventoryV1) => gallery_inventory_helper::run_protocol()?,
+        Some(Command::GalleryInventoryV2) => gallery_inventory_helper::run_protocol()?,
     }
     Ok(())
 }

@@ -1,0 +1,152 @@
+{
+  "schema_version": "x-img.storage-authority-acceptance.v1",
+  "fixture_kind": "synthetic",
+  "generated_prefix": "rc-b/generated",
+  "capacity_limit_bytes": 16384,
+  "cases": [
+    {
+      "id": "authority-mediated-ingest",
+      "actions": [
+        {
+          "kind": "ingest",
+          "canonical_id": "synthetic-image-001",
+          "object_key": "rc-b/generated/images/synthetic-image-001.bin",
+          "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+          "size_bytes": 512
+        },
+        {
+          "kind": "ingest",
+          "canonical_id": "synthetic-video-001",
+          "object_key": "rc-b/generated/videos/synthetic-video-001.bin",
+          "sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+          "size_bytes": 2048
+        }
+      ],
+      "expected": {
+        "provider_keys": [
+          "rc-b/generated/images/synthetic-image-001.bin",
+          "rc-b/generated/videos/synthetic-video-001.bin"
+        ],
+        "catalogue_keys": [
+          "rc-b/generated/images/synthetic-image-001.bin",
+          "rc-b/generated/videos/synthetic-video-001.bin"
+        ],
+        "projection_keys": [
+          "rc-b/generated/images/synthetic-image-001.bin",
+          "rc-b/generated/videos/synthetic-video-001.bin"
+        ],
+        "capacity_used_bytes": 2560,
+        "pending_keys": [],
+        "diagnostics": []
+      }
+    },
+    {
+      "id": "idempotent-ingest-retry",
+      "actions": [
+        {
+          "kind": "ingest",
+          "canonical_id": "synthetic-image-002",
+          "object_key": "rc-b/generated/images/synthetic-image-002.bin",
+          "sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+          "size_bytes": 700
+        },
+        {
+          "kind": "retry_ingest",
+          "canonical_id": "synthetic-image-002",
+          "object_key": "rc-b/generated/images/synthetic-image-002.bin",
+          "sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+          "size_bytes": 700
+        }
+      ],
+      "expected": {
+        "provider_keys": ["rc-b/generated/images/synthetic-image-002.bin"],
+        "catalogue_keys": ["rc-b/generated/images/synthetic-image-002.bin"],
+        "projection_keys": ["rc-b/generated/images/synthetic-image-002.bin"],
+        "capacity_used_bytes": 700,
+        "pending_keys": [],
+        "diagnostics": []
+      }
+    },
+    {
+      "id": "crash-repair-before-admission",
+      "actions": [
+        {
+          "kind": "crash_after_provider",
+          "canonical_id": "synthetic-video-002",
+          "object_key": "rc-b/generated/videos/synthetic-video-002.bin",
+          "sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+          "size_bytes": 4096
+        },
+        {"kind": "repair"}
+      ],
+      "expected": {
+        "provider_keys": ["rc-b/generated/videos/synthetic-video-002.bin"],
+        "catalogue_keys": ["rc-b/generated/videos/synthetic-video-002.bin"],
+        "projection_keys": ["rc-b/generated/videos/synthetic-video-002.bin"],
+        "capacity_used_bytes": 4096,
+        "pending_keys": [],
+        "diagnostics": []
+      }
+    },
+    {
+      "id": "provider-absent-authoritative-delete-retry",
+      "actions": [
+        {
+          "kind": "ingest",
+          "canonical_id": "synthetic-image-003",
+          "object_key": "rc-b/generated/images/synthetic-image-003.bin",
+          "sha256": "5555555555555555555555555555555555555555555555555555555555555555",
+          "size_bytes": 900
+        },
+        {
+          "kind": "remove_provider_direct",
+          "object_key": "rc-b/generated/images/synthetic-image-003.bin"
+        },
+        {
+          "kind": "delete",
+          "object_key": "rc-b/generated/images/synthetic-image-003.bin"
+        },
+        {
+          "kind": "retry_delete",
+          "object_key": "rc-b/generated/images/synthetic-image-003.bin"
+        }
+      ],
+      "expected": {
+        "provider_keys": [],
+        "catalogue_keys": [],
+        "projection_keys": [],
+        "capacity_used_bytes": 0,
+        "pending_keys": [],
+        "diagnostics": []
+      }
+    },
+    {
+      "id": "dry-run-stale-and-orphan-detection",
+      "actions": [
+        {
+          "kind": "seed_orphan",
+          "canonical_id": "synthetic-orphan-001",
+          "object_key": "rc-b/generated/orphans/synthetic-orphan-001.bin",
+          "sha256": "6666666666666666666666666666666666666666666666666666666666666666",
+          "size_bytes": 256
+        },
+        {
+          "kind": "seed_stale_projection",
+          "object_key": "rc-b/generated/stale/synthetic-stale-001.bin"
+        },
+        {"kind": "dry_run_reconcile"}
+      ],
+      "expected": {
+        "provider_keys": ["rc-b/generated/orphans/synthetic-orphan-001.bin"],
+        "catalogue_keys": [],
+        "projection_keys": ["rc-b/generated/stale/synthetic-stale-001.bin"],
+        "capacity_used_bytes": 0,
+        "pending_keys": [],
+        "diagnostics": [
+          "orphan_provider:rc-b/generated/orphans/synthetic-orphan-001.bin",
+          "stale_projection:rc-b/generated/stale/synthetic-stale-001.bin"
+        ]
+      }
+    }
+  ]
+}

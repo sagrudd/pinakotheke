@@ -26,8 +26,42 @@ pub struct AuthorityObjectIdentity {
 pub struct AuthorityObject {
     #[serde(flatten)]
     pub identity: AuthorityObjectIdentity,
+    /// Immutable DAS representation version. A key alone is never evidence
+    /// that the projected representation is still the committed object.
+    pub object_version: u64,
+    /// Immutable checksum reported by DASObjectStore for this version.
+    pub checksum: String,
     pub state: String,
     pub content_length: u64,
+}
+
+impl AuthorityObject {
+    /// Builds the only authority state that can make a gallery representation
+    /// available. Callers which observe another state must retain that state
+    /// explicitly; reconciliation deliberately treats it as unavailable.
+    #[must_use]
+    pub fn protected(
+        identity: AuthorityObjectIdentity,
+        object_version: u64,
+        checksum: impl Into<String>,
+        content_length: u64,
+    ) -> Self {
+        Self {
+            identity,
+            object_version,
+            checksum: checksum.into(),
+            state: "Protected".into(),
+            content_length,
+        }
+    }
+
+    fn matches_representation(&self, representation: &GalleryRepresentation) -> bool {
+        self.state == "Protected"
+            && self.identity == representation_identity(representation)
+            && self.object_version == representation.object_version
+            && self.checksum == representation.checksum
+            && self.content_length == representation.content_length
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -56,9 +90,11 @@ impl Default for GalleryConvergenceReport {
 
 /// Reconciles availability against a complete, settled authority inventory.
 ///
-/// Object version and checksum remain immutable projection bindings. DAS object
-/// identifiers are immutable within a logical store; the inventory must omit
-/// incomplete, deleted, or otherwise non-settled records.
+/// Every representation must match its protected DAS evidence exactly: endpoint,
+/// logical store, object key, immutable version, checksum, and byte length.
+/// A key match with changed immutable evidence is a tombstone, not a restored
+/// object. DAS object identifiers are immutable within a logical store; the
+/// inventory must omit incomplete, deleted, or otherwise non-settled records.
 pub fn reconcile_gallery(
     gallery: &mut GalleryCatalogue,
     authority: &[AuthorityObject],
@@ -66,8 +102,16 @@ pub fn reconcile_gallery(
     let authority = authority
         .iter()
         .filter(|object| object.state == "Protected")
-        .map(|object| (object.identity.clone(), object))
-        .collect::<BTreeMap<_, _>>();
+        .fold(
+            BTreeMap::<AuthorityObjectIdentity, Vec<&AuthorityObject>>::new(),
+            |mut grouped, object| {
+                grouped
+                    .entry(object.identity.clone())
+                    .or_default()
+                    .push(object);
+                grouped
+            },
+        );
     let mut referenced = BTreeSet::new();
     let mut available = BTreeSet::new();
     let mut stale = BTreeSet::new();
@@ -80,7 +124,13 @@ pub fn reconcile_gallery(
             let previous_delivery_path = representation.delivery_path.clone();
             let identity = representation_identity(representation);
             referenced.insert(identity.clone());
-            let is_ready = authority.contains_key(&identity);
+            let is_ready = authority.get(&identity).is_some_and(|objects| {
+                // A complete inventory has one settled representation for
+                // a stable DAS object identity. Multiple records are
+                // ambiguous authority evidence, so fail closed rather
+                // than accepting an arbitrary matching entry.
+                objects.len() == 1 && objects[0].matches_representation(representation)
+            });
             if is_ready {
                 available.insert(identity);
             } else {
@@ -187,15 +237,16 @@ mod tests {
     }
 
     fn authority(key: &str) -> AuthorityObject {
-        AuthorityObject {
-            identity: AuthorityObjectIdentity {
+        AuthorityObject::protected(
+            AuthorityObjectIdentity {
                 endpoint_id: "endpoint-a".into(),
                 object_store_id: "store-a".into(),
                 object_key: key.into(),
             },
-            state: "Protected".into(),
-            content_length: 12,
-        }
+            1,
+            format!("sha256:{key}"),
+            12,
+        )
     }
 
     #[test]
@@ -255,5 +306,77 @@ mod tests {
         assert_eq!(report.authoritative_count, 0);
         assert_eq!(report.projected_count, 0);
         assert_eq!(report.stale_count, 2);
+    }
+
+    #[test]
+    fn immutable_authority_mismatches_tombstone_the_representation() {
+        let cases = [
+            ("version", {
+                let mut object = authority("thumb");
+                object.object_version = 2;
+                object
+            }),
+            ("checksum", {
+                let mut object = authority("thumb");
+                object.checksum = "sha256:different".into();
+                object
+            }),
+            ("length", {
+                let mut object = authority("thumb");
+                object.content_length = 13;
+                object
+            }),
+        ];
+
+        for (name, object) in cases {
+            let mut catalogue = gallery();
+            let report = reconcile_gallery(&mut catalogue, &[object]);
+            assert_eq!(report.authoritative_count, 1, "{name}");
+            assert_eq!(report.projected_count, 0, "{name}");
+            assert_eq!(report.stale_count, 2, "{name}");
+            assert_eq!(report.changed_representations, 2, "{name}");
+            assert_eq!(
+                catalogue.items()[0].thumbnail.availability,
+                GalleryObjectAvailability::Unavailable,
+                "{name}"
+            );
+            assert!(
+                catalogue.items()[0].thumbnail.delivery_path.is_none(),
+                "{name}"
+            );
+        }
+    }
+
+    #[test]
+    fn exact_authority_restores_a_representation_after_immutable_mismatch() {
+        let mut catalogue = gallery();
+        let mut stale_authority = authority("thumb");
+        stale_authority.checksum = "sha256:replaced".into();
+        reconcile_gallery(&mut catalogue, &[stale_authority]);
+
+        let report = reconcile_gallery(&mut catalogue, &[authority("thumb")]);
+        assert_eq!(report.authoritative_count, 1);
+        assert_eq!(report.projected_count, 1);
+        assert_eq!(report.stale_count, 1);
+        assert_eq!(report.changed_representations, 1);
+        assert_eq!(
+            catalogue.items()[0].thumbnail.availability,
+            GalleryObjectAvailability::Ready
+        );
+        assert_eq!(
+            catalogue.items()[0].thumbnail.delivery_path.as_deref(),
+            Some("/products/pinakotheke/api/gallery/v1/objects/item-a/thumbnail")
+        );
+    }
+
+    #[test]
+    fn duplicate_authority_evidence_is_ambiguous_and_tombstoned() {
+        let mut catalogue = gallery();
+        let report = reconcile_gallery(&mut catalogue, &[authority("thumb"), authority("thumb")]);
+        assert_eq!(report.authoritative_count, 1);
+        assert_eq!(report.projected_count, 0);
+        assert_eq!(report.orphan_count, 0);
+        assert_eq!(report.stale_count, 2);
+        assert_eq!(report.changed_representations, 2);
     }
 }

@@ -2,6 +2,15 @@
 
 ## 1.29.0-rc.1 - 2026-07-27
 
+- Require exact immutable DAS catalogue evidence (endpoint, ObjectStore, key,
+  version, SHA-256, and length) before a gallery representation becomes ready;
+  same-key replacements and ambiguous authority responses now fail closed.
+- Add the scoped, private-file-protected ``catalogue reconcile-authority``
+  dry-run/guarded-repair command and the versioned trusted-local inventory
+  helper protocol.
+- Add deterministic RC-B storage-authority convergence fixtures and local
+  acceptance target covering admission, retries, deletion, crash repair, and
+  stale/orphan dry-run detection.
 - Add the strict machine-readable RC compatibility contract, exact sibling
   commit/capability evidence, copied wire-contract digests, and deterministic
   product/native/Firefox prerelease mappings.

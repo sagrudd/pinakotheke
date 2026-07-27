@@ -53,6 +53,7 @@ Configuration
    gallery-catalogue
    gallery-deduplication
    gallery-convergence
+   storage-authority-acceptance
    video-candidates
    normalized-video-profiles
    video-normalization

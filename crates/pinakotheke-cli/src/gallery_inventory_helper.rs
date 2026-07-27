@@ -11,7 +11,7 @@ use std::{
 use x_img_api::HostGalleryInventory;
 use x_img_core::gallery_reconciliation::{AuthorityObject, AuthorityObjectIdentity};
 
-const SCHEMA: &str = "pinakotheke.gallery-inventory-helper.v1";
+const SCHEMA: &str = "pinakotheke.gallery-inventory-helper.v2";
 const RESPONSE_LIMIT: usize = 64 * 1024 * 1024;
 
 #[derive(Serialize, Deserialize)]
@@ -33,6 +33,8 @@ struct Response {
 #[serde(deny_unknown_fields)]
 struct InventoryObject {
     object_key: String,
+    object_version: u64,
+    checksum: String,
     state: String,
     content_length: u64,
 }
@@ -55,7 +57,7 @@ fn invoke(
     object_store_id: &str,
 ) -> Result<Vec<AuthorityObject>, String> {
     let mut child = Command::new(path)
-        .arg("gallery-inventory-v1")
+        .arg("gallery-inventory-v2")
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -147,6 +149,8 @@ fn invoke(
             if object.object_key.is_empty()
                 || object.object_key.len() > 2_048
                 || object.state != "Protected"
+                || object.object_version == 0
+                || !valid_checksum(&object.checksum)
             {
                 return Err("gallery inventory authority returned an invalid object".into());
             }
@@ -156,6 +160,8 @@ fn invoke(
                     object_store_id: object_store_id.into(),
                     object_key: object.object_key,
                 },
+                object_version: object.object_version,
+                checksum: object.checksum,
                 state: object.state,
                 content_length: object.content_length,
             })
@@ -199,6 +205,8 @@ pub(crate) fn run_protocol() -> Result<(), Box<dyn std::error::Error>> {
             .filter(|object| object.state == "Protected")
             .map(|object| InventoryObject {
                 object_key: object.object_id,
+                object_version: object.object_version,
+                checksum: object.checksum,
                 state: object.state,
                 content_length: object.size_bytes,
             })
@@ -218,8 +226,16 @@ struct DasSnapshot {
 #[derive(Deserialize)]
 struct DasObject {
     object_id: String,
+    object_version: u64,
+    checksum: String,
     state: String,
     size_bytes: u64,
+}
+
+fn valid_checksum(value: &str) -> bool {
+    value.len() == 71
+        && value.starts_with("sha256:")
+        && value[7..].bytes().all(|byte| byte.is_ascii_hexdigit())
 }
 
 fn validate_helper(path: &Path) -> io::Result<()> {
@@ -256,7 +272,14 @@ mod tests {
     #[test]
     fn response_rejects_unknown_fields() {
         assert!(serde_json::from_str::<Response>(
-            r#"{"schema_version":"pinakotheke.gallery-inventory-helper.v1","objects":[],"extra":true}"#
+            r#"{"schema_version":"pinakotheke.gallery-inventory-helper.v2","objects":[],"extra":true}"#
         ).is_err());
+    }
+
+    #[test]
+    fn inventory_requires_immutable_sha256_evidence() {
+        assert!(valid_checksum(&format!("sha256:{}", "a".repeat(64))));
+        assert!(!valid_checksum("sha256:too-short"));
+        assert!(!valid_checksum(&format!("sha512:{}", "a".repeat(64))));
     }
 }

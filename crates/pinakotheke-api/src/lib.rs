@@ -3453,6 +3453,8 @@ mod tests {
                 object_store_id: "store-1".into(),
                 object_key: "objects/media-1".into(),
             },
+            object_version: 1,
+            checksum: CHECKSUM.into(),
             state: "Protected".into(),
             content_length: 12,
         }]));

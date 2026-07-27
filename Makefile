@@ -17,7 +17,7 @@ RPM_VERSION := $(shell python3 scripts/release/check_rc_compatibility.py --print
 RPM_RELEASE := $(shell python3 scripts/release/check_rc_compatibility.py --print-release-field rpm_release 2>/dev/null)
 MACOS_PKG_VERSION := $(shell python3 scripts/release/check_rc_compatibility.py --print-release-field macos_pkg_version 2>/dev/null)
 
-.PHONY: help all packages web critical-vertical-check firefox-gallery-check firefox-playback-check firefox-capture-check firefox-lint firefox-sign firefox-signed-install-check rc-compatibility-check rc-compatibility-ready rc-output-prepare rc-output-add-artifact rc-output-seal rc-output-verify linux linux-x86_64 linux-arm64 linux-deb linux-rpm \
+.PHONY: help all packages web critical-vertical-check storage-authority-check firefox-gallery-check firefox-playback-check firefox-capture-check firefox-lint firefox-sign firefox-signed-install-check rc-compatibility-check rc-compatibility-ready rc-output-prepare rc-output-add-artifact rc-output-seal rc-output-verify linux linux-x86_64 linux-arm64 linux-deb linux-rpm \
 	linux-deb-x86_64 linux-deb-arm64 linux-rpm-x86_64 linux-rpm-arm64 \
 	macos-pkg macos-pkg-x86_64 macos-pkg-arm64 firefox firefox-macos-x86_64 \
 	firefox-macos-arm64 firefox-windows-x86_64 firefox-windows-arm64 \
@@ -30,6 +30,7 @@ help:
 	@echo "  make firefox-gallery-check Exercise the Yew gallery in installed Firefox"
 	@echo "  make firefox-playback-check VIDEO=/path/to/normalized.mp4"
 	@echo "  make critical-vertical-check VIDEO=/path/to/normalized.mp4"
+	@echo "  make storage-authority-check Prove isolated synthetic RC-B authority convergence"
 	@echo "  make firefox-capture-check Exercise observed/opened capture in installed Firefox"
 	@echo "  make linux                 Build DEB and RPM for Linux x86_64 and arm64"
 	@echo "  make macos-pkg             Build macOS PKG for x86_64 and arm64 (macOS only)"
@@ -81,6 +82,10 @@ critical-vertical-check:
 	$(MAKE) firefox-gallery-check
 	$(MAKE) firefox-playback-check VIDEO="$(VIDEO)"
 	scripts/quality/check.sh
+
+storage-authority-check:
+	PYTHONDONTWRITEBYTECODE=1 python3 scripts/acceptance/test_check_storage_authority_convergence.py
+	PYTHONDONTWRITEBYTECODE=1 python3 scripts/acceptance/check_storage_authority_convergence.py
 
 firefox-capture-check:
 	node scripts/firefox/check_installed_capture.mjs
