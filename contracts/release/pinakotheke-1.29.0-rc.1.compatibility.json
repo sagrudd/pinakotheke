@@ -13,7 +13,7 @@
   },
   "pinakotheke": {
     "repository": "https://github.com/sagrudd/pinakotheke",
-    "tested_commit": "573b4dfa747d09443561f4d9a84b886f1487a14f",
+    "tested_commit": "d2cd46e7499ed74efaf9100c1fc8e41f3592ef43",
     "baseline_version": "1.29.0-rc.1",
     "working_tree": "clean",
     "version_sources": [
