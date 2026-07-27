@@ -1499,6 +1499,10 @@ Epic RC-A is complete in ``573b4df``. Monas ``0.9.1`` (``dbcc705``) performs
 the exact bounded runtime preflight, and DASObjectStore ``0.145.4``
 (``3a58859a``) supplies store-global application-delete capacity convergence
 plus immutable local catalogue inventory evidence.
+RC-B implementation and deterministic isolated acceptance are delivered in
+``44c273f`` and ``2434d3e``; its deployed acceptance remains pending until the
+available DASServer is upgraded from DASObjectStore ``0.145.2`` to the verified
+``0.145.4`` minimum, without using an existing user gallery as test data.
 The release-ready compatibility record, native dependency enforcement,
 canonical Firefox XPI, clean-source release preparation, exact artifact matrix,
 rollback binding, and checksum-verifiable sealing are now the sole RC release

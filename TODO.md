@@ -101,6 +101,15 @@ existing supported path regresses.
   commit, retry, crash, restart, application deletion, and out-of-band DAS
   deletion.
 
+  Implementation, wire-contract, immutable-evidence, and deterministic
+  generated-prefix acceptance work are delivered in ``44c273f`` and
+  ``2434d3e``. The remaining acceptance deployment is deliberately not claimed:
+  the available DASServer is still running DASObjectStore ``0.145.2``, below
+  the released ``0.145.4`` minimum (``3a58859a``) required for trusted local
+  catalogue inventory. Upgrade that dependency and run the isolated deployed
+  acceptance without touching the existing user gallery before checking either
+  RC-B task complete.
+
 ### Epic RC-C — Converge Firefox capture on one current version
 
 - [ ] **XIMG-211 P0 — Build deterministic Firefox regression fixtures.**
