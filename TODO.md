@@ -4,7 +4,7 @@ Status: dependency-ordered planning backlog
 
 Version: 1.28.0
 
-Updated: 2026-07-24
+Updated: 2026-07-27
 
 ## How to use this backlog
 
@@ -21,6 +21,157 @@ Updated: 2026-07-24
 
 Priority meanings: P0 blocks safe architecture or data integrity; P1 blocks a
 milestone; P2 improves a usable milestone; P3 is post-1.0.
+
+## 1.29.0-rc.1 — MVP release convergence
+
+This is the active dependency-ordered release queue. It consolidates the
+proof-only tails of earlier tasks without deleting their implementation
+history. The target is a backward-compatible ``1.29.0-rc.1`` functional MVP
+refresh. GitHub Actions remains advisory and must not block this queue; local
+checks and the pinned documentation container are authoritative.
+
+The RC-critical product slice is Monas login and authenticated host context,
+reviewed DASObjectStore selection, persistent Firefox pairing/site corpus,
+capture of only user-opened images and user-played videos, fast historical
+stored-evidence framing, the ThumbsPlus-style gallery, verified playback, and
+authoritative deletion. X is an obligate adapter; every other enabled origin,
+including Instagram, uses the generic site model. X OAuth/account import,
+bioinformatics transfer, extra adapters, Synoptikon enhancements, tags,
+collections, and perceptual duplicate grouping do not block this RC unless an
+existing supported path regresses.
+
+### Epic RC-A — Establish one release truth
+
+- [ ] **XIMG-206 P0 — Reconcile the backlog and live evidence.** Preserve every
+  historical implementation/evidence note, close XIMG-109, XIMG-127, and
+  XIMG-133 from the settled explicit selections ``capture-plan-70`` through
+  ``capture-plan-82``, mark XIMG-116 superseded by its completed successor
+  chain, and route the remaining Firefox proof-only tasks through XIMG-212.
+  Acceptance requires a clean planning diff, local quality check, pushed
+  commit, and no claim that superseded historical versions are the current RC.
+
+- [ ] **XIMG-207 P0 — Publish the RC compatibility manifest.** Record exact
+  tested Pinakotheke, Monas, DASObjectStore, design-language, and Mnemosyne
+  commits plus package and wire-contract versions. Require the first
+  DASObjectStore release containing application-delete capacity
+  reconciliation; require Monas 0.9.0 host capabilities through startup
+  protocol checks. DEB/RPM must express the verified DAS minimum and the macOS
+  preflight must reject an absent or incompatible installation. Acceptance
+  rejects stale documentation, binary/package disagreement, missing required
+  capabilities, and unpublished sibling path dependencies.
+
+- [ ] **XIMG-208 P1 — Make release output immutable and reproducible.** Build
+  only from a clean committed revision into a fresh version-specific directory.
+  Emit an artifact manifest containing source commit, dependencies, local test
+  evidence, architectures, checksums, and build commands. Binary, package, web,
+  API, and Firefox compatibility metadata must agree. Keep the previous
+  verified package available for rollback and never deploy an unlisted artifact
+  from the mixed historic ``dist`` tree.
+
+### Epic RC-B — Close storage authority and convergence
+
+- [ ] **XIMG-209 P0 — Finish XIMG-130 authoritative deletion.** Add
+  DASObjectStore logical-capacity debit to the application-authorized deletion
+  transaction, release a compatible DASObjectStore version, configure the
+  first-party helper with a mode-``0600`` scoped session, and deploy it.
+  In an isolated generated prefix, ingest and delete one synthetic image and
+  one short synthetic video through the normal UI/API. Verify provider absence,
+  catalogue withdrawal, capacity decrement, Pinakotheke projection removal,
+  redacted audit, restart persistence, and idempotent retry without touching
+  the existing user gallery.
+
+- [ ] **XIMG-210 P0 — Prove authoritative catalogue convergence.**
+  DASObjectStore's verified catalogue remains the byte authority and
+  Pinakotheke remains a rebuildable indexed projection. Remove or reject every
+  provider-direct write path, admit a gallery record only after a matching
+  completion receipt, and reconcile bounded missing/orphaned/stale records at
+  startup and periodically. Add a scoped dry-run repair command. Acceptance
+  proves equal provider, DAS catalogue, capacity, and Pinakotheke state after
+  commit, retry, crash, restart, application deletion, and out-of-band DAS
+  deletion.
+
+### Epic RC-C — Converge Firefox capture on one current version
+
+- [ ] **XIMG-211 P0 — Build deterministic Firefox regression fixtures.**
+  Provide a redistributable local HTTPS site with long virtualized timelines,
+  recycled nodes, overlay galleries, redirects, progressive media, bounded
+  HLS/DASH, delayed discovery, and failure injection. Prove displayed
+  thumbnails are lookup-only; only a user-opened image or user-played video can
+  acquire. Exercise at least 1,000 synthetic records and explicit selections
+  beyond the former 64-item boundary. Offline and partial failures must fail
+  open.
+
+- [ ] **XIMG-212 P0 — Complete the current-version Firefox convergence
+  campaign.** Supersede the version-by-version proof tails of XIMG-120 and
+  XIMG-122 through XIMG-126 with one matching RC server/extension run. A clean
+  Firefox profile must pair through a one-time code, retain its site corpus
+  across extension updates, batch historical evidence without DAS hot-path
+  lookups, frame only matching settled originals/videos, show immediate
+  selected/transferring/settling/stored/failed progress, survive recycled DOM
+  and deep timelines, and avoid capture on autoplay or observation. Use an
+  unsigned canonical XPI during development; Mozilla unlisted signing is
+  required only for the final public RC.
+
+- [ ] **XIMG-213 P0 — Pass the bounded video RC gate.** Support trusted-play
+  direct MP4/WebM and explicitly proven bounded clear HLS/DASH adapters. Block
+  DRM/encryption without circumvention. Stream through DAS-managed staging,
+  validate compatible inputs, otherwise normalize through the digest-pinned
+  containerized FFmpeg profile, and commit rendition, poster, subtitles when
+  present, and provenance as separate typed objects. Gallery admission requires
+  checksum verification, probe evidence, and Firefox playback/seek proof.
+  Unsupported media creates only a redacted adapter/codec-gap record.
+
+### Epic RC-D — Deliver the usable product surface
+
+- [ ] **XIMG-214 P1 — Meet the measured ThumbsPlus gallery gate.** Render the
+  latest 20 ready objects first, then progressively page a dense virtualized
+  browser over source/uploader/date folders from the Pinakotheke projection.
+  Cards show uploader/account, capture date, media type, dimensions or duration,
+  and worded storage state. Dedicated DAS thumbnails/posters must begin from a
+  warm projection within 200 ms; the shell and first cards target one second;
+  no per-card sequential authorization or ObjectStore transaction is allowed.
+  Prove keyboard navigation, image preview, video playback/seek, unavailable
+  states, authoritative delete, and smooth browsing across 1,000 records while
+  following the Mnemosyne design language.
+
+- [ ] **XIMG-215 P1 — Make authentication and operations diagnosable.** Monas
+  owns process-bound browser sessions and invalidates them on restart. A
+  one-time pairing code creates a revocable least-privilege Firefox device
+  identity with short-lived access tokens; it never copies Monas cookies,
+  passwords, site credentials, or DAS credentials. Add paired-device
+  list/revoke controls, component health, version compatibility, projection
+  lag, worker readiness, and redacted correlation IDs from browser gesture
+  through DAS settlement. The status panel reports planned, transferring,
+  settling, ready, failed, deleted, and reconciliation-required counts by media
+  type, with downloadable bounded diagnostics.
+
+### Epic RC-E — Build, deploy, and promote
+
+- [ ] **XIMG-216 P1 — Produce the tiered RC artifact matrix.** Build and verify
+  DEB/RPM for x86_64 and arm64, macOS pkg for x86_64 and arm64, and one
+  platform-independent Firefox XPI. DASObjectStore is a versioned dependency,
+  never bundled. Live reference acceptance is Linux x86_64 DASServer plus
+  macOS Firefox; Linux arm64 DGX Spark provides generated-data smoke evidence.
+  Lack of physical Windows, x86 macOS, or live arm64 RPM hardware is a declared
+  limitation rather than a blocker; portable-extension metadata checks cover
+  Linux and Windows.
+
+- [ ] **XIMG-217 P0 — Execute the isolated RC promotion campaign.** Deploy only
+  manifest-listed artifacts to ``192.168.1.192``, smoke the generated-data path
+  on ``192.168.1.48``, and run the installed macOS Firefox acceptance. Prove
+  login, pairing, ObjectStore selection, image/video capture, historical
+  framing, gallery performance, playback/seek, deletion, restart recovery,
+  reconciliation, and rollback. Publish commands, versions, checksums, timings,
+  redacted traces, limitations, and known defects as a local evidence bundle.
+
+- [ ] **XIMG-218 P0 — Publish Pinakotheke 1.29.0-rc.1.** Promote only after
+  XIMG-206 through XIMG-217 are complete. Data loss, authority divergence,
+  authentication failure, capture regression, unreadable committed media,
+  unsafe deletion, or reference-deployment failure blocks publication.
+  Documented non-critical defects may remain. Sign the canonical XPI through
+  Mozilla's unlisted channel for this public RC, tag the exact manifest commit,
+  publish checksums and release notes, and verify a clean public install plus
+  rollback.
 
 ## 0.1.0 — Governance and feasibility
 
@@ -1272,7 +1423,7 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   proves metadata load, range seek, pause/resume, concurrent/conditional reads,
   cancellation, and unavailable-object recovery without origin fallback.
 
-- [ ] **XIMG-109 P0 — Require authoritative DASObjectStore capture completion.**
+- [x] **XIMG-109 P0 — Require authoritative DASObjectStore capture completion.**
   Remove the transfer-only success path from the first-party helper. A capture
   configuration must set ``submit_to_daemon`` to ``true`` and provide the
   reviewed daemon socket; the paired DASObjectStore remote client must attach
@@ -1311,7 +1462,10 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   settled 69,977,212-byte MP4 remains checksum- and range-readable. No pending
   browser plan existed after deployment. Remaining handoff: one new
   installed-Firefox image or video selection must settle through this exact
-  binary before marking the item complete.
+  binary before marking the item complete. Completed by fresh installed-Firefox
+  evidence on 2026-07-24: plans ``capture-plan-70`` through
+  ``capture-plan-82`` are all ``explicit_original`` or ``explicit_video`` and
+  every one is settled through the 1.27.6 daemon-authoritative path.
 
 - [x] **XIMG-110 P0 — Generalize trusted-play progressive video capture.**
   Remove the accidental single-source restriction from the first-party capture
@@ -1396,7 +1550,7 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   services active. A restart proof also confirmed graceful Pinakotheke shutdown
   releases and reacquires the capture-worker lease without manual cleanup.
 
-- [ ] **XIMG-116 P0 — Capture late script-fetched progressive video after
+- [x] **XIMG-116 P0 — Capture late script-fetched progressive video after
   trusted play.** The progressive-resource implementation landed in
   ``1.17.0``: the exact
   opted-in top-frame observer now polls nine bounded times over two seconds
@@ -1426,7 +1580,10 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   synthetic coverage includes a separate overlay control. Live capture proof
   remains. Mozilla signing, permanent-install verification, and
   checksum-identical DASServer deployment of the ``1.17.2`` backend and XPI
-  are complete in ``7f145d6``.
+  are complete in ``7f145d6``. This historical proof tail is superseded by the
+  completed XIMG-117 segmented assembly, XIMG-129 generic trusted-play,
+  XIMG-132 native-control activation, and XIMG-135 credential-free retrieval
+  evidence; it is not a separate current-version release gate.
 
 - [x] **XIMG-117 P0 — Assemble trusted-play HLS/fMP4 into a committed video.**
   Live ``1.17.2`` plan ``capture-plan-48`` proved end-to-end observer and plan
@@ -1730,7 +1887,10 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   the quality runner preserves but no longer incorrectly executes the one-time
   1.0 cutover gate against later versions.
 - [ ] **XIMG-201 P3 — Add approved site adapters through the registry.**
-- [ ] **XIMG-120 P0 — Make browser cache evidence and video progress explicit.**
+- [x] **XIMG-120 P0 — Make browser cache evidence and video progress explicit.**
+  The implementation history below remains authoritative; its outstanding
+  version-specific installed-Firefox proof is superseded by the consolidated
+  current-RC acceptance task XIMG-212.
   Query authoritative alias evidence independently of substitution and add a
   browser-only two-pixel green frame to matching settled images and videos.
   Correlate each trusted video selection to its page element, exclude autoplay
@@ -1889,7 +2049,7 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   left 246 unique catalogue IDs with no duplicate card. Pinakotheke and Monas
   were active on version ``1.22.20`` and the authenticated app redirected
   correctly to fresh login.
-- [ ] **XIMG-122 P0 — Make explicit-image settlement visibly convergent.** An
+- [x] **XIMG-122 P0 — Make explicit-image settlement visibly convergent.** An
   X thumbnail may be replaced by a modal/gallery DOM node before DASObjectStore
   settlement. Frame the replacement only when it displays the same immutable
   canonical media identity, retain rejection for a node recycled to different
@@ -1903,8 +2063,10 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   the 1.22.21 server is deployed and active on the DASServer. The remaining
   acceptance step is installation and real-Firefox proof of the 1.22.21
   extension-side node-replacement frame fix; extension signing remains skipped
-  at the user's request rather than being represented as complete.
-- [ ] **XIMG-123 P0 — Make cache evidence lookup viewport-fast.** Replace
+  at the user's request rather than being represented as complete. The
+  implementation is retained; its current installed-Firefox proof is
+  consolidated into XIMG-212.
+- [x] **XIMG-123 P0 — Make cache evidence lookup viewport-fast.** Replace
   sequential per-media HTTP evidence checks with one bounded authenticated
   viewport batch backed entirely by Pinakotheke's process-resident capture and
   gallery metadata. The lookup must not contact DASObjectStore, framing and
@@ -1918,8 +2080,10 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   256 identities returned HTTP 200 with all 256 results in 5.266 ms. The final
   unchecked gate is installation and real-Firefox proof of the matching 1.23.0
   extension; Mozilla signing credentials are not currently available in the
-  development environment, so this is not falsely recorded as deployed.
-- [ ] **XIMG-124 P0 — Bound capture-to-green latency.** Remove global
+  development environment, so this is not falsely recorded as deployed. The
+  implementation is retained; its current installed-Firefox proof is
+  consolidated into XIMG-212.
+- [x] **XIMG-124 P0 — Bound capture-to-green latency.** Remove global
   acquisition serialization, reserve a bounded worker lane for explicitly
   opened images/videos so thumbnail traffic cannot starve it, and poll rapidly
   during the normal short settlement window before backing off. Green must
@@ -1932,8 +2096,9 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   final gate remains installation of the matching extension and a measured
   real-Firefox capture; the currently installed older extension retains its
   one-second polling cadence even though it benefits from the server worker
-  lanes immediately.
-- [ ] **XIMG-125 P0 — Preserve green framing through long X timelines.** X
+  lanes immediately. The implementation is retained; its current measured
+  installed-Firefox proof is consolidated into XIMG-212.
+- [x] **XIMG-125 P0 — Preserve green framing through long X timelines.** X
   virtualizes and disconnects media nodes after prolonged scrolling. Retain a
   bounded browser-session set of server-confirmed image identities and repair
   their browser-only frame when the same identity returns, without repeating a
@@ -1945,8 +2110,9 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   Implementation commit ``9b0dd91`` passes a 32-identity/one-request regression,
   changed-identity rejection, workspace checks, and the local documentation
   container. Pinakotheke ``1.23.2`` and its matching unsigned test XPI are
-  deployed on DASServer; installed-Firefox long-timeline assurance remains.
-- [ ] **XIMG-126 P0 — Preserve explicit image capture through deep X node
+  deployed on DASServer; its current installed-Firefox long-timeline assurance
+  is consolidated into XIMG-212.
+- [x] **XIMG-126 P0 — Preserve explicit image capture through deep X node
   replacement.** Snapshot the exact eligible image on trusted pointerdown and
   retain that identity for no more than two seconds when X removes the node
   before click delivery. Resolve composed-path and overlay targets, reject
@@ -1955,9 +2121,9 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   and one installed-Firefox deep-timeline original settlement.
   Implementation commit ``2ad2a16`` passes the deterministic replacement
   regression and full local verification. Pinakotheke ``1.23.3`` and its
-  matching unsigned test XPI are deployed on DASServer; the remaining evidence
-  is one user-driven deep-timeline settlement in the installed Firefox.
-- [ ] **XIMG-127 P0 — Make Firefox acquisition explicit-selection-only.** Never
+  matching unsigned test XPI are deployed on DASServer; the current-version
+  deep-timeline proof is consolidated into XIMG-212.
+- [x] **XIMG-127 P0 — Make Firefox acquisition explicit-selection-only.** Never
   create a capture plan or ObjectStore payload for a merely displayed
   thumbnail; use viewport observation only for cache evidence and green-frame
   feedback. Capture an image only after the user opens it and a video only after
@@ -1971,8 +2137,11 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   settled plans replayed 28 and 20 times. Implementation ``127b73d`` is pushed
   and version ``1.24.0`` is deployed on DASServer. Local installed-Firefox
   assurance proves zero capture from viewport observation followed by trusted
-  opened-image and played-video capture; the remaining acceptance evidence is
-  one prolonged user-driven X timeline session with the deployed extension.
+  opened-image and played-video capture. Fresh 2026-07-24 live state closes the
+  prolonged-session audit: plans ``capture-plan-70`` through
+  ``capture-plan-82`` contain only ``explicit_original`` and
+  ``explicit_video`` selections and all are settled; no observed-thumbnail
+  acquisition appears in that session.
 - [x] **XIMG-128 P0 — Enforce DASObjectStore/gallery convergence.** Treat the
   live DASObjectStore catalogue as payload authority and Pinakotheke as its
   metadata projection. Reconcile at startup and after delete/commit events;
@@ -2030,7 +2199,7 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   ``1.27.2`` and serves the checksum-identical unsigned test XPI at the
   versioned download route with SHA-256
   ``e5034a041638497ffe905db4dd2664037e732563ccbeb88cd1b417f02f2891fc``.
-- [ ] **XIMG-133 P0 — Remove false long-timeline candidate exhaustion.** Keep
+- [x] **XIMG-133 P0 — Remove false long-timeline candidate exhaustion.** Keep
   automatic/observed media bounded by canonical page and day, but account for
   explicit user-opened images and user-played videos by their individual
   canonical presentation/post. Distinct selected posts on one virtualized
@@ -2042,9 +2211,10 @@ milestone; P2 improves a usable milestone; P3 is post-1.0.
   Implementation ``6f08390`` passes all 252 native tests, strict Clippy, Wasm,
   extension contracts, repository quality, and both pinned Sphinx container
   checks. DASServer runs ``1.27.3`` and serves the matching unsigned test XPI.
-  Remaining handoff: click one previously failing deep-timeline image and
-  record its plan admission plus verified settlement beyond the historic 64
-  plans before marking this item complete.
+  Fresh live evidence on 2026-07-24 records settled explicit selections
+  ``capture-plan-70`` through ``capture-plan-82``, including explicit originals
+  beyond the historic 64-plan ceiling. The implementation and its closing
+  acceptance evidence are complete.
 - [x] **XIMG-134 P0 — Make the persisted site corpus authoritative.** Resolve
   executable capture eligibility from the authenticated actor's exact-origin
   site rule and selected media kind. Keep pairing ownership/expiry and the

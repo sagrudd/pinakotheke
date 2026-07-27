@@ -1437,6 +1437,73 @@ browse/play cycle demonstrating the frames and settled toolbar transition.
 - XIMG-130 remains open for capacity-ledger reconciliation, package deployment,
   and live generated image/video deletion evidence.
 
+## 1.29.0-rc.1 — Functional MVP release convergence
+
+Goal: replace accumulated version-specific proof tails with one reproducible,
+current-version Pinakotheke release candidate that is safe to install, useful
+for daily browsing, and supported by deterministic evidence.
+
+The mandatory RC vertical is:
+
+- Monas-owned login, process-start browser-session invalidation, authenticated
+  host context, and a separately revocable Firefox device pairing;
+- explicit endpoint and named writable ObjectStore selection, with
+  DASObjectStore installed as a compatible dependency rather than bundled;
+- persisted per-origin site rules, X as an obligate adapter, and all other
+  origins—including Instagram—using the opt-in generic-site model;
+- lookup-only displayed thumbnails, acquisition only for a user-opened image or
+  user-played video, immediate worded progress, and fast historical two-pixel
+  green stored-evidence framing;
+- authoritative DASObjectStore completion and deletion, one verified copy for
+  the dedicated media store, logical-capacity reconciliation, and a rebuildable
+  Pinakotheke projection;
+- a measured Mnemosyne-compliant ThumbsPlus-style source/uploader/date browser,
+  image preview, normalized video poster/playback/seeking, and authoritative
+  image/video deletion; and
+- redacted end-to-end correlation, component health, reconciliation status,
+  clean packaging, upgrade, restart, and rollback evidence.
+
+Release rules:
+
+- the RC version is ``1.29.0-rc.1`` because this is a backward-compatible
+  functional refresh; the current ``1.28.0`` workspace remains the source
+  baseline until the release quantum begins;
+- one compatibility manifest records exact tested Pinakotheke, Monas,
+  DASObjectStore, design-language, and Mnemosyne commits plus required protocol
+  capabilities. Monas 0.9.0 is the host baseline; the DAS minimum is assigned
+  only after application-deletion capacity reconciliation is released;
+- builds originate from a clean committed revision and a fresh versioned output
+  directory. Package, binary, web, API, and Firefox compatibility versions must
+  agree, and every deployed artifact must appear in the checksum manifest;
+- deterministic local HTTPS Firefox fixtures, not mutable production websites,
+  are the regression authority. They cover 1,000-record virtualized timelines,
+  recycled nodes, deep selections, redirects, progressive and bounded
+  segmented video, failure injection, restart, and deletion. A small live X and
+  generic-site smoke supplements that evidence;
+- development uses one canonical unsigned platform-independent XPI. Mozilla
+  unlisted signing is required only for public RC publication;
+- live reference acceptance is Linux x86_64 DASServer
+  ``192.168.1.192`` plus macOS Firefox. Linux arm64 DGX Spark
+  ``192.168.1.48`` supplies generated-data smoke evidence. DEB/RPM and macOS
+  artifacts are built for x86_64 and arm64; absent physical Windows, x86 macOS,
+  or arm64 RPM live hardware is recorded as a limitation, not a blocker;
+- destructive assurance uses an isolated generated ObjectStore prefix and must
+  never touch the existing user gallery; and
+- GitHub Actions remains optional and non-blocking. Local Rust, schema, fixture,
+  security, packaging, deterministic Firefox, and pinned Sphinx-container
+  evidence is authoritative.
+
+Promotion is blocked by data loss, DAS/Pinakotheke authority divergence,
+authentication failure, explicit capture regression, unreadable committed
+media, unsafe deletion, or failure of the reference deployment. Documented
+non-critical defects may remain. X OAuth/account import, bioinformatics
+transfer, additional adapters, Synoptikon enhancements, tags/collections, and
+perceptual duplicate grouping remain supported secondary or post-RC work and
+do not block promotion unless an existing supported path regresses.
+
+The dependency-ordered implementation and evidence queue is XIMG-206 through
+XIMG-218 in ``TODO.md``.
+
 ## 1.27.6 — Unambiguous daemon-authoritative capture completion
 
 - The capture helper requires an explicit ``submit_to_daemon: true`` and an
