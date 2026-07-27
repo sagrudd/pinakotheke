@@ -104,15 +104,17 @@ existing supported path regresses.
   Implementation, wire-contract, immutable-evidence, and deterministic
   generated-prefix acceptance work are delivered in ``44c273f`` and
   ``2434d3e``. DASServer was upgraded and health-checked at DASObjectStore
-  ``0.145.4`` (``3a58859a``) on 2026-07-27. The deployed acceptance remains
-  deliberately incomplete: a newly created disposable ``generated_data``
-  store persisted its registry/capacity record but was absent from the daemon's
-  live metadata, so ``store contents`` failed before any object admission.
-  The generated registry records were removed from both daemon registries and
-  every production service was restored healthy; no user gallery or media was
-  used. Fix and release that DASObjectStore profile-initialisation defect, then
-  run the isolated Pinakotheke UI/API acceptance before checking either RC-B
-  task complete.
+  ``0.145.4`` (``3a58859a``) on 2026-07-27. The generated-store
+  profile-initialisation defect was fixed and released as DASObjectStore
+  ``0.146.4`` (``08fdde9e``), but has not yet been deployed to the acceptance
+  host. The generated registry records were removed from both daemon registries
+  and every production service was restored healthy; no user gallery or media
+  was used. Before closure, deploy ``0.146.4`` and add the remaining P0
+  Pinakotheke safeguards: verify an authoritative completion receipt before
+  gallery admission, scope the inventory helper to the reviewed destination
+  rather than ambient CLI privilege, surface reconciliation failure fail-closed
+  diagnostics, and replace the synthetic-only acceptance model with the normal
+  authenticated UI/API exercise.
 
 ### Epic RC-C — Converge Firefox capture on one current version
 
