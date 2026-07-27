@@ -1494,6 +1494,14 @@ Release rules:
   security, packaging, deterministic Firefox, and pinned Sphinx-container
   evidence is authoritative.
 
+Epic RC-A is complete in ``573b4df``. Monas ``0.9.1`` (``dbcc705``) performs
+the exact bounded runtime preflight, and DASObjectStore ``0.145.3``
+(``f8ac52f9``) supplies store-global application-delete capacity convergence.
+The release-ready compatibility record, native dependency enforcement,
+canonical Firefox XPI, clean-source release preparation, exact artifact matrix,
+rollback binding, and checksum-verifiable sealing are now the sole RC release
+path.
+
 Promotion is blocked by data loss, DAS/Pinakotheke authority divergence,
 authentication failure, explicit capture regression, unreadable committed
 media, unsafe deletion, or failure of the reference deployment. Documented

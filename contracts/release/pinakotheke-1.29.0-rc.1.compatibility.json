@@ -9,11 +9,11 @@
     "macos_pkg_version": "1.29.0.1",
     "firefox_manifest_version": "1.29.0.1",
     "firefox_version_name": "1.29.0-rc.1",
-    "status": "blocked"
+    "status": "release_ready"
   },
   "pinakotheke": {
     "repository": "https://github.com/sagrudd/pinakotheke",
-    "tested_commit": "627dcb6221dc00f7f97b6831c4c58c9301658d37",
+    "tested_commit": "573b4dfa747d09443561f4d9a84b886f1487a14f",
     "baseline_version": "1.29.0-rc.1",
     "working_tree": "clean",
     "version_sources": [
@@ -47,15 +47,15 @@
   "dependencies": {
     "monas": {
       "repository": "https://github.com/sagrudd/monas",
-      "tested_commit": "dac0e113c8b197cb06abc38187d72f27e562ad63",
-      "tested_version": "0.9.0",
+      "tested_commit": "dbcc70577d28f2c4a619eafeaee9e399798bec5c",
+      "tested_version": "0.9.1",
       "tested_components": [
-        {"name": "monas-core", "version": "0.9.0"},
-        {"name": "monas-server", "version": "0.9.0"},
-        {"name": "monas-web", "version": "0.9.0"}
+        {"name": "monas-core", "version": "0.9.1"},
+        {"name": "monas-server", "version": "0.9.1"},
+        {"name": "monas-web", "version": "0.9.1"}
       ],
-      "minimum_version": "0.9.0",
-      "evidence_status": "blocked_behavioral_preflight",
+      "minimum_version": "0.9.1",
+      "evidence_status": "verified",
       "working_tree": "clean",
       "required_capabilities": [
         "monas.prosopikon-authenticated-host-context.v1",
@@ -64,9 +64,7 @@
         "monas.pinakotheke-device-pairing.v1",
         "monas.pinakotheke-runtime-compatibility-health.v1"
       ],
-      "missing_required_capabilities": [
-        "monas.pinakotheke-runtime-compatibility-health.v1"
-      ],
+      "missing_required_capabilities": [],
       "wire_contracts": [
         {
           "contract_version": "x-img.monas-product-bootstrap.v1",
@@ -82,16 +80,16 @@
     },
     "dasobjectstore": {
       "repository": "https://github.com/sagrudd/DASObjectStore",
-      "tested_commit": "4f16ca166b165953a2a2832b7e58b4eddf9c9650",
-      "tested_version": "0.145.2",
+      "tested_commit": "f8ac52f930a440ab725b6ecb61ef6c8fac8d535e",
+      "tested_version": "0.145.3",
       "tested_components": [
-        {"name": "dasobjectstore-core", "version": "0.145.2"},
-        {"name": "dasobjectstore-daemon", "version": "0.145.2"},
-        {"name": "dasobjectstore-remote", "version": "0.145.2"}
+        {"name": "dasobjectstore-core", "version": "0.145.3"},
+        {"name": "dasobjectstore-daemon", "version": "0.145.3"},
+        {"name": "dasobjectstore-remote", "version": "0.145.3"}
       ],
-      "minimum_version": null,
-      "evidence_status": "blocked_unreleased",
-      "working_tree": "dirty",
+      "minimum_version": "0.145.3",
+      "evidence_status": "verified",
+      "working_tree": "clean",
       "required_capabilities": [
         "dasobjectstore.application-stream-ingest.v1",
         "dasobjectstore.authorized-object-read.v1",
@@ -99,9 +97,7 @@
         "dasobjectstore.exact-object-delete.v1",
         "dasobjectstore.application-delete-capacity-reconciliation.v1"
       ],
-      "missing_required_capabilities": [
-        "dasobjectstore.application-delete-capacity-reconciliation.v1"
-      ],
+      "missing_required_capabilities": [],
       "wire_contracts": [
         {
           "contract_version": "x-img.das-application-identity.v1",
@@ -161,20 +157,5 @@
       "wire_contracts": []
     }
   },
-  "blocking_gates": [
-    {
-      "id": "monas_runtime_compatibility_health",
-      "owner": "monas",
-      "state": "unresolved",
-      "required_capability": "monas.pinakotheke-runtime-compatibility-health.v1",
-      "resolution": "Replace the Monas 0.9.0 hard-coded Pinakotheke 1.1.0 product version with runtime-compatible product metadata and expose startup health evidence for every required host capability."
-    },
-    {
-      "id": "das_application_delete_capacity_reconciliation",
-      "owner": "dasobjectstore",
-      "state": "unresolved",
-      "required_capability": "dasobjectstore.application-delete-capacity-reconciliation.v1",
-      "resolution": "Release a clean DASObjectStore version containing atomic logical-capacity debit in the application-authorized exact-object deletion transaction, then set and enforce that release as the minimum version."
-    }
-  ]
+  "blocking_gates": []
 }

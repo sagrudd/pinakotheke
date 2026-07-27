@@ -52,7 +52,7 @@ existing supported path regresses.
   Completed in ``026a956`` with local quality and pinned Sphinx container
   build/run evidence; the focused roadmap commit is pushed to ``main``.
 
-- [ ] **XIMG-207 P0 — Publish the RC compatibility manifest.** Record exact
+- [x] **XIMG-207 P0 — Publish the RC compatibility manifest.** Record exact
   tested Pinakotheke, Monas, DASObjectStore, design-language, and Mnemosyne
   commits plus package and wire-contract versions. Require the first
   DASObjectStore release containing application-delete capacity
@@ -61,14 +61,23 @@ existing supported path regresses.
   preflight must reject an absent or incompatible installation. Acceptance
   rejects stale documentation, binary/package disagreement, missing required
   capabilities, and unpublished sibling path dependencies.
+  Completed in ``573b4df`` after releasing Monas ``0.9.1`` at ``dbcc705`` and
+  DASObjectStore ``0.145.3`` at ``f8ac52f9``. The strict release-ready manifest
+  pins those commits, native and Firefox mappings, required capabilities, and
+  wire-contract digests; DEB/RPM/macOS enforce the verified DAS minimum.
 
-- [ ] **XIMG-208 P1 — Make release output immutable and reproducible.** Build
+- [x] **XIMG-208 P1 — Make release output immutable and reproducible.** Build
   only from a clean committed revision into a fresh version-specific directory.
   Emit an artifact manifest containing source commit, dependencies, local test
   evidence, architectures, checksums, and build commands. Binary, package, web,
   API, and Firefox compatibility metadata must agree. Keep the previous
   verified package available for rollback and never deploy an unlisted artifact
   from the mixed historic ``dist`` tree.
+  Completed in ``573b4df``. Clean-source preparation, fresh version directories,
+  exact compatibility/dependency/version evidence, required dual-architecture
+  native packages, one canonical XPI, checksums, SBOM, release evidence, source
+  archive, and rollback package are enforced before logical sealing; changed,
+  duplicate, missing, symlinked, special, escaped, or unlisted files fail.
 
 ### Epic RC-B — Close storage authority and convergence
 

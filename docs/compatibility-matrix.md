@@ -11,6 +11,14 @@ digests, native package mappings, and the tested DASObjectStore minimum.
 release-output workflow. Older snapshots below remain as implementation
 history only.
 
+The release-ready inspection pins are Monas ``0.9.1`` at
+``dbcc70577d28f2c4a619eafeaee9e399798bec5c``, DASObjectStore ``0.145.3`` at
+``f8ac52f930a440ab725b6ecb61ef6c8fac8d535e``, Mnemosyne at
+``2244a49f5057ef6251b2760bd0729de8e2207f56``, and the Mnemosyne design
+language at ``fbfa28e55d1c8111ef95a139d83927c231534b5f``. These exact
+revisions are executable release evidence; the older pins below document
+earlier implementation decisions only.
+
 Current XIMG-200 Synoptikon integration baseline: ``../mnemosyne`` commit
 ``52810176bf95a170f93d74a6f5daa94da5c6640e``. This supersedes the earlier
 moving-source snapshot retained in the historical table below.

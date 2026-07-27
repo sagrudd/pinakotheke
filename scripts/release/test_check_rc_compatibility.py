@@ -40,29 +40,51 @@ class CompatibilityCheckerTests(unittest.TestCase):
         with self.assertRaisesRegex(checker.CompatibilityError, message):
             self.check_copy(manifest)
 
-    def test_current_blocked_manifest_is_valid(self) -> None:
+    def test_current_release_ready_manifest_is_valid(self) -> None:
         checked = checker.validate_manifest(ROOT, self.manifest_path)
-        self.assertEqual(checked["release"]["status"], "blocked")
-        self.assertIsNone(
-            checked["dependencies"]["dasobjectstore"]["minimum_version"]
+        self.assertEqual(checked["release"]["status"], "release_ready")
+        self.assertEqual(
+            checked["dependencies"]["dasobjectstore"]["minimum_version"],
+            "0.145.3",
         )
 
     def test_blocked_manifest_cannot_be_promoted(self) -> None:
-        with self.assertRaisesRegex(checker.CompatibilityError, "intentionally blocked"):
-            checker.validate_manifest(ROOT, self.manifest_path, require_ready=True)
+        changed = copy.deepcopy(self.manifest)
+        changed["release"]["status"] = "blocked"
+        dependency = changed["dependencies"]["monas"]
+        dependency["evidence_status"] = "blocked_behavioral_preflight"
+        dependency["missing_required_capabilities"] = [
+            "monas.pinakotheke-runtime-compatibility-health.v1"
+        ]
+        changed["blocking_gates"] = [
+            {
+                "id": "runtime",
+                "owner": "monas",
+                "state": "unresolved",
+                "required_capability": "monas.pinakotheke-runtime-compatibility-health.v1",
+                "resolution": "Publish compatible runtime health evidence.",
+            }
+        ]
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".json", encoding="utf-8"
+        ) as handle:
+            json.dump(changed, handle)
+            handle.flush()
+            with self.assertRaisesRegex(
+                checker.CompatibilityError, "intentionally blocked"
+            ):
+                checker.validate_manifest(ROOT, Path(handle.name), require_ready=True)
 
     def test_unresolved_das_minimum_cannot_feed_packaging(self) -> None:
+        changed = copy.deepcopy(self.manifest)
+        changed["dependencies"]["dasobjectstore"]["minimum_version"] = None
         with self.assertRaisesRegex(checker.CompatibilityError, "minimum is unresolved"):
-            checker.verified_das_minimum(self.manifest)
+            checker.verified_das_minimum(changed)
 
     def test_clean_verified_das_minimum_can_feed_packaging(self) -> None:
         changed = copy.deepcopy(self.manifest)
         dependency = changed["dependencies"]["dasobjectstore"]
-        dependency["minimum_version"] = "0.146.0"
-        dependency["evidence_status"] = "verified"
-        dependency["working_tree"] = "clean"
-        dependency["missing_required_capabilities"] = []
-        self.assertEqual(checker.verified_das_minimum(changed), "0.146.0")
+        self.assertEqual(checker.verified_das_minimum(changed), "0.145.3")
 
     def test_rejects_unknown_schema_major(self) -> None:
         changed = copy.deepcopy(self.manifest)
@@ -76,27 +98,37 @@ class CompatibilityCheckerTests(unittest.TestCase):
 
     def test_rejects_missing_capability_without_gate(self) -> None:
         changed = copy.deepcopy(self.manifest)
-        changed["blocking_gates"] = [
-            gate
-            for gate in changed["blocking_gates"]
-            if gate["owner"] != "monas"
+        changed["release"]["status"] = "blocked"
+        changed["dependencies"]["monas"]["evidence_status"] = (
+            "blocked_behavioral_preflight"
+        )
+        changed["dependencies"]["monas"]["missing_required_capabilities"] = [
+            "monas.pinakotheke-runtime-compatibility-health.v1"
         ]
         self.assert_rejected(changed, "missing capability lacks an unresolved gate")
 
     def test_rejects_false_verified_dependency(self) -> None:
         changed = copy.deepcopy(self.manifest)
-        changed["dependencies"]["dasobjectstore"]["evidence_status"] = "verified"
+        changed["dependencies"]["dasobjectstore"]["working_tree"] = "dirty"
         self.assert_rejected(changed, "verified evidence must be clean and complete")
 
     def test_rejects_release_ready_with_unresolved_gate(self) -> None:
         changed = copy.deepcopy(self.manifest)
-        changed["release"]["status"] = "release_ready"
+        changed["blocking_gates"] = [
+            {
+                "id": "unexpected",
+                "owner": "monas",
+                "state": "unresolved",
+                "required_capability": "monas.pinakotheke-runtime-compatibility-health.v1",
+                "resolution": "This gate must block a release-ready record.",
+            }
+        ]
         self.assert_rejected(changed, "release-ready manifest has unresolved gates")
 
     def test_rejects_version_drift(self) -> None:
         changed = copy.deepcopy(self.manifest)
-        changed["pinakotheke"]["baseline_version"] = "1.28.1"
-        self.assert_rejected(changed, "expected baseline 1.28.1")
+        changed["pinakotheke"]["baseline_version"] = "1.29.0"
+        self.assert_rejected(changed, "expected baseline 1.29.0")
 
     def test_rejects_wire_contract_drift(self) -> None:
         changed = copy.deepcopy(self.manifest)
