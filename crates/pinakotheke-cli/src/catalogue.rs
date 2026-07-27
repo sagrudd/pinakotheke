@@ -143,6 +143,7 @@ fn reconcile_authority(
     let authority = load_authority_destination(&arguments.capture_authority_file)?;
     let inventory = crate::gallery_inventory_helper::backend(
         &arguments.helper,
+        &arguments.capture_authority_file,
         authority.endpoint_id,
         authority.object_store_id,
     )?;

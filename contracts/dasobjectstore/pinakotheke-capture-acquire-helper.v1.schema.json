@@ -37,7 +37,7 @@
     {
       "type": "object",
       "additionalProperties": false,
-      "required": ["outcome", "schema_version", "catalogue_id", "title", "content_type", "content_length", "endpoint_id", "object_store_id", "object_key", "object_version", "checksum_sha256", "verified_at_epoch_seconds"],
+      "required": ["outcome", "schema_version", "catalogue_id", "title", "content_type", "content_length", "endpoint_id", "object_store_id", "object_key", "object_version", "checksum_sha256", "verified_at_epoch_seconds", "completion_receipt"],
       "properties": {
         "outcome": { "const": "committed" },
         "schema_version": { "const": "pinakotheke.capture-acquire-helper.v1" },
@@ -50,12 +50,14 @@
         "object_key": { "$ref": "#/$defs/object_key" },
         "object_version": { "type": "integer", "minimum": 1 },
         "checksum_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
-        "verified_at_epoch_seconds": { "type": "integer", "minimum": 1 }
+        "verified_at_epoch_seconds": { "type": "integer", "minimum": 1 },
+        "completion_receipt": { "$ref": "#/$defs/completion_receipt" }
       }
     }
   ],
   "$defs": {
     "identifier": { "type": "string", "pattern": "^[A-Za-z0-9._:-]{1,128}$" },
-    "object_key": { "type": "string", "minLength": 1, "maxLength": 1024, "pattern": "^[A-Za-z0-9._:/-]+$" }
+    "object_key": { "type": "string", "minLength": 1, "maxLength": 1024, "pattern": "^[A-Za-z0-9._:/-]+$" },
+    "completion_receipt": { "type": "object", "additionalProperties": false, "required": ["schema_version", "endpoint_id", "object_store_id", "object_key", "size_bytes", "checksum", "object_reference"], "properties": { "schema_version": { "const": "pinakotheke.object-ingest-stream.v1" }, "endpoint_id": { "$ref": "#/$defs/identifier" }, "object_store_id": { "$ref": "#/$defs/identifier" }, "object_key": { "$ref": "#/$defs/object_key" }, "size_bytes": { "type": "integer", "minimum": 1 }, "checksum": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }, "object_reference": { "type": "string", "minLength": 1, "maxLength": 2048 } } }
   }
 }

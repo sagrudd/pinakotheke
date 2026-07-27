@@ -16,6 +16,7 @@ use x_img_core::{
 };
 
 const SCHEMA: &str = "pinakotheke.capture-acquire-helper.v1";
+const INGEST_RECEIPT_SCHEMA: &str = "pinakotheke.object-ingest-stream.v1";
 const RESPONSE_LIMIT: u64 = 16 * 1024;
 
 pub(crate) fn backend(
@@ -86,6 +87,10 @@ enum AcquireResponse {
         object_version: u64,
         checksum_sha256: String,
         verified_at_epoch_seconds: u64,
+        /// Receipt emitted only after the DASObjectStore ingest authority has
+        /// verified and catalogued the exact object.  Helper-selected display
+        /// metadata is never enough to admit a gallery record.
+        completion_receipt: CompletionReceipt,
         #[serde(default)]
         video: Option<Box<GalleryVideoCompletion>>,
     },
@@ -104,6 +109,21 @@ enum AcquireResponse {
         #[serde(default)]
         reason_code: Option<String>,
     },
+}
+
+/// The subset of the DASObjectStore completion receipt that binds the object
+/// to the reviewed plan destination.  It intentionally contains no upload
+/// capability, provider credential, or signed URL.
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CompletionReceipt {
+    schema_version: String,
+    endpoint_id: String,
+    object_store_id: String,
+    object_key: String,
+    size_bytes: u64,
+    checksum: String,
+    object_reference: String,
 }
 
 pub(crate) fn acquire(
@@ -257,9 +277,18 @@ fn acquire_with_progress(
             object_version,
             checksum_sha256,
             verified_at_epoch_seconds,
+            completion_receipt,
             video,
             ..
         } if actual_endpoint == endpoint_id && actual_store == object_store_id => {
+            verify_completion_receipt(
+                &completion_receipt,
+                endpoint_id,
+                object_store_id,
+                &object_key,
+                content_length,
+                &checksum_sha256,
+            )?;
             Ok(VerifiedCaptureCompletion {
                 plan_id: plan.plan_id.clone(),
                 catalogue_id: plan.catalogue_id.clone(),
@@ -292,6 +321,38 @@ fn acquire_with_progress(
             helper_failure("capture helper rejected the plan", reason_code),
         )),
     }
+}
+
+/// Requires the independently produced DAS completion receipt to bind every
+/// immutable object field before the caller can settle/admit the capture.
+///
+/// The outer helper response is intentionally treated as untrusted transport
+/// metadata: neither a successful helper exit nor a `committed` discriminator
+/// can substitute for a matching receipt.
+fn verify_completion_receipt(
+    receipt: &CompletionReceipt,
+    endpoint_id: &str,
+    object_store_id: &str,
+    object_key: &str,
+    content_length: u64,
+    checksum_sha256: &str,
+) -> io::Result<()> {
+    let expected_checksum = format!("sha256:{checksum_sha256}");
+    let expected_reference = format!("dasobjectstore:{endpoint_id}:{object_store_id}:{object_key}");
+    if receipt.schema_version != INGEST_RECEIPT_SCHEMA
+        || receipt.endpoint_id != endpoint_id
+        || receipt.object_store_id != object_store_id
+        || receipt.object_key != object_key
+        || receipt.size_bytes != content_length
+        || receipt.checksum != expected_checksum
+        || receipt.object_reference != expected_reference
+    {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            "capture helper completion receipt does not verify the committed object",
+        ));
+    }
+    Ok(())
 }
 
 fn helper_failure(message: &str, reason_code: Option<String>) -> String {
@@ -379,7 +440,7 @@ test "$1" = acquire-image-v1 || exit 2
 read request
 printf '%s' "$request" | grep -q '"canonical_media_url":"https://example.invalid/thumb.jpg"' || exit 3
 printf '%s\n' '{"outcome":"progress","schema_version":"pinakotheke.capture-acquire-helper.v1","phase":"downloading","progress_percent":42,"bytes_downloaded":21,"bytes_total":50}' >&2
-printf '%s\n' '{"outcome":"committed","schema_version":"pinakotheke.capture-acquire-helper.v1","catalogue_id":"card-1","title":"Synthetic image","content_type":"image/jpeg","content_length":42,"endpoint_id":"endpoint-1","object_store_id":"store-1","object_key":"object-1","object_version":2,"checksum_sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","verified_at_epoch_seconds":42}' >&2
+printf '%s\n' '{"outcome":"committed","schema_version":"pinakotheke.capture-acquire-helper.v1","catalogue_id":"card-1","title":"Synthetic image","content_type":"image/jpeg","content_length":42,"endpoint_id":"endpoint-1","object_store_id":"store-1","object_key":"object-1","object_version":2,"checksum_sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","verified_at_epoch_seconds":42,"completion_receipt":{"schema_version":"pinakotheke.object-ingest-stream.v1","endpoint_id":"endpoint-1","object_store_id":"store-1","object_key":"object-1","size_bytes":42,"checksum":"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","object_reference":"dasobjectstore:endpoint-1:store-1:object-1"}}' >&2
 "##,
         )
         .unwrap();
@@ -402,5 +463,76 @@ printf '%s\n' '{"outcome":"committed","schema_version":"pinakotheke.capture-acqu
         assert_eq!(receipt.content_length, 42);
         assert_eq!(updates.lock().unwrap()[0].progress_percent, 42);
         let _ = std::fs::remove_file(path);
+    }
+
+    #[test]
+    fn receipt_mismatch_is_rejected_before_gallery_admission() {
+        let receipt = CompletionReceipt {
+            schema_version: INGEST_RECEIPT_SCHEMA.into(),
+            endpoint_id: "endpoint-1".into(),
+            object_store_id: "store-1".into(),
+            object_key: "object-1".into(),
+            size_bytes: 41,
+            checksum: format!("sha256:{}", "a".repeat(64)),
+            object_reference: "dasobjectstore:endpoint-1:store-1:object-1".into(),
+        };
+        let error = verify_completion_receipt(
+            &receipt,
+            "endpoint-1",
+            "store-1",
+            "object-1",
+            42,
+            &"a".repeat(64),
+        )
+        .expect_err("a receipt for different bytes must not be admitted");
+        assert_eq!(error.kind(), io::ErrorKind::InvalidData);
+    }
+
+    #[test]
+    fn completion_receipt_requires_the_stream_ingest_contract() {
+        let receipt = CompletionReceipt {
+            schema_version: "untrusted.helper.v1".into(),
+            endpoint_id: "endpoint-1".into(),
+            object_store_id: "store-1".into(),
+            object_key: "object-1".into(),
+            size_bytes: 42,
+            checksum: format!("sha256:{}", "a".repeat(64)),
+            object_reference: "dasobjectstore:endpoint-1:store-1:object-1".into(),
+        };
+        assert!(
+            verify_completion_receipt(
+                &receipt,
+                "endpoint-1",
+                "store-1",
+                "object-1",
+                42,
+                &"a".repeat(64),
+            )
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn receipt_cannot_substitute_another_authority_object_reference() {
+        let receipt = CompletionReceipt {
+            schema_version: INGEST_RECEIPT_SCHEMA.into(),
+            endpoint_id: "endpoint-1".into(),
+            object_store_id: "store-1".into(),
+            object_key: "object-1".into(),
+            size_bytes: 42,
+            checksum: format!("sha256:{}", "a".repeat(64)),
+            object_reference: "dasobjectstore:endpoint-1:store-1:other-object".into(),
+        };
+        assert!(
+            verify_completion_receipt(
+                &receipt,
+                "endpoint-1",
+                "store-1",
+                "object-1",
+                42,
+                &"a".repeat(64),
+            )
+            .is_err()
+        );
     }
 }

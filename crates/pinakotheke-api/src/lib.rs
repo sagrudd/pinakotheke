@@ -73,7 +73,7 @@ type SynoptikonCatalogue = Arc<SynoptikonCatalogueProjection>;
 type MonasGalleryCatalogue = Arc<Mutex<GalleryCatalogue>>;
 type SiteCorpora = Arc<Mutex<SiteCorpusStore>>;
 type ReviewedDestinations = Arc<Mutex<ReviewedDestinationStore>>;
-type GalleryConvergence = Arc<Mutex<GalleryConvergenceReport>>;
+type GalleryConvergence = Arc<Mutex<GalleryConvergenceState>>;
 
 /// Private host-worker authority used only to report independently verified
 /// DASObjectStore image commits.
@@ -114,6 +114,38 @@ pub struct GalleryReconciliationAuthority {
     inventory: HostGalleryInventory,
     interval: std::time::Duration,
     report: GalleryConvergence,
+}
+
+/// Redacted health of the latest authority inventory.
+///
+/// Inventory callback errors can contain endpoint or authorization details,
+/// so browser-visible state is intentionally limited to stable status words.
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct GalleryConvergenceState {
+    report: GalleryConvergenceReport,
+    authority_status: GalleryAuthorityStatus,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum GalleryAuthorityStatus {
+    Ready,
+    Unavailable,
+}
+
+impl GalleryAuthorityStatus {
+    const fn as_str(self) -> &'static str {
+        match self {
+            Self::Ready => "Ready",
+            Self::Unavailable => "Unavailable",
+        }
+    }
+
+    const fn failure_code(self) -> Option<&'static str> {
+        match self {
+            Self::Ready => None,
+            Self::Unavailable => Some("authority_inventory_unavailable"),
+        }
+    }
 }
 
 /// Idempotent result from deleting one exact DASObjectStore object version.
@@ -501,7 +533,10 @@ impl GalleryReconciliationAuthority {
             gallery_store,
             inventory,
             interval: std::time::Duration::from_secs(10),
-            report: Arc::new(Mutex::new(GalleryConvergenceReport::default())),
+            report: Arc::new(Mutex::new(GalleryConvergenceState {
+                report: GalleryConvergenceReport::default(),
+                authority_status: GalleryAuthorityStatus::Unavailable,
+            })),
         }
     }
 
@@ -515,7 +550,12 @@ impl GalleryReconciliationAuthority {
             .map_err(|_| "gallery reconciliation lock is unavailable".to_owned())?
             .items()
             .to_vec();
-        let objects = (self.inventory)()?;
+        let objects = match (self.inventory)() {
+            Ok(objects) => objects,
+            // A failed inventory is never evidence that earlier Ready claims
+            // still describe settled DAS objects.
+            Err(_) => return self.fail_closed_inventory(gallery),
+        };
         let mut current = gallery
             .lock()
             .map_err(|_| "gallery reconciliation lock is unavailable".to_owned())?;
@@ -532,12 +572,52 @@ impl GalleryReconciliationAuthority {
                 .map_err(|error| format!("gallery reconciliation persistence failed: {error}"))?;
             *current = candidate;
         }
+        self.record_status(report.clone(), GalleryAuthorityStatus::Ready)?;
+        Ok(report)
+    }
+
+    /// Withdraws delivery claims when the complete authority inventory is
+    /// unavailable. Callback errors are deliberately redacted.
+    fn fail_closed_inventory(
+        &self,
+        gallery: &MonasGalleryCatalogue,
+    ) -> Result<GalleryConvergenceReport, String> {
+        let mut current = gallery
+            .lock()
+            .map_err(|_| "gallery reconciliation lock is unavailable".to_owned())?;
+        let mut candidate = current.clone();
+        let report = reconcile_gallery(&mut candidate, &[]);
+        if report.changed_representations > 0 {
+            // Make the in-process gallery fail closed immediately. A restart
+            // retries the inventory before the gallery is served.
+            *current = candidate.clone();
+            if let Err(error) = self.gallery_store.replace(candidate.items().to_vec()) {
+                drop(current);
+                self.record_status(report, GalleryAuthorityStatus::Unavailable)?;
+                return Err(format!(
+                    "gallery authority inventory unavailable; fail-closed persistence failed: {error}"
+                ));
+            }
+        }
+        drop(current);
+        self.record_status(report.clone(), GalleryAuthorityStatus::Unavailable)?;
+        Err("gallery authority inventory unavailable; representations withdrawn".into())
+    }
+
+    fn record_status(
+        &self,
+        report: GalleryConvergenceReport,
+        authority_status: GalleryAuthorityStatus,
+    ) -> Result<(), String> {
         *self
             .report
             .lock()
             .map_err(|_| "gallery reconciliation report lock is unavailable".to_owned())? =
-            report.clone();
-        Ok(report)
+            GalleryConvergenceState {
+                report,
+                authority_status,
+            };
+        Ok(())
     }
 
     fn report(&self) -> GalleryConvergence {
@@ -647,6 +727,8 @@ struct IngestionStatusResponse {
 struct GalleryConvergenceResponse {
     schema_version: &'static str,
     report: GalleryConvergenceReport,
+    authority_status: &'static str,
+    failure_code: Option<&'static str>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -1212,7 +1294,14 @@ pub fn monolith_router_with_gallery_web_delivery_and_capture_authority(
                     let gallery = Arc::clone(&reconciled_gallery);
                     let result =
                         tokio::task::spawn_blocking(move || authority.reconcile(&gallery)).await;
-                    let _ = result;
+                    if result.is_err() || result.as_ref().is_ok_and(Result::is_err) {
+                        // Detailed authority errors can contain endpoint or
+                        // authorization material. The operations endpoint
+                        // exposes the corresponding redacted status.
+                        eprintln!(
+                            "gallery convergence: authority inventory unavailable; delivery claims withdrawn"
+                        );
+                    }
                 }
             });
         }
@@ -1298,7 +1387,7 @@ async fn gallery_convergence(
     if !context.permits(XIMG_ACCESS) {
         return Err(StatusCode::FORBIDDEN);
     }
-    let report = convergence
+    let state = convergence
         .ok_or(StatusCode::SERVICE_UNAVAILABLE)?
         .0
         .lock()
@@ -1306,7 +1395,9 @@ async fn gallery_convergence(
         .clone();
     Ok(Json(GalleryConvergenceResponse {
         schema_version: "pinakotheke.gallery-convergence-response.v1",
-        report,
+        report: state.report,
+        authority_status: state.authority_status.as_str(),
+        failure_code: state.authority_status.failure_code(),
     }))
 }
 
@@ -2645,7 +2736,10 @@ fn schedule_gallery_reconciliation(
 ) {
     if let Ok(handle) = tokio::runtime::Handle::try_current() {
         handle.spawn(async move {
-            let _ = tokio::task::spawn_blocking(move || authority.reconcile(&gallery)).await;
+            let result = tokio::task::spawn_blocking(move || authority.reconcile(&gallery)).await;
+            if result.is_err() || result.as_ref().is_ok_and(Result::is_err) {
+                eprintln!("gallery convergence: authority inventory unavailable; delivery claims withdrawn");
+            }
         });
     }
 }
@@ -3227,6 +3321,7 @@ fn playback_status(error: DirectPlaybackError) -> StatusCode {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use std::{
         fs,
         sync::{
@@ -3374,9 +3469,10 @@ mod tests {
 
     use super::{
         CaptureCompletionAuthority, CaptureCompletionRuntime, CaptureDestinationAuthorityState,
-        CapturePlanComposition, ExtensionOnboardingAuthority, GalleryReconciliationAuthority,
-        HostCaptureAcquireBackend, HostCaptureDestinationRevalidateBackend, HostObjectReadBackend,
-        MonasDispatchVerifier, ObjectDeliveryPool, VerifiedCaptureCompletion, monolith_router,
+        CapturePlanComposition, ExtensionOnboardingAuthority, GalleryAuthorityStatus,
+        GalleryReconciliationAuthority, HostCaptureAcquireBackend,
+        HostCaptureDestinationRevalidateBackend, HostObjectReadBackend, MonasDispatchVerifier,
+        ObjectDeliveryPool, VerifiedCaptureCompletion, monolith_router,
         monolith_router_with_authorities, monolith_router_with_gallery_authority,
         monolith_router_with_gallery_delivery_authority,
         monolith_router_with_gallery_web_delivery_and_capture_authority,
@@ -3486,6 +3582,65 @@ mod tests {
             restart_report.projected_count
         );
         assert_eq!(restart_report.changed_representations, 0);
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[tokio::test]
+    async fn unavailable_authority_inventory_withdraws_ready_delivery_claims() {
+        let root = std::env::temp_dir().join(format!(
+            "pinakotheke-gallery-reconciliation-fail-closed-{}-{}",
+            std::process::id(),
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let store = GalleryCatalogueStore::new(root.join("gallery.json"));
+        let gallery = gallery_catalogue();
+        store.replace(gallery.items().to_vec()).unwrap();
+        let authority = GalleryReconciliationAuthority::new(
+            store.clone(),
+            Arc::new(|| Err("authorization=private-host-token".into())),
+        );
+        let shared = Arc::new(Mutex::new(gallery));
+
+        let error = authority.reconcile(&shared).unwrap_err();
+        assert!(!error.contains("private-host-token"));
+        assert_eq!(
+            shared.lock().unwrap().items()[0].thumbnail.availability,
+            GalleryObjectAvailability::Unavailable
+        );
+        assert_eq!(
+            shared.lock().unwrap().items()[0].thumbnail.delivery_path,
+            None
+        );
+        assert_eq!(
+            store.load_or_empty().unwrap().items()[0]
+                .thumbnail
+                .availability,
+            GalleryObjectAvailability::Unavailable
+        );
+        let state = authority.report().lock().unwrap().clone();
+        assert_eq!(state.authority_status, GalleryAuthorityStatus::Unavailable);
+        assert_eq!(
+            state.authority_status.failure_code(),
+            Some("authority_inventory_unavailable")
+        );
+        let context = MonasHostContextAdapter
+            .authenticate(MONAS_CONTEXT.as_bytes())
+            .unwrap();
+        let response = gallery_convergence(
+            Some(Extension(context)),
+            Some(Extension(authority.report())),
+        )
+        .await
+        .unwrap()
+        .0;
+        assert_eq!(response.authority_status, "Unavailable");
+        assert_eq!(
+            response.failure_code,
+            Some("authority_inventory_unavailable")
+        );
         fs::remove_dir_all(root).unwrap();
     }
 

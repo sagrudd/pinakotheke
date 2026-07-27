@@ -449,6 +449,12 @@ pub(crate) fn serve(arguments: ServeArgs) -> Result<(), Box<dyn std::error::Erro
             })?;
             crate::gallery_inventory_helper::backend(
                 helper,
+                arguments.capture_authority_file.as_deref().ok_or_else(|| {
+                    io::Error::new(
+                        io::ErrorKind::InvalidInput,
+                        "gallery inventory requires a private capture authority file",
+                    )
+                })?,
                 authority.endpoint_id.clone(),
                 authority.object_store_id.clone(),
             )
@@ -554,7 +560,13 @@ pub(crate) fn serve(arguments: ServeArgs) -> Result<(), Box<dyn std::error::Erro
         });
         if let Some(authority) = reconciliation.as_ref() {
             let shared = std::sync::Arc::new(std::sync::Mutex::new(gallery));
-            let report = authority.reconcile(&shared).map_err(io::Error::other)?;
+            let report = authority.reconcile(&shared).map_err(|_| {
+                // The helper may have encountered endpoint or authorization
+                // detail. Its failure is observable through the redacted
+                // convergence state once running; at startup refuse to serve
+                // a gallery whose authority inventory is unknown.
+                io::Error::other("gallery authority inventory unavailable; startup refused")
+            })?;
             gallery = shared
                 .lock()
                 .map_err(|_| io::Error::other("gallery reconciliation lock failed"))?

@@ -156,8 +156,27 @@ struct Committed {
     object_version: u64,
     checksum_sha256: String,
     verified_at_epoch_seconds: u64,
+    /// Exact daemon-verified evidence, independently bound to the object that
+    /// the outer capture completion advertises.
+    completion_receipt: CompletionReceipt,
     #[serde(skip_serializing_if = "Option::is_none")]
     video: Option<GalleryVideoCompletion>,
+}
+
+/// Metadata-only completion evidence from the DASObjectStore authority.
+///
+/// This is emitted only after the daemon completion path has verified and
+/// catalogued the provider object. It deliberately excludes capabilities,
+/// credentials, signed URLs, and provider response bodies.
+#[derive(Debug, Serialize)]
+struct CompletionReceipt {
+    schema_version: &'static str,
+    endpoint_id: String,
+    object_store_id: String,
+    object_key: String,
+    size_bytes: u64,
+    checksum: String,
+    object_reference: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -682,12 +701,37 @@ fn acquire_with_progress(
         content_length: metadata.len(),
         endpoint_id: request.endpoint_id.clone(),
         object_store_id: request.object_store_id.clone(),
-        object_key,
+        object_key: object_key.clone(),
         object_version: version,
-        checksum_sha256: checksum,
+        checksum_sha256: checksum.clone(),
         verified_at_epoch_seconds: SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs(),
+        completion_receipt: completion_receipt(
+            &request.endpoint_id,
+            &request.object_store_id,
+            &object_key,
+            metadata.len(),
+            &checksum,
+        ),
         video: video_metadata,
     })
+}
+
+fn completion_receipt(
+    endpoint_id: &str,
+    object_store_id: &str,
+    object_key: &str,
+    size_bytes: u64,
+    checksum_sha256: &str,
+) -> CompletionReceipt {
+    CompletionReceipt {
+        schema_version: "pinakotheke.object-ingest-stream.v1",
+        endpoint_id: endpoint_id.into(),
+        object_store_id: object_store_id.into(),
+        object_key: object_key.into(),
+        size_bytes,
+        checksum: format!("sha256:{checksum_sha256}"),
+        object_reference: format!("dasobjectstore:{endpoint_id}:{object_store_id}:{object_key}"),
+    }
 }
 
 fn create_and_commit_video_poster(
@@ -1332,6 +1376,13 @@ fn normalize_incompatible_video(
         poster_checksum_sha256: poster_checksum,
         poster_content_length: result.poster.size_bytes,
     };
+    let completion_receipt = completion_receipt(
+        &result.normalized_video.endpoint_id,
+        &result.normalized_video.object_store_id,
+        &result.normalized_video.object_key,
+        result.normalized_video.size_bytes,
+        &checksum,
+    );
     Ok(Committed {
         schema_version: REQUEST_SCHEMA,
         catalogue_id: catalogue_id(request),
@@ -1344,6 +1395,7 @@ fn normalize_incompatible_video(
         object_version: version,
         checksum_sha256: checksum,
         verified_at_epoch_seconds: now,
+        completion_receipt,
         video: Some(video),
     })
 }
@@ -2107,10 +2159,21 @@ print(json.dumps({'schema_version':h['schema_version'],'endpoint_id':h['endpoint
             object_version: 1,
             checksum_sha256: "a".repeat(64),
             verified_at_epoch_seconds: 1,
+            completion_receipt: completion_receipt(
+                "endpoint-1",
+                "store-1",
+                "media/checksum",
+                7,
+                &"a".repeat(64),
+            ),
             video: None,
         };
         let encoded = serde_json::to_value(receipt).unwrap();
         assert_eq!(encoded["outcome"], "committed");
+        assert_eq!(
+            encoded["completion_receipt"]["checksum"],
+            "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        );
     }
 
     #[test]
