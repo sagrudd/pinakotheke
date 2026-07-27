@@ -42,13 +42,15 @@ existing supported path regresses.
 
 ### Epic RC-A — Establish one release truth
 
-- [ ] **XIMG-206 P0 — Reconcile the backlog and live evidence.** Preserve every
+- [x] **XIMG-206 P0 — Reconcile the backlog and live evidence.** Preserve every
   historical implementation/evidence note, close XIMG-109, XIMG-127, and
   XIMG-133 from the settled explicit selections ``capture-plan-70`` through
   ``capture-plan-82``, mark XIMG-116 superseded by its completed successor
   chain, and route the remaining Firefox proof-only tasks through XIMG-212.
   Acceptance requires a clean planning diff, local quality check, pushed
   commit, and no claim that superseded historical versions are the current RC.
+  Completed in ``026a956`` with local quality and pinned Sphinx container
+  build/run evidence; the focused roadmap commit is pushed to ``main``.
 
 - [ ] **XIMG-207 P0 — Publish the RC compatibility manifest.** Record exact
   tested Pinakotheke, Monas, DASObjectStore, design-language, and Mnemosyne
