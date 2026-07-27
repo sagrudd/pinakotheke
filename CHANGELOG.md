@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.29.0-rc.1 - 2026-07-27
+
+- Add the strict machine-readable RC compatibility contract, exact sibling
+  commit/capability evidence, copied wire-contract digests, and deterministic
+  product/native/Firefox prerelease mappings.
+- Expose coarse public Pinakotheke runtime compatibility capabilities so Monas
+  can fail closed during its bounded startup preflight.
+- Require the released DASObjectStore logical-capacity reconciliation minimum
+  in DEB/RPM metadata and macOS installer preflight without bundling the
+  storage product.
+- Add clean-source, fresh-directory, exact-inventory release-output preparation
+  and sealing with checksums, local evidence, rollback package, canonical
+  platform-independent Firefox XPI, and mixed-tree rejection.
+
 ## 1.28.0 - 2026-07-24
 
 - Add a first-party, bounded Unix-socket adapter for DASObjectStore's

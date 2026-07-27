@@ -171,7 +171,14 @@
       overlay = document.createElement("div");
       overlay.className = "pinakotheke-video-capture-overlay";
       overlay.setAttribute("role", "status");
-      overlay.innerHTML = '<div data-pinakotheke-video-title>Video is downloading</div><progress max="100"></progress><div data-pinakotheke-video-detail></div>';
+      const title = document.createElement("div");
+      title.dataset.pinakothekeVideoTitle = "";
+      title.textContent = "Video is downloading";
+      const progress = document.createElement("progress");
+      progress.max = 100;
+      const detail = document.createElement("div");
+      detail.dataset.pinakothekeVideoDetail = "";
+      overlay.append(title, progress, detail);
       (document.body || document.documentElement).append(overlay);
       captureOverlays.set(video, overlay);
     }

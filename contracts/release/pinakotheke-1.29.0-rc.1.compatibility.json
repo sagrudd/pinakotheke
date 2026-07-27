@@ -1,0 +1,180 @@
+{
+  "schema_version": "x-img.rc-compatibility.v1",
+  "manifest_id": "pinakotheke-1.29.0-rc.1-compatibility",
+  "release": {
+    "target_version": "1.29.0-rc.1",
+    "deb_version": "1.29.0~rc.1",
+    "rpm_version": "1.29.0",
+    "rpm_release": "0.rc.1",
+    "macos_pkg_version": "1.29.0.1",
+    "firefox_manifest_version": "1.29.0.1",
+    "firefox_version_name": "1.29.0-rc.1",
+    "status": "blocked"
+  },
+  "pinakotheke": {
+    "repository": "https://github.com/sagrudd/pinakotheke",
+    "tested_commit": "627dcb6221dc00f7f97b6831c4c58c9301658d37",
+    "baseline_version": "1.29.0-rc.1",
+    "working_tree": "clean",
+    "version_sources": [
+      {
+        "kind": "cargo_workspace",
+        "path": "Cargo.toml",
+        "selector": "workspace.package.version"
+      },
+      {
+        "kind": "firefox_json_pointer",
+        "path": "firefox-extension/manifest.json",
+        "selector": "/version"
+      },
+      {
+        "kind": "json_pointer",
+        "path": "firefox-extension/manifest.json",
+        "selector": "/version_name"
+      },
+      {
+        "kind": "json_pointer",
+        "path": "contracts/monas/x-img-product-bootstrap.v1.json",
+        "selector": "/product_version"
+      },
+      {
+        "kind": "json_pointer",
+        "path": "contracts/synoptikon/pinakotheke-product-manifest.v1.json",
+        "selector": "/product/version"
+      }
+    ]
+  },
+  "dependencies": {
+    "monas": {
+      "repository": "https://github.com/sagrudd/monas",
+      "tested_commit": "dac0e113c8b197cb06abc38187d72f27e562ad63",
+      "tested_version": "0.9.0",
+      "tested_components": [
+        {"name": "monas-core", "version": "0.9.0"},
+        {"name": "monas-server", "version": "0.9.0"},
+        {"name": "monas-web", "version": "0.9.0"}
+      ],
+      "minimum_version": "0.9.0",
+      "evidence_status": "blocked_behavioral_preflight",
+      "working_tree": "clean",
+      "required_capabilities": [
+        "monas.prosopikon-authenticated-host-context.v1",
+        "monas.process-scoped-session-revocation.v1",
+        "monas.pinakotheke-streaming-forward.v1",
+        "monas.pinakotheke-device-pairing.v1",
+        "monas.pinakotheke-runtime-compatibility-health.v1"
+      ],
+      "missing_required_capabilities": [
+        "monas.pinakotheke-runtime-compatibility-health.v1"
+      ],
+      "wire_contracts": [
+        {
+          "contract_version": "x-img.monas-product-bootstrap.v1",
+          "path": "contracts/monas/x-img-product-bootstrap.v1.json",
+          "sha256": "04ec39f91a2f9bab2ea576ff42a21f4dec7b03b38f2daa8172491b541448ff2d"
+        },
+        {
+          "contract_version": "pinakotheke.capture-authority.v1",
+          "path": "contracts/monas/pinakotheke-capture-authority.v1.schema.json",
+          "sha256": "018b419112e0214966184c4f4ff302ea9e4a107af754a69e444334af72121b3b"
+        }
+      ]
+    },
+    "dasobjectstore": {
+      "repository": "https://github.com/sagrudd/DASObjectStore",
+      "tested_commit": "4f16ca166b165953a2a2832b7e58b4eddf9c9650",
+      "tested_version": "0.145.2",
+      "tested_components": [
+        {"name": "dasobjectstore-core", "version": "0.145.2"},
+        {"name": "dasobjectstore-daemon", "version": "0.145.2"},
+        {"name": "dasobjectstore-remote", "version": "0.145.2"}
+      ],
+      "minimum_version": null,
+      "evidence_status": "blocked_unreleased",
+      "working_tree": "dirty",
+      "required_capabilities": [
+        "dasobjectstore.application-stream-ingest.v1",
+        "dasobjectstore.authorized-object-read.v1",
+        "dasobjectstore.application-upload-completion.v1",
+        "dasobjectstore.exact-object-delete.v1",
+        "dasobjectstore.application-delete-capacity-reconciliation.v1"
+      ],
+      "missing_required_capabilities": [
+        "dasobjectstore.application-delete-capacity-reconciliation.v1"
+      ],
+      "wire_contracts": [
+        {
+          "contract_version": "x-img.das-application-identity.v1",
+          "path": "contracts/dasobjectstore/x-img-application-identity.v1.json",
+          "sha256": "5c67211933f339d04b1d33cca1bd24708d44bc7c94618e9a5b01d03825246242"
+        },
+        {
+          "contract_version": "pinakotheke.das-stream-ingest-helper.v1",
+          "path": "contracts/dasobjectstore/pinakotheke-das-stream-ingest-helper.v1.schema.json",
+          "sha256": "4f77cd809be0fd7b77c41b1caa2bd2628dd39aa582f5c01dafaba554e3e96b7b"
+        },
+        {
+          "contract_version": "pinakotheke.das-object-delete-helper.v1",
+          "path": "contracts/dasobjectstore/pinakotheke-das-object-delete-helper.v1.schema.json",
+          "sha256": "ac4176f34bd1bbab6014fddd31b213867674373da730019976fe8f98cb95c526"
+        }
+      ]
+    },
+    "mnemosyne": {
+      "repository": "https://github.com/sagrudd/mnemosyne",
+      "tested_commit": "2244a49f5057ef6251b2760bd0729de8e2207f56",
+      "tested_version": null,
+      "tested_components": [
+        {"name": "mneion-api-types", "version": "0.21.1"},
+        {"name": "mnemosyne-product-sdk", "version": "0.2.1"}
+      ],
+      "minimum_version": null,
+      "evidence_status": "verified",
+      "working_tree": "clean",
+      "required_capabilities": [
+        "mnemosyne.product-sdk.v1",
+        "mnemosyne.product-manifest.v1"
+      ],
+      "missing_required_capabilities": [],
+      "wire_contracts": [
+        {
+          "contract_version": "mnemosyne.product.manifest.v1",
+          "path": "contracts/synoptikon/pinakotheke-product-manifest.v1.json",
+          "sha256": "43102e74983e6e1669be1238fa80a611edbaad106f54fa69e278e9e9cdf661fd"
+        }
+      ]
+    },
+    "mnemosyne_design_language": {
+      "repository": "https://github.com/sagrudd/mnemosyne_design_language",
+      "tested_commit": "fbfa28e55d1c8111ef95a139d83927c231534b5f",
+      "tested_version": "0.1.2",
+      "tested_components": [
+        {"name": "@mnemosyne/design-language", "version": "0.1.2"}
+      ],
+      "minimum_version": "0.1.2",
+      "evidence_status": "verified",
+      "working_tree": "clean",
+      "required_capabilities": [
+        "mnemosyne-design-language.interface-patterns.v1"
+      ],
+      "missing_required_capabilities": [],
+      "wire_contracts": []
+    }
+  },
+  "blocking_gates": [
+    {
+      "id": "monas_runtime_compatibility_health",
+      "owner": "monas",
+      "state": "unresolved",
+      "required_capability": "monas.pinakotheke-runtime-compatibility-health.v1",
+      "resolution": "Replace the Monas 0.9.0 hard-coded Pinakotheke 1.1.0 product version with runtime-compatible product metadata and expose startup health evidence for every required host capability."
+    },
+    {
+      "id": "das_application_delete_capacity_reconciliation",
+      "owner": "dasobjectstore",
+      "state": "unresolved",
+      "required_capability": "dasobjectstore.application-delete-capacity-reconciliation.v1",
+      "resolution": "Release a clean DASObjectStore version containing atomic logical-capacity debit in the application-authorized exact-object deletion transaction, then set and enforce that release as the minimum version."
+    }
+  ]
+}

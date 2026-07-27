@@ -257,8 +257,30 @@ def check_versions(findings: Findings) -> None:
             value = json.loads(manifest.read_text(encoding="utf-8"), object_pairs_hook=reject_duplicate_keys).get("version")
         except (ValueError, json.JSONDecodeError):
             continue  # strict JSON check reports this separately
-        if value != expected:
-            findings.add(manifest, f"Firefox version must match canonical version {expected}")
+        prerelease = re.fullmatch(
+            r"([0-9]+\.[0-9]+\.[0-9]+)-rc\.([1-9][0-9]*)", expected
+        )
+        firefox_expected = (
+            f"{prerelease.group(1)}.{prerelease.group(2)}"
+            if prerelease
+            else expected
+        )
+        if value != firefox_expected:
+            findings.add(
+                manifest,
+                f"Firefox version must map canonical version {expected} to {firefox_expected}",
+            )
+        try:
+            version_name = json.loads(
+                manifest.read_text(encoding="utf-8"),
+                object_pairs_hook=reject_duplicate_keys,
+            ).get("version_name")
+        except (ValueError, json.JSONDecodeError):
+            continue
+        if prerelease and version_name != expected:
+            findings.add(
+                manifest, f"Firefox version_name must preserve {expected}"
+            )
 
     for cargo in ROOT.rglob("Cargo.toml"):
         if EXCLUDED_PARTS.intersection(cargo.parts):

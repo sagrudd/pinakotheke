@@ -2,14 +2,40 @@
 # SPDX-License-Identifier: MPL-2.0
 set -eu
 
-# DASObjectStore remains a separately installed product and is never copied
-# into the Pinakotheke package payload.
+required_minimum='@DASOBJECTSTORE_MIN_VERSION@'
+
+# DASObjectStore remains a separately installed product and is never copied into
+# the Pinakotheke package payload. The release manifest supplies the minimum,
+# and the package builder replaces the placeholder before pkgbuild runs.
 for executable in /usr/local/bin/dasobjectstore /opt/homebrew/bin/dasobjectstore /usr/bin/dasobjectstore; do
   if [ -x "$executable" ]; then
-    exit 0
+    installed=$("$executable" --version 2>/dev/null | sed -n 's/.*\([0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\).*/\1/p' | head -n 1)
+    if [ -z "$installed" ]; then
+      echo "Cannot determine the installed DASObjectStore version from $executable." >&2
+      exit 1
+    fi
+    if awk -v actual="$installed" -v required="$required_minimum" '
+      function part(version, position, values) {
+        split(version, values, ".")
+        return values[position] + 0
+      }
+      BEGIN {
+        for (position = 1; position <= 3; position++) {
+          left = part(actual, position)
+          right = part(required, position)
+          if (left > right) exit 0
+          if (left < right) exit 1
+        }
+        exit 0
+      }
+    '; then
+      exit 0
+    fi
+    echo "Pinakotheke requires DASObjectStore $required_minimum or newer; found $installed." >&2
+    exit 1
   fi
 done
 
-echo "Pinakotheke requires a separate DASObjectStore installation." >&2
+echo "Pinakotheke requires a separate DASObjectStore $required_minimum or newer installation." >&2
 echo "Install DASObjectStore, then run this installer again." >&2
 exit 1

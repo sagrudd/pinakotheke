@@ -2,11 +2,15 @@
 # SPDX-License-Identifier: MPL-2.0
 set -eu
 
-arch=${1:?usage: build-macos-pkg.sh x86_64|arm64 VERSION DIST}
-version=${2:?usage: build-macos-pkg.sh x86_64|arm64 VERSION DIST}
-dist=${3:?usage: build-macos-pkg.sh x86_64|arm64 VERSION DIST [PRODUCT]}
+arch=${1:?usage: build-macos-pkg.sh x86_64|arm64 VERSION DIST PRODUCT DAS_MIN PKG_VERSION}
+version=${2:?usage: build-macos-pkg.sh x86_64|arm64 VERSION DIST PRODUCT DAS_MIN PKG_VERSION}
+dist=${3:?usage: build-macos-pkg.sh x86_64|arm64 VERSION DIST PRODUCT DAS_MIN PKG_VERSION}
 product=${4:-x-img}
+das_minimum=${5:?DASObjectStore minimum version is required}
+package_version=${6:?mapped macOS package version is required}
 case "$product" in x-img|pinakotheke) ;; *) echo "unsupported product: $product" >&2; exit 2 ;; esac
+case "$das_minimum" in ''|*[!0-9.]*) echo "invalid DASObjectStore minimum: $das_minimum" >&2; exit 2 ;; esac
+case "$package_version" in ''|*[!0-9.]*) echo "invalid macOS package version: $package_version" >&2; exit 2 ;; esac
 [ "$(uname -s)" = Darwin ] || { echo "macOS PKG builds require macOS and pkgbuild" >&2; exit 2; }
 command -v pkgbuild >/dev/null || { echo "pkgbuild is required (install Xcode command-line tools)" >&2; exit 2; }
 case "$arch" in
@@ -36,6 +40,7 @@ fi
 install -m 0644 "$bootstrap" "$root/usr/local/share/$product/monas/product-bootstrap.json"
 cp -a "$web/." "$root/usr/local/share/$product/web/"
 install -m 0644 LICENSE "$root/usr/local/share/doc/$product/LICENSE"
-install -m 0755 packaging/macos/preinstall "$scripts/preinstall"
-COPYFILE_DISABLE=1 pkgbuild --root "$root" --identifier "com.github.sagrudd.$product" --version "$version" \
+sed "s/@DASOBJECTSTORE_MIN_VERSION@/$das_minimum/g" packaging/macos/preinstall > "$scripts/preinstall"
+chmod 0755 "$scripts/preinstall"
+COPYFILE_DISABLE=1 pkgbuild --root "$root" --identifier "com.github.sagrudd.$product" --version "$package_version" \
   --scripts "$scripts" --install-location / "$dist/macos/$arch/$product-$version-macos-$arch.pkg"

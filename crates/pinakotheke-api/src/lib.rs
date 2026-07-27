@@ -303,7 +303,21 @@ struct PublicHealthResponse {
     status: &'static str,
     product: &'static str,
     version: &'static str,
+    required_host_capabilities: &'static [&'static str],
+    capabilities: &'static [&'static str],
 }
+
+const REQUIRED_MONAS_HOST_CAPABILITIES: &[&str] = &[
+    "monas.prosopikon-authenticated-host-context.v1",
+    "monas.process-scoped-session-revocation.v1",
+    "monas.pinakotheke-streaming-forward.v1",
+    "monas.pinakotheke-device-pairing.v1",
+    "monas.pinakotheke-runtime-compatibility-health.v1",
+];
+const PINAKOTHEKE_RUNTIME_CAPABILITIES: &[&str] = &[
+    "pinakotheke.monas-host-context-consumer.v1",
+    "pinakotheke.runtime-compatibility-health.v1",
+];
 
 #[derive(Debug, Serialize)]
 struct MonolithReadinessResponse {
@@ -2090,6 +2104,8 @@ async fn health() -> Json<PublicHealthResponse> {
         status: "alive",
         product: x_img_core::build_info().product.name,
         version: x_img_core::build_info().product.version,
+        required_host_capabilities: REQUIRED_MONAS_HOST_CAPABILITIES,
+        capabilities: PINAKOTHEKE_RUNTIME_CAPABILITIES,
     })
 }
 
@@ -4866,6 +4882,14 @@ mod tests {
         let health_body = to_bytes(health.into_body(), 4096).await.unwrap();
         let health_json: serde_json::Value = serde_json::from_slice(&health_body).unwrap();
         assert_eq!(health_json["status"], "alive");
+        assert_eq!(
+            health_json["required_host_capabilities"],
+            serde_json::json!(crate::REQUIRED_MONAS_HOST_CAPABILITIES)
+        );
+        assert_eq!(
+            health_json["capabilities"],
+            serde_json::json!(crate::PINAKOTHEKE_RUNTIME_CAPABILITIES)
+        );
         assert!(health_json.get("components").is_none());
         assert!(health_json.get("audit").is_none());
 

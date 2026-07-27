@@ -1,0 +1,345 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/sagrudd/pinakotheke/contracts/release/pinakotheke-rc-compatibility.v1.schema.json",
+  "title": "Pinakotheke release-candidate compatibility manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "manifest_id",
+    "release",
+    "pinakotheke",
+    "dependencies",
+    "blocking_gates"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "x-img.rc-compatibility.v1"
+    },
+    "manifest_id": {
+      "type": "string",
+      "pattern": "^pinakotheke-[0-9]+\\.[0-9]+\\.[0-9]+-rc\\.[0-9]+-compatibility$"
+    },
+    "release": {
+      "$ref": "#/$defs/release"
+    },
+    "pinakotheke": {
+      "$ref": "#/$defs/pinakotheke"
+    },
+    "dependencies": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "monas",
+        "dasobjectstore",
+        "mnemosyne",
+        "mnemosyne_design_language"
+      ],
+      "properties": {
+        "monas": {
+          "$ref": "#/$defs/dependency"
+        },
+        "dasobjectstore": {
+          "$ref": "#/$defs/dependency"
+        },
+        "mnemosyne": {
+          "$ref": "#/$defs/dependency"
+        },
+        "mnemosyne_design_language": {
+          "$ref": "#/$defs/dependency"
+        }
+      }
+    },
+    "blocking_gates": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/gate"
+      },
+      "maxItems": 32
+    }
+  },
+  "$defs": {
+    "semver": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"
+    },
+    "sha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "release": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "target_version",
+        "deb_version",
+        "rpm_version",
+        "rpm_release",
+        "macos_pkg_version",
+        "firefox_manifest_version",
+        "firefox_version_name",
+        "status"
+      ],
+      "properties": {
+        "target_version": {
+          "$ref": "#/$defs/semver"
+        },
+        "deb_version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:~(?:alpha|beta|rc)\\.[1-9][0-9]*)?$"
+        },
+        "rpm_version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+        },
+        "rpm_release": {
+          "type": "string",
+          "pattern": "^(?:0\\.(?:alpha|beta|rc)\\.[1-9][0-9]*|1)$"
+        },
+        "macos_pkg_version": {
+          "type": "string",
+          "pattern": "^[0-9]+(?:\\.[0-9]+){2,3}$"
+        },
+        "firefox_manifest_version": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]*)(?:\\.(0|[1-9][0-9]*)){0,3}$"
+        },
+        "firefox_version_name": {
+          "$ref": "#/$defs/semver"
+        },
+        "status": {
+          "enum": [
+            "blocked",
+            "release_ready"
+          ]
+        }
+      }
+    },
+    "pinakotheke": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "tested_commit",
+        "baseline_version",
+        "working_tree",
+        "version_sources"
+      ],
+      "properties": {
+        "repository": {
+          "const": "https://github.com/sagrudd/pinakotheke"
+        },
+        "tested_commit": {
+          "$ref": "#/$defs/sha"
+        },
+        "baseline_version": {
+          "$ref": "#/$defs/semver"
+        },
+        "working_tree": {
+          "const": "clean"
+        },
+        "version_sources": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 16,
+          "items": {
+            "$ref": "#/$defs/version_source"
+          }
+        }
+      }
+    },
+    "version_source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "path",
+        "selector"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "cargo_workspace",
+            "json_pointer",
+            "firefox_json_pointer"
+          ]
+        },
+        "path": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_./-]+$"
+        },
+        "selector": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      }
+    },
+    "dependency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "tested_commit",
+        "tested_version",
+        "tested_components",
+        "minimum_version",
+        "evidence_status",
+        "working_tree",
+        "required_capabilities",
+        "missing_required_capabilities",
+        "wire_contracts"
+      ],
+      "properties": {
+        "repository": {
+          "type": "string",
+          "pattern": "^https://github\\.com/sagrudd/[A-Za-z0-9_.-]+$"
+        },
+        "tested_commit": {
+          "$ref": "#/$defs/sha"
+        },
+        "tested_version": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/semver"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "tested_components": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "version"],
+            "properties": {
+              "name": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]+$"
+              },
+              "version": {
+                "$ref": "#/$defs/semver"
+              }
+            }
+          }
+        },
+        "minimum_version": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/semver"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "evidence_status": {
+          "enum": [
+            "verified",
+            "blocked_behavioral_preflight",
+            "blocked_unreleased"
+          ]
+        },
+        "working_tree": {
+          "enum": [
+            "clean",
+            "dirty",
+            "unknown"
+          ]
+        },
+        "required_capabilities": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9._-]+\\.v[0-9]+$"
+          }
+        },
+        "missing_required_capabilities": {
+          "type": "array",
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9._-]+\\.v[0-9]+$"
+          }
+        },
+        "wire_contracts": {
+          "type": "array",
+          "maxItems": 64,
+          "items": {
+            "$ref": "#/$defs/wire_contract"
+          }
+        }
+      }
+    },
+    "wire_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract_version",
+        "path",
+        "sha256"
+      ],
+      "properties": {
+        "contract_version": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]+\\.v[0-9]+$"
+        },
+        "path": {
+          "type": "string",
+          "pattern": "^contracts/[A-Za-z0-9_./-]+\\.json$"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "gate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "owner",
+        "state",
+        "required_capability",
+        "resolution"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9_-]+$"
+        },
+        "owner": {
+          "enum": [
+            "pinakotheke",
+            "monas",
+            "dasobjectstore",
+            "mnemosyne",
+            "mnemosyne_design_language"
+          ]
+        },
+        "state": {
+          "const": "unresolved"
+        },
+        "required_capability": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]+\\.v[0-9]+$"
+        },
+        "resolution": {
+          "type": "string",
+          "minLength": 16,
+          "maxLength": 512
+        }
+      }
+    }
+  }
+}

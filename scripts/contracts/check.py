@@ -14,10 +14,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 PINS = {
-    "monas": "a0fabe2d250f2d217765ee59a95cc2a04610bedc",
-    "DASObjectStore": "0d71b2a197a310004b686bc2a4bff3e8fd9c6463",
-    "mnemosyne": "52810176bf95a170f93d74a6f5daa94da5c6640e",
-    "mnemosyne_design_language": "5539df8f662a78ebdf7cf4c868d71831380c8cfd",
+    "monas": "dbcc70577d28f2c4a619eafeaee9e399798bec5c",
+    "DASObjectStore": "f8ac52f930a440ab725b6ecb61ef6c8fac8d535e",
+    "mnemosyne": "2244a49f5057ef6251b2760bd0729de8e2207f56",
+    "mnemosyne_design_language": "fbfa28e55d1c8111ef95a139d83927c231534b5f",
 }
 VENDORED_REQUIRED = (
     "contracts/monas/x-img-product-bootstrap.v1.json",
@@ -123,7 +123,13 @@ def main() -> None:
     )
     args = parser.parse_args()
     check_vendored()
-    check_siblings(args.sibling_root, args.require_siblings, args.sibling)
+    # A clean public clone is the dependency-free baseline. Merely having a
+    # sibling checkout beside it must not silently change that check. Sibling
+    # inspection is compatibility evidence requested explicitly by the caller.
+    if args.require_siblings or args.sibling:
+        check_siblings(args.sibling_root, args.require_siblings, args.sibling)
+    else:
+        print("sibling contract inspection: skipped (not explicitly requested)")
 
 
 if __name__ == "__main__":

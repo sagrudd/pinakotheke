@@ -72,6 +72,7 @@ Release and quality
    :maxdepth: 1
 
    release-quality-policy
+   release-candidate-1-29-0
    release-1.0.0.md
    release-candidate-0.9.0.md
    fault-injection-recovery

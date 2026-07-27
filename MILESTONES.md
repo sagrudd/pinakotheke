@@ -2,9 +2,9 @@
 
 Status: 1.0 stable release
 
-Version: 1.28.0
+Version: 1.29.0-rc.1
 
-Updated: 2026-07-24
+Updated: 2026-07-27
 
 Product identity: Pinakotheke is canonical from v1.0.0 at
 `sagrudd/pinakotheke`; `x-img` remains only where documented compatibility or
@@ -15,8 +15,8 @@ historic schema identity requires it.
 Pinakotheke provides one private, authenticated Web library for media acquired from:
 
 - a small JSON allowlist of X/Twitter accounts;
-- a small JSON allowlist of Instagram accounts; and
-- websites enabled by the user through a Firefox extension.
+- websites enabled by the user through a Firefox extension, with Instagram
+  using the same generic opt-in website path rather than a formal connector;
 - user-identified public GEO, SRA, ENA, and NCBI resources through an explicit
   review-and-confirm transfer plan.
 - endpoint/device inventory and logical ObjectStore selection through the
@@ -1470,8 +1470,9 @@ Release rules:
   baseline until the release quantum begins;
 - one compatibility manifest records exact tested Pinakotheke, Monas,
   DASObjectStore, design-language, and Mnemosyne commits plus required protocol
-  capabilities. Monas 0.9.0 is the host baseline; the DAS minimum is assigned
-  only after application-deletion capacity reconciliation is released;
+  capabilities. Monas ``0.9.1`` is the verified host minimum and
+  DASObjectStore ``0.145.3`` is the verified storage minimum containing
+  application-deletion capacity reconciliation;
 - builds originate from a clean committed revision and a fresh versioned output
   directory. Package, binary, web, API, and Firefox compatibility versions must
   agree, and every deployed artifact must appear in the checksum manifest;

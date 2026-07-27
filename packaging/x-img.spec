@@ -2,11 +2,11 @@
 %global __strip /bin/true
 Name: %{product_name}
 Version: %{ximg_version}
-Release: 1%{?dist}
+Release: %{ximg_release}%{?dist}
 Summary: %{product_name} metadata CLI and Monas product contract
 License: MPL-2.0
 URL: https://github.com/sagrudd/%{product_name}
-Requires: dasobjectstore
+Requires: dasobjectstore >= %{dasobjectstore_min_version}
 %if "%{product_name}" == "pinakotheke"
 Provides: x-img = %{version}-%{release}
 Obsoletes: x-img < %{version}-%{release}

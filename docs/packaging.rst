@@ -8,16 +8,20 @@ license. They do not install Monas, DASObjectStore, user media, or credentials;
 those authority and payload boundaries remain separate.
 
 DASObjectStore is nevertheless a required, separately installed runtime
-product. The DEB declares ``Depends: dasobjectstore`` and the RPM declares
-``Requires: dasobjectstore`` so native package managers can resolve the
-published dependency. The macOS PKG checks for an independently installed
-``dasobjectstore`` executable and stops with an actionable prerequisite message
-when it is absent. Install or upgrade DASObjectStore independently before
+product. The verified minimum is supplied only by the current RC compatibility
+manifest. The DEB declares ``Depends: dasobjectstore (>= <minimum>)`` and the
+RPM declares ``Requires: dasobjectstore >= <minimum>`` so native package
+managers can resolve the published dependency. The macOS PKG checks for an
+independently installed ``dasobjectstore`` executable, parses its version, and
+stops with an actionable prerequisite message when it is absent or older than
+the verified minimum. Install or upgrade DASObjectStore independently before
 Pinakotheke; removing Pinakotheke does not remove ObjectStore data.
 
-The packaging contract was checked against sibling Monas commit
-``3d21b0bc7b83fa8408d01b93347a56f43f3a96b7``. Public builds consume only the
-checked-in bootstrap contract and have no sibling path dependency.
+The RC packaging contract was checked against Monas ``0.9.1`` commit
+``dbcc70577d28f2c4a619eafeaee9e399798bec5c`` and DASObjectStore ``0.145.3``
+commit ``f8ac52f930a440ab725b6ecb61ef6c8fac8d535e``. Public builds consume only
+checked-in contracts and published package versions; they have no sibling path
+dependency.
 
 Targets
 -------
@@ -55,11 +59,10 @@ Xcode command-line tools. It produces x86_64 and arm64 PKGs. These development
 packages are unsigned; release signing/notarization identities must be supplied
 by the release operator and are not stored in this repository.
 
-``make firefox`` creates deterministic XPIs labelled for macOS, Windows, and
-Linux on x86_64 and arm64. WebExtension source is platform-independent, so the
-six packages intentionally contain identical extension files; explicit names
-make the requested distribution matrix and checksums reviewable. Public Firefox
-distribution still requires the applicable Mozilla signing/listing process.
+``make firefox`` creates one deterministic, platform-independent XPI from an
+explicit tracked source allowlist. Local Mozilla upload state is excluded.
+Public Firefox distribution still requires the applicable Mozilla
+signing/listing process.
 
 Artifacts and verification
 --------------------------
@@ -68,7 +71,7 @@ Expected outputs are:
 
 * Linux x86_64/arm64: four DEB/RPM files;
 * macOS x86_64/arm64: two PKG files; and
-* Firefox macOS/Windows/Linux x86_64/arm64: six XPI files; and
+* one platform-independent Firefox XPI; and
 * one deterministic CycloneDX 1.6 software bill of materials.
 
 ``make sbom`` inventories locked third-party Rust packages and the Firefox
@@ -77,7 +80,8 @@ writes ``dist/SHA256SUMS`` and a deterministic
 ``dist/release-manifest.v1.json``. The manifest identifies each artefact's
 kind, operating system, architecture, byte length, SHA-256, and signing state;
 development outputs explicitly say ``signed: false``. ``make verify`` requires
-all thirteen artifacts, validates the SBOM, six XPI manifests and product version, and
+the exact artifact set, validates the SBOM, XPI manifest and product version, and
+rejects mixed or unlisted historic files as well as
 rejects missing or stale checksum and release manifests. ``make quality``
 checks packaging sources alongside the existing local quality and release
 audits without requiring hosted CI.

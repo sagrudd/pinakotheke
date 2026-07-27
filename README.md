@@ -3,9 +3,10 @@
 Public repository: [github.com/sagrudd/pinakotheke](https://github.com/sagrudd/pinakotheke)
 
 Pinakotheke is a personal acquisition and review service for a small,
-explicitly configured set of X/Twitter and Instagram accounts, user-identified
-public GEO/SRA/ENA/NCBI resources, and websites enabled through a Firefox
-extension.
+explicitly configured set of X/Twitter accounts, user-identified public
+GEO/SRA/ENA/NCBI resources, and websites enabled through a Firefox extension.
+Instagram is handled by the same opt-in generic-site path as any other enabled
+website; it has no formal connector or account API requirement.
 
 All sources resolve to one Pinakotheke Web instance. That instance presents a
 thumbnail-dense, ThumbsPlus-inspired library and review queue, and offers a
@@ -65,14 +66,14 @@ release remains available from its historical
 with checksums, typed artifact manifest, CycloneDX SBOM, explicit limitations,
 and dual-architecture upgrade/rollback evidence.
 
-The `1.28.0` development workspace provides shared model and core boundaries, a `clap`
+The `1.29.0-rc.1` workspace provides shared model and core boundaries, a `clap`
 CLI, an Axum composition boundary, and a Yew client boundary. It compiles
 without enabling unconfigured source, storage, authentication, or media-payload
 integration. The first local monolith slice can now run a loopback Axum service
 with an isolated private metadata root. Explicit local-profile commands now
 provision and discover a named DASObjectStore-managed ObjectStore without
 granting Pinakotheke direct filesystem authority. Monas authentication
-composes through the Monas ``0.8.4`` authenticated forwarding/login shell and a
+composes through the Monas ``0.9.1`` authenticated forwarding/login shell and a
 fail-closed, process-credentialed backend boundary. Pinakotheke does not parse
 Monas cookies or issue sessions. Monas revokes all browser sessions on process
 startup, so a host restart requires a fresh login instead of accepting a
@@ -89,6 +90,13 @@ Production HTTPS is terminated directly by the Rust/Axum service; nginx is not
 part of the Pinakotheke request path. Certificate trust, issuance, deployment,
 rotation, and the reusable Mnemosyne pattern are defined in
 [TRUSTED_CERTIFICATES_AND_AXUM.md](TRUSTED_CERTIFICATES_AND_AXUM.md).
+
+The current release-candidate compatibility and clean-output authority is
+documented in
+[Pinakotheke 1.29.0 release-candidate authority](docs/release-candidate-1-29-0.rst).
+It pins exact sibling releases and capabilities, derives native/Firefox version
+mappings, requires a clean committed source, and rejects mixed or unlisted
+release artifacts.
 
 The Monas-authenticated gallery now loads a strict, bounded, atomically replaced
 metadata catalogue from ``state/gallery-catalogue.v1.json`` below the monolith

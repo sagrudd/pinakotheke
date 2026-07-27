@@ -7,8 +7,17 @@ DIST := $(CURDIR)/dist
 BASELINE_DIST ?=
 BASELINE_VERSION ?=
 PRODUCT ?= pinakotheke
+RC_VERSION ?= 1.29.0-rc.1
+RC_COMPATIBILITY := contracts/release/pinakotheke-$(RC_VERSION).compatibility.json
+RC_OUTPUT_ROOT ?= $(CURDIR)/release-output
+RC_DIRECTORY ?= $(RC_OUTPUT_ROOT)/$(RC_VERSION)
+DASOBJECTSTORE_MIN_VERSION ?= $(shell python3 scripts/release/check_rc_compatibility.py --print-das-minimum 2>/dev/null)
+DEB_VERSION := $(shell python3 scripts/release/check_rc_compatibility.py --print-release-field deb_version 2>/dev/null)
+RPM_VERSION := $(shell python3 scripts/release/check_rc_compatibility.py --print-release-field rpm_version 2>/dev/null)
+RPM_RELEASE := $(shell python3 scripts/release/check_rc_compatibility.py --print-release-field rpm_release 2>/dev/null)
+MACOS_PKG_VERSION := $(shell python3 scripts/release/check_rc_compatibility.py --print-release-field macos_pkg_version 2>/dev/null)
 
-.PHONY: help all packages web critical-vertical-check firefox-gallery-check firefox-playback-check firefox-capture-check firefox-lint firefox-sign firefox-signed-install-check linux linux-x86_64 linux-arm64 linux-deb linux-rpm \
+.PHONY: help all packages web critical-vertical-check firefox-gallery-check firefox-playback-check firefox-capture-check firefox-lint firefox-sign firefox-signed-install-check rc-compatibility-check rc-compatibility-ready rc-output-prepare rc-output-add-artifact rc-output-seal rc-output-verify linux linux-x86_64 linux-arm64 linux-deb linux-rpm \
 	linux-deb-x86_64 linux-deb-arm64 linux-rpm-x86_64 linux-rpm-arm64 \
 	macos-pkg macos-pkg-x86_64 macos-pkg-arm64 firefox firefox-macos-x86_64 \
 	firefox-macos-arm64 firefox-windows-x86_64 firefox-windows-arm64 \
@@ -24,12 +33,22 @@ help:
 	@echo "  make firefox-capture-check Exercise observed/opened capture in installed Firefox"
 	@echo "  make linux                 Build DEB and RPM for Linux x86_64 and arm64"
 	@echo "  make macos-pkg             Build macOS PKG for x86_64 and arm64 (macOS only)"
-	@echo "  make firefox               Build labelled XPIs for macOS/Windows/Linux x86_64/arm64"
+	@echo "  make firefox               Build one canonical platform-independent XPI"
 	@echo "  make firefox-lint          Run Mozilla's pinned AMO validator locally"
 	@echo "  make firefox-sign          Request an unlisted Mozilla-signed XPI (credentials in environment)"
 	@echo "  make firefox-signed-install-check XPI=..."
 	@echo "                              Permanently install a signed XPI in isolated Firefox"
 	@echo "  make verify                Verify produced package structure and checksums"
+	@echo "  make rc-compatibility-check"
+	@echo "                              Validate the versioned RC compatibility evidence"
+	@echo "  make rc-compatibility-ready"
+	@echo "                              Fail unless every RC dependency gate is resolved"
+	@echo "  make rc-output-prepare     Create a fresh, logically sealed-output workspace"
+	@echo "  make rc-output-add-artifact ARTIFACT=... KIND=... ARCH=..."
+	@echo "                              Register one produced artifact and checksum"
+	@echo "  make rc-output-seal        Enforce the exact matrix and seal the inventory"
+	@echo "  make rc-output-verify RC_DIRECTORY=..."
+	@echo "                              Verify an exact prepared/sealed RC inventory"
 	@echo "  make sbom                  Generate the deterministic CycloneDX release SBOM"
 	@echo "  make upgrade-rollback BASELINE_DIST=... BASELINE_VERSION=..."
 	@echo "                              Exercise genuine package upgrade/downgrade acceptance"
@@ -82,6 +101,37 @@ firefox-signed-install-check:
 	@test -n "$(XPI)" || { echo "XPI is required" >&2; exit 2; }
 	node scripts/firefox/check_signed_install.mjs "$(XPI)"
 
+rc-compatibility-check:
+	python3 scripts/release/check_rc_compatibility.py
+
+rc-compatibility-ready:
+	python3 scripts/release/check_rc_compatibility.py --require-ready
+
+rc-output-prepare: rc-compatibility-ready
+	python3 scripts/release/prepare_rc_output.py prepare \
+		--repository "$(CURDIR)" \
+		--output-root "$(RC_OUTPUT_ROOT)" \
+		--version "$(RC_VERSION)" \
+		--compatibility-manifest "$(RC_COMPATIBILITY)" \
+		--build-command "make packages PRODUCT=pinakotheke DIST=$(RC_DIRECTORY)" \
+		--test-command-passed "make quality" \
+		--test-command-passed "docker build --pull --progress=plain -f docs/Dockerfile -t x-img-docs:check ." \
+		--test-command-passed "docker run --rm x-img-docs:check"
+
+rc-output-verify:
+	python3 scripts/release/prepare_rc_output.py verify \
+		--directory "$(RC_DIRECTORY)"
+
+rc-output-add-artifact:
+	@test -n "$(ARTIFACT)" && test -n "$(KIND)" && test -n "$(ARCH)" || { echo "ARTIFACT, KIND, and ARCH are required" >&2; exit 2; }
+	python3 scripts/release/prepare_rc_output.py add-artifact \
+		--directory "$(RC_DIRECTORY)" --artifact "$(ARTIFACT)" \
+		--kind "$(KIND)" --architecture "$(ARCH)"
+
+rc-output-seal:
+	python3 scripts/release/prepare_rc_output.py seal \
+		--directory "$(RC_DIRECTORY)" --repository "$(CURDIR)"
+
 linux: linux-x86_64 linux-arm64
 linux-deb: linux-deb-x86_64 linux-deb-arm64
 linux-rpm: linux-rpm-x86_64 linux-rpm-arm64
@@ -89,16 +139,22 @@ linux-deb-x86_64 linux-rpm-x86_64: linux-x86_64
 linux-deb-arm64 linux-rpm-arm64: linux-arm64
 
 linux-x86_64: web
+	@test -n "$(DASOBJECTSTORE_MIN_VERSION)" || { echo "verified DASObjectStore minimum is unresolved; run make rc-compatibility-check" >&2; exit 2; }
 	@mkdir -p "$(DIST)/linux/x86_64"
 	docker buildx build --build-arg VERSION=$(VERSION) \
+		--build-arg DASOBJECTSTORE_MIN_VERSION=$(DASOBJECTSTORE_MIN_VERSION) \
+		--build-arg DEB_VERSION=$(DEB_VERSION) --build-arg RPM_VERSION=$(RPM_VERSION) --build-arg RPM_RELEASE=$(RPM_RELEASE) \
 		--build-context web-assets="$(DIST)/web" \
 		--build-arg PRODUCT_NAME=$(PRODUCT) \
 		--build-arg RUST_TARGET=x86_64-unknown-linux-gnu --build-arg DEB_ARCH=amd64 --build-arg RPM_ARCH=x86_64 \
 		-f packaging/Dockerfile.linux --output type=local,dest="$(DIST)/linux/x86_64" .
 
 linux-arm64: web
+	@test -n "$(DASOBJECTSTORE_MIN_VERSION)" || { echo "verified DASObjectStore minimum is unresolved; run make rc-compatibility-check" >&2; exit 2; }
 	@mkdir -p "$(DIST)/linux/arm64"
 	docker buildx build --build-arg VERSION=$(VERSION) \
+		--build-arg DASOBJECTSTORE_MIN_VERSION=$(DASOBJECTSTORE_MIN_VERSION) \
+		--build-arg DEB_VERSION=$(DEB_VERSION) --build-arg RPM_VERSION=$(RPM_VERSION) --build-arg RPM_RELEASE=$(RPM_RELEASE) \
 		--build-context web-assets="$(DIST)/web" \
 		--build-arg PRODUCT_NAME=$(PRODUCT) \
 		--build-arg RUST_TARGET=aarch64-unknown-linux-gnu --build-arg DEB_ARCH=arm64 --build-arg RPM_ARCH=aarch64 \
@@ -106,26 +162,18 @@ linux-arm64: web
 
 macos-pkg: macos-pkg-x86_64 macos-pkg-arm64
 macos-pkg-x86_64: web
-	packaging/build-macos-pkg.sh x86_64 $(VERSION) "$(DIST)" $(PRODUCT)
+	@test -n "$(DASOBJECTSTORE_MIN_VERSION)" || { echo "verified DASObjectStore minimum is unresolved; run make rc-compatibility-check" >&2; exit 2; }
+	packaging/build-macos-pkg.sh x86_64 $(VERSION) "$(DIST)" $(PRODUCT) $(DASOBJECTSTORE_MIN_VERSION) $(MACOS_PKG_VERSION)
 
 macos-pkg-arm64: web
-	packaging/build-macos-pkg.sh arm64 $(VERSION) "$(DIST)" $(PRODUCT)
+	@test -n "$(DASOBJECTSTORE_MIN_VERSION)" || { echo "verified DASObjectStore minimum is unresolved; run make rc-compatibility-check" >&2; exit 2; }
+	packaging/build-macos-pkg.sh arm64 $(VERSION) "$(DIST)" $(PRODUCT) $(DASOBJECTSTORE_MIN_VERSION) $(MACOS_PKG_VERSION)
 
-firefox: firefox-macos-x86_64 firefox-macos-arm64 firefox-windows-x86_64 \
-	firefox-windows-arm64 firefox-linux-x86_64 firefox-linux-arm64
+firefox:
+	python3 packaging/build-firefox.py --product $(PRODUCT) --version $(VERSION) --dist "$(DIST)"
 
-firefox-macos-x86_64:
-	python3 packaging/build-firefox.py --product $(PRODUCT) --os macos --arch x86_64 --version $(VERSION) --dist "$(DIST)"
-firefox-macos-arm64:
-	python3 packaging/build-firefox.py --product $(PRODUCT) --os macos --arch arm64 --version $(VERSION) --dist "$(DIST)"
-firefox-windows-x86_64:
-	python3 packaging/build-firefox.py --product $(PRODUCT) --os windows --arch x86_64 --version $(VERSION) --dist "$(DIST)"
-firefox-windows-arm64:
-	python3 packaging/build-firefox.py --product $(PRODUCT) --os windows --arch arm64 --version $(VERSION) --dist "$(DIST)"
-firefox-linux-x86_64:
-	python3 packaging/build-firefox.py --product $(PRODUCT) --os linux --arch x86_64 --version $(VERSION) --dist "$(DIST)"
-firefox-linux-arm64:
-	python3 packaging/build-firefox.py --product $(PRODUCT) --os linux --arch arm64 --version $(VERSION) --dist "$(DIST)"
+firefox-macos-x86_64 firefox-macos-arm64 firefox-windows-x86_64 \
+firefox-windows-arm64 firefox-linux-x86_64 firefox-linux-arm64: firefox
 
 sbom:
 	python3 packaging/sbom.py --product $(PRODUCT) --version $(VERSION) --dist "$(DIST)"

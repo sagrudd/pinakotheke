@@ -62,10 +62,16 @@ def privacy(files: list[pathlib.Path]) -> None:
 
 def security() -> None:
     manifest = json.loads((ROOT / "firefox-extension/manifest.json").read_text())
-    allowed = {"storage", "activeTab", "scripting"}
+    # ``webRequest`` observes bounded media requests after an explicit play
+    # gesture. It cannot read response bodies and origin access remains an
+    # independently granted optional permission.
+    allowed = {"storage", "activeTab", "scripting", "webRequest"}
     if set(manifest.get("permissions", [])) != allowed:
         fail("Firefox required permissions differ from the reviewed least-privilege set")
-    if manifest.get("optional_host_permissions") != ["https://*/*"]:
+    if manifest.get("optional_host_permissions") != [
+        "https://*/*",
+        "https://video.twimg.com/*",
+    ]:
         fail("Firefox origins must remain optional HTTPS permissions")
     expected_icons = {str(size): f"icon-{size}.png" for size in (16, 32, 48, 96)}
     if manifest.get("icons") != expected_icons:

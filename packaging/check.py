@@ -8,11 +8,24 @@ import argparse
 import hashlib
 import json
 import pathlib
+import re
 import zipfile
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-HOSTS = [(os_name, arch) for os_name in ("macos", "windows", "linux") for arch in ("x86_64", "arm64")]
 RELEASE_MANIFEST = "release-manifest.v1.json"
+
+
+def firefox_version(product_version: str) -> str:
+    match = re.fullmatch(
+        r"(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-rc\.([1-9][0-9]*))?",
+        product_version,
+    )
+    if match is None:
+        raise AssertionError(f"unsupported package version: {product_version}")
+    parts = [match.group(index) for index in (1, 2, 3)]
+    if match.group(4):
+        parts.append(match.group(4))
+    return ".".join(parts)
 
 
 def digest(path: pathlib.Path) -> str:
@@ -28,7 +41,8 @@ def check_sources(version: str, product: str) -> None:
     # compatibility-labelled build consume the shipped manifest version.
     manifest_path = ROOT / "firefox-extension/manifest.json"
     manifest = json.loads(manifest_path.read_text())
-    assert manifest["version"] == version
+    assert manifest["version"] == firefox_version(version)
+    assert manifest.get("version_name", version) == version
     expected_icons = {str(size): f"icon-{size}.png" for size in (16, 32, 48, 96)}
     assert manifest["icons"] == expected_icons
     assert manifest["action"]["default_icon"] == {"16": "icon-16.png", "32": "icon-32.png"}
@@ -49,13 +63,19 @@ def check_sources(version: str, product: str) -> None:
     assert "COPY --from=web-assets" in dockerfile
     assert "PINAKOTHEKE_DEFAULT_WEB_ROOT" in dockerfile
     assert "Depends: dasobjectstore" in dockerfile
+    assert "DASOBJECTSTORE_MIN_VERSION" in dockerfile
     assert "Requires: dasobjectstore" in (ROOT / "packaging/x-img.spec").read_text()
     macos_builder = (ROOT / "packaging/build-macos-pkg.sh").read_text()
     assert "PINAKOTHEKE_DEFAULT_WEB_ROOT" in macos_builder
     assert 'cp -a "$web/."' in macos_builder
     assert '--scripts "$scripts"' in macos_builder
+    assert "das_minimum=" in macos_builder
+    assert 'pkgbuild --root "$root"' in macos_builder
+    assert '--version "$package_version"' in macos_builder
     macos_preinstall = (ROOT / "packaging/macos/preinstall").read_text()
-    assert "requires a separate DASObjectStore installation" in macos_preinstall
+    assert "@DASOBJECTSTORE_MIN_VERSION@" in macos_preinstall
+    assert "or newer" in macos_preinstall
+    assert '"$executable" --version' in macos_preinstall
     assert "dasobjectstore-server" not in dockerfile
     assert "dasobjectstored" not in dockerfile
     assert "dasobjectstore-server" not in macos_builder
@@ -66,7 +86,7 @@ def artifact_record(path: pathlib.Path, dist: pathlib.Path) -> dict[str, object]
     relative = path.relative_to(dist).as_posix()
     parts = relative.split("/")
     if parts[0] == "firefox":
-        kind, os_name, arch = "firefox-xpi", parts[1], parts[2]
+        kind, os_name, arch = "firefox-xpi", "all", "portable"
     elif parts[0] == "linux":
         kind = "linux-deb" if path.suffix == ".deb" else "linux-rpm"
         os_name, arch = "linux", parts[1]
@@ -106,9 +126,8 @@ def main() -> int:
         args.dist / "macos/x86_64" / f"{args.product}-{args.version}-macos-x86_64.pkg",
         args.dist / "macos/arm64" / f"{args.product}-{args.version}-macos-arm64.pkg",
     ]
-    expected.extend(
-        args.dist / "firefox" / os_name / arch / f"{args.product}-{args.version}-firefox-{os_name}-{arch}.xpi"
-        for os_name, arch in HOSTS
+    expected.append(
+        args.dist / "firefox" / f"{args.product}-{args.version}.xpi"
     )
     missing = [path.relative_to(args.dist) for path in expected if not path.is_file()]
     if missing:
@@ -117,15 +136,21 @@ def main() -> int:
     artifacts = sorted(path for path in args.dist.rglob("*") if path.is_file() and path.name not in ignored)
     if not artifacts:
         raise SystemExit("no package artifacts found; build a package target first")
-    for os_name, arch in HOSTS:
-        xpi = args.dist / "firefox" / os_name / arch / f"{args.product}-{args.version}-firefox-{os_name}-{arch}.xpi"
-        if xpi.exists():
-            with zipfile.ZipFile(xpi) as archive:
-                assert "manifest.json" in archive.namelist()
-                packaged_manifest = json.loads(archive.read("manifest.json"))
-                assert packaged_manifest["version"] == args.version
-                for icon in packaged_manifest["icons"].values():
-                    assert icon in archive.namelist()
+    expected_set = set(expected)
+    unexpected = sorted(path.relative_to(args.dist) for path in artifacts if path not in expected_set)
+    if unexpected:
+        raise SystemExit(
+            "mixed or unlisted release artifacts are forbidden: "
+            + ", ".join(map(str, unexpected))
+        )
+    xpi = args.dist / "firefox" / f"{args.product}-{args.version}.xpi"
+    with zipfile.ZipFile(xpi) as archive:
+        assert "manifest.json" in archive.namelist()
+        packaged_manifest = json.loads(archive.read("manifest.json"))
+        assert packaged_manifest["version"] == firefox_version(args.version)
+        assert packaged_manifest.get("version_name", args.version) == args.version
+        for icon in packaged_manifest["icons"].values():
+            assert icon in archive.namelist()
     sbom = json.loads((args.dist / f"{args.product}-{args.version}.cdx.json").read_text())
     assert sbom["bomFormat"] == "CycloneDX"
     assert sbom["specVersion"] == "1.6"

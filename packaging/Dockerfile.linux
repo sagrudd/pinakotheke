@@ -2,6 +2,10 @@
 # SPDX-License-Identifier: MPL-2.0
 FROM rust:1.97-bookworm@sha256:8fa55b2f3ddf97471ab6a767bfa3f37e6bad0986ba823e75fea57e2a2a5c3073 AS build
 ARG VERSION
+ARG DASOBJECTSTORE_MIN_VERSION
+ARG DEB_VERSION
+ARG RPM_VERSION
+ARG RPM_RELEASE
 ARG RUST_TARGET
 ARG DEB_ARCH
 ARG RPM_ARCH
@@ -18,6 +22,9 @@ COPY fixtures ./fixtures
 COPY packaging/x-img.spec ./packaging/x-img.spec
 COPY --from=web-assets . /workspace/web-assets
 RUN test "$(cargo metadata --format-version 1 --no-deps | python3 -c 'import json,sys; print(json.load(sys.stdin)["packages"][0]["version"])')" = "$VERSION"
+RUN case "$DASOBJECTSTORE_MIN_VERSION" in ''|*[!0-9.]* ) exit 2;; esac \
+    && case "$DEB_VERSION" in ''|*[!0-9A-Za-z.~+-]* ) exit 2;; esac \
+    && case "$RPM_VERSION:$RPM_RELEASE" in *[!0-9A-Za-z._:+-]* ) exit 2;; esac
 RUN rustup target add "$RUST_TARGET" && \
     CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc \
     CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc \
@@ -33,11 +40,11 @@ RUN set -eu; \
     install -m 0644 "$bootstrap" "/tmp/deb/usr/share/$PRODUCT_NAME/monas/product-bootstrap.json"; \
     cp -a web-assets/. "/tmp/deb/usr/share/$PRODUCT_NAME/web/"; \
     install -m 0644 LICENSE "/tmp/deb/usr/share/doc/$PRODUCT_NAME/LICENSE"; \
-    printf 'Package: %s\nVersion: %s\nSection: utils\nPriority: optional\nArchitecture: %s\nMaintainer: Pinakotheke maintainers\nDepends: dasobjectstore\nDescription: %s metadata CLI and Monas product contract\n' "$PRODUCT_NAME" "$VERSION" "$DEB_ARCH" "$PRODUCT_NAME" > /tmp/deb/DEBIAN/control; \
+    printf 'Package: %s\nVersion: %s\nSection: utils\nPriority: optional\nArchitecture: %s\nMaintainer: Pinakotheke maintainers\nDepends: dasobjectstore (>= %s)\nDescription: %s metadata CLI and Monas product contract\n' "$PRODUCT_NAME" "$DEB_VERSION" "$DEB_ARCH" "$DASOBJECTSTORE_MIN_VERSION" "$PRODUCT_NAME" > /tmp/deb/DEBIAN/control; \
     if [ "$PRODUCT_NAME" = pinakotheke ]; then printf 'Provides: x-img\nConflicts: x-img\nReplaces: x-img\n' >> /tmp/deb/DEBIAN/control; fi; \
     dpkg-deb --root-owner-group --build /tmp/deb "/out/${PRODUCT_NAME}-${VERSION}-linux-${DEB_ARCH}.deb"; \
     mkdir -p /tmp/rpmbuild/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}; \
-    rpmbuild -bb --target "$RPM_ARCH" --define "_topdir /tmp/rpmbuild" --define "ximg_version $VERSION" --define "product_name $PRODUCT_NAME" --define "product_binary /workspace/target/$RUST_TARGET/release/$binary" --define "legacy_binary /workspace/target/$RUST_TARGET/release/x-img" --define "product_bootstrap /workspace/$bootstrap" --define "product_web /workspace/web-assets" packaging/x-img.spec; \
+    rpmbuild -bb --target "$RPM_ARCH" --define "_topdir /tmp/rpmbuild" --define "ximg_version $RPM_VERSION" --define "ximg_release $RPM_RELEASE" --define "dasobjectstore_min_version $DASOBJECTSTORE_MIN_VERSION" --define "product_name $PRODUCT_NAME" --define "product_binary /workspace/target/$RUST_TARGET/release/$binary" --define "legacy_binary /workspace/target/$RUST_TARGET/release/x-img" --define "product_bootstrap /workspace/$bootstrap" --define "product_web /workspace/web-assets" packaging/x-img.spec; \
     find /tmp/rpmbuild/RPMS -name '*.rpm' -exec cp {} "/out/${PRODUCT_NAME}-${VERSION}-linux-${RPM_ARCH}.rpm" \;
 
 FROM scratch AS export

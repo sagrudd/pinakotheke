@@ -1,5 +1,16 @@
 # XIMG-003 compatibility matrix
 
+## Current 1.29.0-rc.1 release contract
+
+The authoritative current record is
+`contracts/release/pinakotheke-1.29.0-rc.1.compatibility.json`; this historical
+page does not override it. The record is dependency-free, machine checked, and
+pins exact commits, component versions, required capabilities, wire-contract
+digests, native package mappings, and the tested DASObjectStore minimum.
+`docs/release-candidate-1-29-0.rst` describes the verification and immutable
+release-output workflow. Older snapshots below remain as implementation
+history only.
+
 Current XIMG-200 Synoptikon integration baseline: ``../mnemosyne`` commit
 ``52810176bf95a170f93d74a6f5daa94da5c6640e``. This supersedes the earlier
 moving-source snapshot retained in the historical table below.
