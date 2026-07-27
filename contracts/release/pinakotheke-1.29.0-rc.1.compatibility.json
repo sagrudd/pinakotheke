@@ -13,7 +13,7 @@
   },
   "pinakotheke": {
     "repository": "https://github.com/sagrudd/pinakotheke",
-    "tested_commit": "d2cd46e7499ed74efaf9100c1fc8e41f3592ef43",
+    "tested_commit": "44c273f79a8dc7755406535eb947f15c86ab5464",
     "baseline_version": "1.29.0-rc.1",
     "working_tree": "clean",
     "version_sources": [
@@ -80,14 +80,14 @@
     },
     "dasobjectstore": {
       "repository": "https://github.com/sagrudd/DASObjectStore",
-      "tested_commit": "f8ac52f930a440ab725b6ecb61ef6c8fac8d535e",
-      "tested_version": "0.145.3",
+      "tested_commit": "3a58859a17af6afb403a4ab397ad4b0f00b8980d",
+      "tested_version": "0.145.4",
       "tested_components": [
-        {"name": "dasobjectstore-core", "version": "0.145.3"},
-        {"name": "dasobjectstore-daemon", "version": "0.145.3"},
-        {"name": "dasobjectstore-remote", "version": "0.145.3"}
+        {"name": "dasobjectstore-core", "version": "0.145.4"},
+        {"name": "dasobjectstore-daemon", "version": "0.145.4"},
+        {"name": "dasobjectstore-remote", "version": "0.145.4"}
       ],
-      "minimum_version": "0.145.3",
+      "minimum_version": "0.145.4",
       "evidence_status": "verified",
       "working_tree": "clean",
       "required_capabilities": [
@@ -95,7 +95,8 @@
         "dasobjectstore.authorized-object-read.v1",
         "dasobjectstore.application-upload-completion.v1",
         "dasobjectstore.exact-object-delete.v1",
-        "dasobjectstore.application-delete-capacity-reconciliation.v1"
+        "dasobjectstore.application-delete-capacity-reconciliation.v1",
+        "dasobjectstore.trusted-local-catalogue-inventory.v1"
       ],
       "missing_required_capabilities": [],
       "wire_contracts": [
@@ -113,6 +114,11 @@
           "contract_version": "pinakotheke.das-object-delete-helper.v1",
           "path": "contracts/dasobjectstore/pinakotheke-das-object-delete-helper.v1.schema.json",
           "sha256": "ac4176f34bd1bbab6014fddd31b213867674373da730019976fe8f98cb95c526"
+        },
+        {
+          "contract_version": "pinakotheke.gallery-inventory-helper.v2",
+          "path": "contracts/dasobjectstore/pinakotheke-gallery-inventory-helper.v2.schema.json",
+          "sha256": "6577eb21079b619f286d786c5cac76d13756d7b012c4f0e76def843c81c2178d"
         }
       ]
     },

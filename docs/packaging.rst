@@ -18,8 +18,8 @@ the verified minimum. Install or upgrade DASObjectStore independently before
 Pinakotheke; removing Pinakotheke does not remove ObjectStore data.
 
 The RC packaging contract was checked against Monas ``0.9.1`` commit
-``dbcc70577d28f2c4a619eafeaee9e399798bec5c`` and DASObjectStore ``0.145.3``
-commit ``f8ac52f930a440ab725b6ecb61ef6c8fac8d535e``. Public builds consume only
+``dbcc70577d28f2c4a619eafeaee9e399798bec5c`` and DASObjectStore ``0.145.4``
+commit ``3a58859a17af6afb403a4ab397ad4b0f00b8980d``. Public builds consume only
 checked-in contracts and published package versions; they have no sibling path
 dependency.
 

@@ -45,7 +45,7 @@ class CompatibilityCheckerTests(unittest.TestCase):
         self.assertEqual(checked["release"]["status"], "release_ready")
         self.assertEqual(
             checked["dependencies"]["dasobjectstore"]["minimum_version"],
-            "0.145.3",
+            "0.145.4",
         )
 
     def test_blocked_manifest_cannot_be_promoted(self) -> None:
@@ -84,7 +84,7 @@ class CompatibilityCheckerTests(unittest.TestCase):
     def test_clean_verified_das_minimum_can_feed_packaging(self) -> None:
         changed = copy.deepcopy(self.manifest)
         dependency = changed["dependencies"]["dasobjectstore"]
-        self.assertEqual(checker.verified_das_minimum(changed), "0.145.3")
+        self.assertEqual(checker.verified_das_minimum(changed), "0.145.4")
 
     def test_rejects_unknown_schema_major(self) -> None:
         changed = copy.deepcopy(self.manifest)

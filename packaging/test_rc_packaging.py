@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 class RcPackagingTest(unittest.TestCase):
     def rendered_preinstall(self, executable: Path) -> Path:
         source = (ROOT / "packaging/macos/preinstall").read_text(encoding="utf-8")
-        source = source.replace("@DASOBJECTSTORE_MIN_VERSION@", "0.145.3")
+        source = source.replace("@DASOBJECTSTORE_MIN_VERSION@", "0.145.4")
         start = (
             "for executable in /usr/local/bin/dasobjectstore "
             "/opt/homebrew/bin/dasobjectstore /usr/bin/dasobjectstore; do"
@@ -40,7 +40,7 @@ class RcPackagingTest(unittest.TestCase):
     def test_macos_preinstall_accepts_exact_or_newer_release(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
-            executable = self.fake_das(root, "0.145.3")
+            executable = self.fake_das(root, "0.145.4")
             script = self.rendered_preinstall(executable)
             subprocess.run([os.fspath(script)], check=True)
             executable = self.fake_das(root, "0.146.0")
@@ -49,13 +49,13 @@ class RcPackagingTest(unittest.TestCase):
     def test_macos_preinstall_rejects_older_or_unparseable_release(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
-            executable = self.fake_das(root, "0.145.2")
+            executable = self.fake_das(root, "0.145.3")
             script = self.rendered_preinstall(executable)
             result = subprocess.run(
                 [os.fspath(script)], check=False, capture_output=True, text=True
             )
             self.assertNotEqual(result.returncode, 0)
-            self.assertIn("0.145.3 or newer", result.stderr)
+            self.assertIn("0.145.4 or newer", result.stderr)
             executable.write_text(
                 "#!/bin/sh\nprintf '%s\\n' unknown\n", encoding="utf-8"
             )

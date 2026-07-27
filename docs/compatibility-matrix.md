@@ -12,8 +12,8 @@ release-output workflow. Older snapshots below remain as implementation
 history only.
 
 The release-ready inspection pins are Monas ``0.9.1`` at
-``dbcc70577d28f2c4a619eafeaee9e399798bec5c``, DASObjectStore ``0.145.3`` at
-``f8ac52f930a440ab725b6ecb61ef6c8fac8d535e``, Mnemosyne at
+``dbcc70577d28f2c4a619eafeaee9e399798bec5c``, DASObjectStore ``0.145.4`` at
+``3a58859a17af6afb403a4ab397ad4b0f00b8980d``, Mnemosyne at
 ``2244a49f5057ef6251b2760bd0729de8e2207f56``, and the Mnemosyne design
 language at ``fbfa28e55d1c8111ef95a139d83927c231534b5f``. These exact
 revisions are executable release evidence; the older pins below document

@@ -1471,8 +1471,9 @@ Release rules:
 - one compatibility manifest records exact tested Pinakotheke, Monas,
   DASObjectStore, design-language, and Mnemosyne commits plus required protocol
   capabilities. Monas ``0.9.1`` is the verified host minimum and
-  DASObjectStore ``0.145.3`` is the verified storage minimum containing
-  application-deletion capacity reconciliation;
+  DASObjectStore ``0.145.4`` is the verified storage minimum containing
+  application-deletion capacity reconciliation and trusted local immutable
+  catalogue inventory evidence;
 - builds originate from a clean committed revision and a fresh versioned output
   directory. Package, binary, web, API, and Firefox compatibility versions must
   agree, and every deployed artifact must appear in the checksum manifest;
@@ -1495,8 +1496,9 @@ Release rules:
   evidence is authoritative.
 
 Epic RC-A is complete in ``573b4df``. Monas ``0.9.1`` (``dbcc705``) performs
-the exact bounded runtime preflight, and DASObjectStore ``0.145.3``
-(``f8ac52f9``) supplies store-global application-delete capacity convergence.
+the exact bounded runtime preflight, and DASObjectStore ``0.145.4``
+(``3a58859a``) supplies store-global application-delete capacity convergence
+plus immutable local catalogue inventory evidence.
 The release-ready compatibility record, native dependency enforcement,
 canonical Firefox XPI, clean-source release preparation, exact artifact matrix,
 rollback binding, and checksum-verifiable sealing are now the sole RC release

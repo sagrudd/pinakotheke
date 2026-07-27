@@ -15,7 +15,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 PINS = {
     "monas": "dbcc70577d28f2c4a619eafeaee9e399798bec5c",
-    "DASObjectStore": "f8ac52f930a440ab725b6ecb61ef6c8fac8d535e",
+    "DASObjectStore": "3a58859a17af6afb403a4ab397ad4b0f00b8980d",
     "mnemosyne": "2244a49f5057ef6251b2760bd0729de8e2207f56",
     "mnemosyne_design_language": "fbfa28e55d1c8111ef95a139d83927c231534b5f",
 }
@@ -25,6 +25,7 @@ VENDORED_REQUIRED = (
     "contracts/dasobjectstore/x-img-application-identity.v1.json",
     "contracts/dasobjectstore/pinakotheke-application-identity.v1.candidate.json",
     "contracts/dasobjectstore/x-img-destination-inventory.v1.json",
+    "contracts/dasobjectstore/pinakotheke-gallery-inventory-helper.v2.schema.json",
     "fixtures/monas/v1/invalid-anonymous-api.json",
     "fixtures/host-context/v1/monas-valid.json",
     "fixtures/host-context/v1/synoptikon-valid.json",

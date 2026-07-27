@@ -20,16 +20,20 @@ DASObjectStore integration:
 At startup, and every ten seconds thereafter, Pinakotheke asks the helper for
 one complete bounded inventory of ``Protected`` objects in the configured
 logical ObjectStore. The packaged helper calls ``dasobjectstore store contents
-STORE --json``. It does not list a provider bucket and does not receive storage
-credentials.
+STORE --json`` from DASObjectStore ``0.145.4`` or later. It requires the
+catalogue's exact immutable object version, SHA-256, and length as well as the
+stable endpoint/store/key identity. It does not list a provider bucket and does
+not receive storage credentials.
 
 Each gallery thumbnail, original, poster, or normalized video is compared by
-stable endpoint ID, ObjectStore ID, and immutable DAS object ID. An absent
-object is atomically persisted as ``Unavailable`` before the in-memory gallery
-is replaced. Its delivery route is removed. If authority later returns, the
-route and ``Ready`` state are reconstructed. Provenance metadata remains so the
-user can understand the missing object; source websites are never used as a
-read fallback.
+stable endpoint ID, ObjectStore ID, immutable DAS object ID, object version,
+SHA-256, and length. A same-key record with changed or ambiguous immutable
+evidence is unavailable, never a replacement. An absent object is atomically
+persisted as ``Unavailable`` before the in-memory gallery is replaced. Its
+delivery route is removed. If exact authority evidence later returns, the route
+and ``Ready`` state are reconstructed. Provenance metadata remains so the user
+can understand the missing object; source websites are never used as a read
+fallback.
 
 Diagnostics
 -----------
