@@ -85,7 +85,8 @@ integration, review, tests, commits, and the final handoff.
   truth; extension and product metadata must be checked against it.
 - Update `CHANGELOG.md` for released behavior. Compatible fixes use patch,
   backward-compatible features use minor, and breaking public/schema changes
-  require an agreed major bump.
+  require a major bump explicitly approved by a human reviewer or the project
+  owner.
 - Never rewrite public history or force-push unless the user explicitly asks.
 
 ## Authority boundaries
